@@ -1,0 +1,9 @@
+{
+  "expo": {
+    "name": "frontend",
+    "slug": "frontend",
+    "plugins": [
+      "expo-secure-store"
+    ]
+  }
+}

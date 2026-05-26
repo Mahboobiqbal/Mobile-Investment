@@ -10,7 +10,7 @@ import DashboardScreen from '../screens/DashboardScreen';
 import AnalysisScreen from '../screens/AnalysisScreen';
 
 export type RootStackParamList = {
-  Login: undefined;
+  Login: { email?: string; password?: string } | undefined;
   Register: undefined;
   PlanSelection: undefined;
   TermsCondition: { selectedPlan: string };

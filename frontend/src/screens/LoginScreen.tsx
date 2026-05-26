@@ -1,7 +1,7 @@
 import { AxiosError } from 'axios';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useState } from 'react';
-import { useNavigation } from '@react-navigation/native';
+import { useState, useEffect } from 'react';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -62,6 +62,14 @@ export default function LoginScreen() {
     }
   };
 
+  // Prefill credentials if navigated from Register
+  const route = useRoute<any>();
+  useEffect(() => {
+    const params = route.params as { email?: string; password?: string } | undefined;
+    if (params?.email) setEmail(params.email);
+    if (params?.password) setPassword(params.password);
+  }, [route.params]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
@@ -97,6 +105,10 @@ export default function LoginScreen() {
 
           <Pressable disabled={isLoading} onPress={handleLogin} style={[styles.button, isLoading && styles.buttonDisabled]}>
             {isLoading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.buttonText}>Login</Text>}
+          </Pressable>
+
+          <Pressable style={styles.signUpRow} onPress={() => navigation.navigate('Register' as never)}>
+            <Text style={styles.signUpText}>Don't have an account? <Text style={styles.signUpLink}>Sign up</Text></Text>
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -183,6 +195,19 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#FFFFFF',
     fontSize: 16,
+    fontWeight: '700',
+  },
+  signUpRow: {
+    marginTop: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  signUpText: {
+    color: '#64748B',
+    fontSize: 13,
+  },
+  signUpLink: {
+    color: '#0EA5E9',
     fontWeight: '700',
   },
 });

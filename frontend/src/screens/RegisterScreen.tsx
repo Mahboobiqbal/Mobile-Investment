@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useNavigation } from '@react-navigation/native';
 import SuccessModal from '../components/SuccessModal';
 import ErrorModal from '../components/ErrorModal';
 
@@ -24,6 +25,7 @@ type ApiError = {
 
 export default function RegisterScreen() {
   const { login } = useAuth();
+  const navigation = useNavigation<any>();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -48,11 +50,12 @@ export default function RegisterScreen() {
         phone: phone.trim(),
       });
 
-      const { token, user } = response.data;
-      await login(token, user);
-
-      // TODO: Securely store token in AsyncStorage/SecureStore and navigate to Dashboard.
-      setSuccessModal({ visible: true, title: 'Account Created!', message: 'Your account has been created successfully. Welcome aboard!' });
+      // After successful registration, navigate user to Login and prefill credentials
+      setSuccessModal({ visible: true, title: 'Account Created!', message: 'Account created. Redirecting to login...' });
+      setTimeout(() => {
+        setSuccessModal({ visible: false, title: '', message: '' });
+        navigation.navigate('Login', { email: email.trim().toLowerCase(), password });
+      }, 1200);
     } catch (error) {
       const axiosError = error as AxiosError<ApiError>;
       setErrorModal({ visible: true, title: 'Registration Failed', message: axiosError.response?.data?.message || 'Something went wrong' });

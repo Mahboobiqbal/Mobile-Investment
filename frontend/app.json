@@ -4,6 +4,9 @@
     "slug": "frontend",
     "plugins": [
       "expo-secure-store"
-    ]
+    ],
+    "android": {
+      "package": "com.anonymous.frontend"
+    }
   }
 }

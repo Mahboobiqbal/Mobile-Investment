@@ -25,14 +25,14 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, { explorer: t
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 200,
   message: 'Too many requests from this IP, please try again later'
 });
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 15,
-  message: 'Too many login attempts from this IP, please try again later'
+  max: 100,
+  message: 'Too many requests from this IP, please try again later'
 });
 
 app.use('/api/auth', authLimiter, authRoutes);

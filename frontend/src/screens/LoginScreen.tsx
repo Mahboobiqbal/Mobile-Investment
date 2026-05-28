@@ -1,73 +1,72 @@
+import { useEffect, useState } from 'react';
 import { AxiosError } from 'axios';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useState, useEffect } from 'react';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import api from '../services/api';
-import { useAuth } from '../context/AuthContext';
-import SuccessModal from '../components/SuccessModal';
-import ErrorModal from '../components/ErrorModal';
+import { authApi } from '../services/api/authApi';
+import { useAuth, type UserData } from '../context/AuthContext';
+import type { RootStackParamList } from '../navigation/AppNavigator';
 
-type AuthResponse = {
-  token: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    role: 'user' | 'admin';
-    currentBalance: number;
-  };
-};
-
-type ApiError = {
-  message?: string;
-};
+type LoginRoute = RouteProp<RootStackParamList, 'Login'>;
 
 export default function LoginScreen() {
   const { login } = useAuth();
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [successModal, setSuccessModal] = useState({ visible: false, title: '', message: '' });
-  const [errorModal, setErrorModal] = useState({ visible: false, title: '', message: '' });
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      setErrorModal({ visible: true, title: 'Missing Fields', message: 'Please enter your email and password.' });
+      Alert.alert('Missing Fields', 'Please enter your email and password.');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const response = await api.post<AuthResponse>('/auth/login', {
+      const response = await authApi.login({
         email: email.trim().toLowerCase(),
         password,
       });
 
       const { token, user } = response.data;
-      await login(token, user);
 
-      setSuccessModal({ visible: true, title: 'Welcome Back!', message: 'Login successful. Redirecting...' });
-      setTimeout(() => {
-        setSuccessModal({ visible: false, title: '', message: '' });
-        navigation.navigate('PlanSelection');
-      }, 1500);
+      if (!token || !user) {
+        Alert.alert('Login Failed', 'The server did not return a valid session.');
+        return;
+      }
+
+      const normalizedUser: UserData = {
+        id: user.id ?? user._id ?? '',
+        name: user.name,
+        email: user.email,
+        role: user.role === 'admin' ? 'admin' : 'user',
+        currentBalance: user.currentBalance ?? 0,
+        phone: user.phone,
+        activePlan: user.activePlan ?? undefined,
+        isVerified: user.isVerified,
+        dp: user.dp,
+      };
+
+      await login(token, normalizedUser);
+
+      navigation.replace(user.activePlan && user.activePlan !== 'None' ? 'Dashboard' : 'PlanSelection' as never);
     } catch (error) {
-      const axiosError = error as AxiosError<ApiError>;
-      setErrorModal({ visible: true, title: 'Login Failed', message: axiosError.response?.data?.message || 'Something went wrong' });
+      const axiosError = error as AxiosError<{ message?: string }>;
+      const message = axiosError.response?.data?.message || 'Something went wrong';
+      Alert.alert('Login Failed', message);
     } finally {
       setIsLoading(false);
     }
   };
 
   // Prefill credentials if navigated from Register
-  const route = useRoute<any>();
+  const route = useRoute<LoginRoute>();
   useEffect(() => {
-    const params = route.params as { email?: string; password?: string } | undefined;
-    if (params?.email) setEmail(params.email);
-    if (params?.password) setPassword(params.password);
+    if (route.params?.email) setEmail(route.params.email);
+    if (route.params?.password) setPassword(route.params.password);
   }, [route.params]);
 
   return (
@@ -113,20 +112,6 @@ export default function LoginScreen() {
         </View>
       </KeyboardAvoidingView>
 
-      <SuccessModal
-        visible={successModal.visible}
-        title={successModal.title}
-        message={successModal.message}
-        buttonText="Continue"
-        onClose={() => setSuccessModal({ ...successModal, visible: false })}
-      />
-
-      <ErrorModal
-        visible={errorModal.visible}
-        title={errorModal.title}
-        message={errorModal.message}
-        onClose={() => setErrorModal({ ...errorModal, visible: false })}
-      />
     </SafeAreaView>
   );
 }

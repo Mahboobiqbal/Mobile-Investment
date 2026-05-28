@@ -1,5 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   SafeAreaView,
   View,
   Text,
@@ -10,21 +12,43 @@ import {
   Platform,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { walletApi } from '../services/api/walletApi';
 
-type TermsRoute = RouteProp<{ TermsCondition: { selectedPlan: string } }, 'TermsCondition'>;
+type TermsRoute = RouteProp<{ TermsCondition: { selectedPlanId: string; selectedPlanName: string } }, 'TermsCondition'>;
 
 export default function TermsConditionScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<TermsRoute>();
-  const selectedPlan = useMemo(() => route.params?.selectedPlan, [route.params]);
+  const selectedPlanId = useMemo(() => route.params?.selectedPlanId, [route.params]);
+  const selectedPlanName = useMemo(() => route.params?.selectedPlanName, [route.params]);
   const [hasAgreed, setHasAgreed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleToggleAgree = useCallback(() => setHasAgreed((v) => !v), []);
 
   const handleContinue = useCallback(() => {
-    if (!hasAgreed) return;
-    navigation.replace('Dashboard');
-  }, [hasAgreed, navigation]);
+    if (!hasAgreed || !selectedPlanId || !selectedPlanName) {
+      return;
+    }
+
+    const commitPlanSelection = async () => {
+      setSubmitting(true);
+
+      try {
+        await walletApi.selectPlan({ planName: selectedPlanName });
+        navigation.replace('Dashboard');
+      } catch (error) {
+        Alert.alert(
+          'Plan Selection Failed',
+          error instanceof Error ? error.message : 'Unable to commit this plan to your account. Please try again.'
+        );
+      } finally {
+        setSubmitting(false);
+      }
+    };
+
+    void commitPlanSelection();
+  }, [hasAgreed, navigation, selectedPlanId, selectedPlanName]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -33,9 +57,9 @@ export default function TermsConditionScreen() {
         <Text style={styles.subtitle}>
           Please review our legal guidelines, daily ROI distribution rules, and transfer windows carefully.
         </Text>
-        {selectedPlan ? (
+        {selectedPlanName ? (
           <View style={styles.selectedPlanPill}>
-            <Text style={styles.selectedPlanText}>{selectedPlan}</Text>
+            <Text style={styles.selectedPlanText}>{selectedPlanName}</Text>
           </View>
         ) : null}
       </View>
@@ -83,11 +107,15 @@ export default function TermsConditionScreen() {
 
       <View style={styles.stickyFooter} pointerEvents={hasAgreed ? 'auto' : 'box-none'}>
         <Pressable
-          style={[styles.continueButton, !hasAgreed && styles.continueButtonDisabled]}
+          style={[styles.continueButton, (!hasAgreed || submitting) && styles.continueButtonDisabled]}
           onPress={handleContinue}
-          disabled={!hasAgreed}
+          disabled={!hasAgreed || submitting}
         >
-          <Text style={[styles.continueText, !hasAgreed && styles.continueTextDisabled]}>Agree & Continue</Text>
+          {submitting ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={[styles.continueText, !hasAgreed && styles.continueTextDisabled]}>Agree & Continue</Text>
+          )}
         </Pressable>
       </View>
     </SafeAreaView>

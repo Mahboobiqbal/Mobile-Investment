@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   Pressable,
   RefreshControl,
@@ -51,7 +52,7 @@ interface ApiError {
 }
 
 export default function DashboardScreen() {
-  const { userData, logout } = useAuth();
+  const { logout } = useAuth();
   const navigation = useNavigation();
   const [dashboardData, setDashboardData] = useState<DashboardData>({
     user: null,
@@ -93,7 +94,8 @@ export default function DashboardScreen() {
       });
     } catch (err) {
       const axiosError = err as AxiosError<ApiError>;
-      const errorMessage = axiosError.response?.data?.message || 'Failed to load dashboard data';
+      const errorMessage = axiosError.response?.data?.message || axiosError.message || 'Failed to load dashboard data';
+      console.error('Dashboard error:', errorMessage, axiosError);
       setError(errorMessage);
       setErrorModal({
         visible: true,
@@ -179,11 +181,18 @@ export default function DashboardScreen() {
     );
   }
 
-  const user = dashboardData.user || userData;
+  const user = dashboardData.user || {
+    id: '',
+    name: 'User',
+    email: '',
+    role: 'user' as const,
+    currentBalance: 0,
+  };
   const stats = dashboardData.stats || {
     totalDepositsApproved: 0,
     totalWithdrawalsApproved: 0,
     totalROIEarnings: 0,
+    message: undefined,
   };
 
   const getGreeting = () => {
@@ -234,7 +243,7 @@ export default function DashboardScreen() {
               <Pressable style={styles.eyeButtonContainer} onPress={handleBalanceToggle}>
                 <Text style={styles.eyeButton}>{showBalance ? '👁' : '🔒'}</Text>
               </Pressable>
-              <Pressable style={styles.addMoneyButton} onPress={() => setInfoModal({ visible: true, title: 'Deposit Funds', message: 'This feature is coming soon. You\'ll be able to deposit funds to your wallet soon.', icon: '💳', isComingSoon: true })}>
+              <Pressable style={styles.addMoneyButton} onPress={() => navigation.navigate('DepositRequest' as never)}>
                 <Text style={styles.addMoneyText}>Add Money</Text>
               </Pressable>
             </View>
@@ -245,6 +254,15 @@ export default function DashboardScreen() {
         <View style={styles.analyticsSection}>
           <Text style={styles.sectionTitle}>Financial Analytics</Text>
           <View style={styles.analyticsGrid}>
+            {/* Total Investment Card */}
+            <View style={styles.analyticsCard}>
+              <Text style={styles.analyticsLabel}>Total Investment</Text>
+              <Text style={[styles.analyticsValue, styles.investmentColor]}>
+                {formatCurrency(user?.currentBalance || 0)}
+              </Text>
+              <View style={[styles.analyticsIndicator, { backgroundColor: '#8B5CF6' }]} />
+            </View>
+
             {/* ROI Card */}
             <View style={styles.analyticsCard}>
               <Text style={styles.analyticsLabel}>Total ROI Profit</Text>
@@ -281,7 +299,7 @@ export default function DashboardScreen() {
             {/* Deposit Action */}
             <Pressable
               style={styles.actionItem}
-              onPress={() => setInfoModal({ visible: true, title: 'Deposit Funds', message: 'This feature is coming soon. You\'ll be able to deposit funds to your wallet soon.', icon: '💳', isComingSoon: true })}
+              onPress={() => navigation.navigate('DepositRequest' as never)}
             >
               <View style={[styles.actionCircle, styles.depositActionBg]}>
                 <Text style={styles.actionIcon}>💳</Text>
@@ -292,7 +310,7 @@ export default function DashboardScreen() {
             {/* Withdraw Action */}
             <Pressable
               style={styles.actionItem}
-              onPress={() => setInfoModal({ visible: true, title: 'Withdraw Funds', message: 'This feature is coming soon. You\'ll be able to request withdrawals soon.', icon: '🏦', isComingSoon: true })}
+              onPress={() => navigation.navigate('WithdrawalRequest' as never)}
             >
               <View style={[styles.actionCircle, styles.withdrawActionBg]}>
                 <Text style={styles.actionIcon}>🏦</Text>
@@ -562,10 +580,10 @@ const styles = StyleSheet.create({
   analyticsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 10,
+    flexWrap: 'wrap',
   },
   analyticsCard: {
-    flex: 1,
+    width: '48%',
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 14,
@@ -574,6 +592,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
+    marginBottom: 12,
   },
   analyticsLabel: {
     fontSize: 11,
@@ -590,6 +609,9 @@ const styles = StyleSheet.create({
   },
   roiColor: {
     color: '#10B981',
+  },
+  investmentColor: {
+    color: '#8B5CF6',
   },
   depositColor: {
     color: '#0EA5E9',
@@ -761,5 +783,76 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  transactionModal: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    paddingBottom: 30,
+    marginTop: 'auto',
+    maxHeight: '80%',
+  },
+  transactionModalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 4,
+  },
+  transactionModalSubtitle: {
+    fontSize: 13,
+    color: '#64748B',
+    marginBottom: 20,
+    fontWeight: '500',
+  },
+  formGroup: {
+    marginBottom: 16,
+  },
+  formLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#334155',
+    marginBottom: 8,
+  },
+  formInput: {
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: '#0F172A',
+    backgroundColor: '#FFFFFF',
+  },
+  transactionModalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+  },
+  transactionButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#E2E8F0',
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  submitButton: {
+    backgroundColor: '#00A86B',
+  },
+  submitButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  submitButtonDisabled: {
+    opacity: 0.65,
   },
 });

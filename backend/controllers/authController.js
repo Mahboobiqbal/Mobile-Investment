@@ -37,12 +37,13 @@ const signToken = (user) =>
 const registerUser = async (req, res) => {
   try {
     const { name, email, password, phone } = req.body;
+    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
 
-    if (!name || !email || !password || !phone) {
+    if (!name || !normalizedEmail || !password || !phone) {
       return res.status(400).json({ message: 'All required fields must be provided' });
     }
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email: normalizedEmail });
 
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
@@ -52,7 +53,7 @@ const registerUser = async (req, res) => {
 
     const user = await User.create({
       name,
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
       phone,
     });
@@ -78,12 +79,13 @@ const registerUser = async (req, res) => {
 const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
 
-    if (!email || !password) {
+    if (!normalizedEmail || !password) {
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email: normalizedEmail }).select('+password');
 
     if (!user) {
       return res.status(401).json({ message: 'Invalid email or password' });
@@ -257,77 +259,77 @@ const resetPassword = async (req, res) => {
 };
 
 const getUserDashboardStats = async (req, res) => {
-  try {
-    const userId = req.user.id;
+    try {
+      const userId = req.user.id;
 
-    const stats = await Transaction.aggregate([
-      {
-        $match: {
-          user: new mongoose.Types.ObjectId(userId),
+      const stats = await Transaction.aggregate([
+        {
+          $match: {
+            user: new mongoose.Types.ObjectId(userId),
+          },
         },
-      },
-      {
-        $facet: {
-          totalDepositsApproved: [
-            {
-              $match: {
-                type: 'Deposit',
-                status: { $in: ['approved', 'Approved'] },
-                transactionId: { $not: /^ROI-DAILY-/ },
+        {
+          $facet: {
+            totalDepositsApproved: [
+              {
+                $match: {
+                  type: 'Deposit',
+                  status: { $in: ['approved', 'Approved'] },
+                  transactionId: { $not: /^ROI-DAILY-/ },
+                },
               },
-            },
-            {
-              $group: {
-                _id: null,
-                total: { $sum: '$amount' },
+              {
+                $group: {
+                  _id: null,
+                  total: { $sum: '$amount' },
+                },
               },
-            },
-          ],
-          totalWithdrawalsApproved: [
-            {
-              $match: {
-                type: 'Withdrawal',
-                status: { $in: ['approved', 'Approved'] },
+            ],
+            totalWithdrawalsProcessed: [
+              {
+                $match: {
+                  type: 'Withdrawal',
+                  status: { $in: ['approved', 'Approved', 'withdrawn', 'Withdrawn'] },
+                },
               },
-            },
-            {
-              $group: {
-                _id: null,
-                total: { $sum: '$amount' },
+              {
+                $group: {
+                  _id: null,
+                  total: { $sum: '$amount' },
+                },
               },
-            },
-          ],
-          totalROIEarnings: [
-            {
-              $match: {
-                type: 'Deposit',
-                transactionId: /^ROI-DAILY-/,
+            ],
+            totalROIEarnings: [
+              {
+                $match: {
+                  type: 'Deposit',
+                  transactionId: /^ROI-DAILY-/,
+                },
               },
-            },
-            {
-              $group: {
-                _id: null,
-                total: { $sum: '$amount' },
+              {
+                $group: {
+                  _id: null,
+                  total: { $sum: '$amount' },
+                },
               },
-            },
-          ],
+            ],
+          },
         },
-      },
-    ]);
+      ]);
 
-    const summary = stats[0] || {};
+      const summary = stats[0] || {};
 
-    return res.status(200).json({
-      message: 'Dashboard stats fetched successfully',
-      totalDepositsApproved: summary.totalDepositsApproved?.[0]?.total || 0,
-      totalWithdrawalsApproved: summary.totalWithdrawalsApproved?.[0]?.total || 0,
-      totalROIEarnings: summary.totalROIEarnings?.[0]?.total || 0,
-    });
-  } catch (error) {
-    console.error('Dashboard stats calculation failed:', error.message);
-    return res.status(500).json({ message: error.message || 'Unable to fetch dashboard stats' });
-  }
-};
+      return res.status(200).json({
+        message: 'Dashboard stats fetched successfully',
+        totalDepositsApproved: summary.totalDepositsApproved?.[0]?.total || 0,
+        totalWithdrawalsApproved: summary.totalWithdrawalsProcessed?.[0]?.total || 0,
+        totalROIEarnings: summary.totalROIEarnings?.[0]?.total || 0,
+      });
+    } catch (error) {
+      console.error('Dashboard stats calculation failed:', error.message);
+      return res.status(500).json({ message: error.message || 'Unable to fetch dashboard stats' });
+    }
+  };
 
 module.exports = {
   registerUser,

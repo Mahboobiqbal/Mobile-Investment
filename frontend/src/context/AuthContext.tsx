@@ -26,6 +26,7 @@ export interface AuthState {
 interface AuthContextValue extends AuthState {
   login: (token: string, userData: UserData) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUserData: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -62,6 +63,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthTokenProvider(() => null);
     setAuthState({ token: null, loading: false, userData: null });
   }, []);
+
+  const refreshUserData = useCallback(async () => {
+    if (!authState.token) return;
+    try {
+      const response = await api.get<{ user: UserData }>('/auth/profile');
+      setAuthState(prev => ({ ...prev, userData: response.data.user }));
+    } catch (error) {
+      console.error('Failed to refresh user data:', error);
+    }
+  }, [authState.token]);
 
   useEffect(() => {
     let isMounted = true;
@@ -106,8 +117,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ...authState,
       login,
       logout,
+      refreshUserData,
     }),
-    [authState, login, logout]
+    [authState, login, logout, refreshUserData]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

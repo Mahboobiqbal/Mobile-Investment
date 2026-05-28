@@ -1,5 +1,5 @@
-import React from 'react';
-import { Modal, View, Text, Pressable, StyleSheet, Animated } from 'react-native';
+import React, { useEffect } from 'react';
+import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
 
 interface SuccessModalProps {
   visible: boolean;
@@ -7,9 +7,17 @@ interface SuccessModalProps {
   message: string;
   buttonText?: string;
   onClose: () => void;
+  autoCloseMs?: number;
 }
 
-export default function SuccessModal({ visible, title, message, buttonText = 'Continue', onClose }: SuccessModalProps) {
+export default function SuccessModal({ visible, title, message, buttonText = 'Continue', onClose, autoCloseMs }: SuccessModalProps) {
+  useEffect(() => {
+    if (visible && autoCloseMs) {
+      const timer = setTimeout(onClose, autoCloseMs);
+      return () => clearTimeout(timer);
+    }
+  }, [visible, autoCloseMs, onClose]);
+
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
@@ -21,9 +29,11 @@ export default function SuccessModal({ visible, title, message, buttonText = 'Co
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.message}>{message}</Text>
 
-          <Pressable style={styles.button} onPress={onClose}>
-            <Text style={styles.buttonText}>{buttonText}</Text>
-          </Pressable>
+          {!autoCloseMs && (
+            <Pressable style={styles.button} onPress={onClose}>
+              <Text style={styles.buttonText}>{buttonText}</Text>
+            </Pressable>
+          )}
         </View>
       </View>
     </Modal>

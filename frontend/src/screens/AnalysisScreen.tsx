@@ -18,10 +18,10 @@ import ErrorModal from '../components/ErrorModal';
 
 interface Transaction {
   _id: string;
-  type: 'deposit' | 'withdrawal' | 'roi';
+  type: 'Deposit' | 'Withdrawal' | 'roi';
   amount: number;
   status: string;
-  date: string;
+  createdAt: string;
   description?: string;
 }
 
@@ -70,7 +70,7 @@ export default function AnalysisScreen() {
   const getFilteredTransactions = () => {
     const now = new Date();
     return transactions.filter((tx) => {
-      const txDate = new Date(tx.date);
+      const txDate = new Date(tx.createdAt);
       const daysDiff = (now.getTime() - txDate.getTime()) / (1000 * 60 * 60 * 24);
 
       if (filter === 'week') return daysDiff <= 7;
@@ -82,8 +82,8 @@ export default function AnalysisScreen() {
 
   const getTransactionStats = (filteredTxs: Transaction[]) => {
     return {
-      deposits: filteredTxs.filter((tx) => tx.type === 'deposit').reduce((sum, tx) => sum + tx.amount, 0),
-      withdrawals: filteredTxs.filter((tx) => tx.type === 'withdrawal').reduce((sum, tx) => sum + tx.amount, 0),
+      deposits: filteredTxs.filter((tx) => tx.type === 'Deposit').reduce((sum, tx) => sum + tx.amount, 0),
+      withdrawals: filteredTxs.filter((tx) => tx.type === 'Withdrawal').reduce((sum, tx) => sum + tx.amount, 0),
       roi: filteredTxs.filter((tx) => tx.type === 'roi').reduce((sum, tx) => sum + tx.amount, 0),
       count: filteredTxs.length,
     };
@@ -103,9 +103,9 @@ export default function AnalysisScreen() {
 
   const getTransactionTypeLabel = (type: string) => {
     switch (type) {
-      case 'deposit':
+      case 'Deposit':
         return 'Deposit';
-      case 'withdrawal':
+      case 'Withdrawal':
         return 'Withdrawal';
       case 'roi':
         return 'ROI Earnings';
@@ -116,9 +116,9 @@ export default function AnalysisScreen() {
 
   const getTransactionTypeColor = (type: string) => {
     switch (type) {
-      case 'deposit':
+      case 'Deposit':
         return '#0EA5E9';
-      case 'withdrawal':
+      case 'Withdrawal':
         return '#EF4444';
       case 'roi':
         return '#10B981';
@@ -129,9 +129,9 @@ export default function AnalysisScreen() {
 
   const getTransactionTypeIcon = (type: string) => {
     switch (type) {
-      case 'deposit':
+      case 'Deposit':
         return '↓';
-      case 'withdrawal':
+      case 'Withdrawal':
         return '↑';
       case 'roi':
         return '📈';
@@ -232,35 +232,35 @@ export default function AnalysisScreen() {
               <Text style={styles.emptyStateSubtext}>Try selecting a different time period</Text>
             </View>
           ) : (
-            <FlatList
-              scrollEnabled={false}
-              data={filteredTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())}
-              keyExtractor={(item) => item._id}
-              renderItem={({ item }) => (
-                <View style={styles.transactionItem}>
-                  <View style={[styles.transactionIcon, { backgroundColor: getTransactionTypeColor(item.type) + '20' }]}>
-                    <Text style={[styles.transactionIconText, { color: getTransactionTypeColor(item.type) }]}>
-                      {getTransactionTypeIcon(item.type)}
-                    </Text>
-                  </View>
+<FlatList
+               scrollEnabled={false}
+               data={filteredTransactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())}
+               keyExtractor={(item) => item._id}
+               renderItem={({ item }) => (
+                 <View style={styles.transactionItem}>
+                   <View style={[styles.transactionIcon, { backgroundColor: getTransactionTypeColor(item.type) + '20' }]}>
+                     <Text style={[styles.transactionIconText, { color: getTransactionTypeColor(item.type) }]}>
+                       {getTransactionTypeIcon(item.type)}
+                     </Text>
+                   </View>
 
-                  <View style={styles.transactionDetails}>
-                    <Text style={styles.transactionType}>{getTransactionTypeLabel(item.type)}</Text>
-                    <Text style={styles.transactionDate}>{formatDate(item.date)}</Text>
-                  </View>
+                   <View style={styles.transactionDetails}>
+                     <Text style={styles.transactionType}>{getTransactionTypeLabel(item.type)}</Text>
+                     <Text style={styles.transactionDate}>{formatDate(item.createdAt)}</Text>
+                   </View>
 
-                  <View style={styles.transactionAmountContainer}>
-                    <Text style={[styles.transactionAmount, { color: getTransactionTypeColor(item.type) }]}>
-                      {item.type === 'withdrawal' ? '-' : '+'}
-                      {formatCurrency(item.amount)}
-                    </Text>
-                    <Text style={[styles.transactionStatus, { color: item.status === 'approved' ? '#10B981' : '#F59E0B' }]}>
-                      {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-                    </Text>
-                  </View>
-                </View>
-              )}
-            />
+                   <View style={styles.transactionAmountContainer}>
+                     <Text style={[styles.transactionAmount, { color: getTransactionTypeColor(item.type) }]}>
+                       {item.type === 'Withdrawal' ? '-' : '+'}
+                       {formatCurrency(item.amount)}
+                     </Text>
+<Text style={[styles.transactionStatus, { color: (item.status || '').toLowerCase() === 'approved' ? '#10B981' : '#F59E0B' }]}>
+                        {(item.status || '').charAt(0).toUpperCase() + (item.status || '').slice(1)}
+                     </Text>
+                   </View>
+                 </View>
+               )}
+             />
           )}
         </View>
 
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 12,
-    marginBottomVertical: 8,
+    marginVertical: 8,
     marginBottom: 8,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 1 },

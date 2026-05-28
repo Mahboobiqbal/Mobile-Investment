@@ -1,65 +1,93 @@
-import { useCallback, useState } from 'react';
-import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import InfoModal from '../components/InfoModal';
+import { walletApi, type InvestmentPlan } from '../services/api/walletApi';
+import type { RootStackParamList } from '../navigation/AppNavigator';
 
-interface Plan {
-  id: string;
-  name: string;
-  dailyProfit: string;
-  description: string;
-  features: string[];
-  color: string;
-}
+type PlanCard = InvestmentPlan & { color: string };
 
-const DUMMY_PLANS: Plan[] = [
-  {
-    id: 'plan-a',
-    name: 'Plan A',
-    dailyProfit: '2% Daily',
-    description: 'Ideal for conservative investors seeking steady returns',
-    features: ['Low risk investment', 'Consistent daily earnings', 'Flexible withdrawal'],
-    color: '#3B82F6',
-  },
-  {
-    id: 'plan-b',
-    name: 'Plan B',
-    dailyProfit: '3.5% Daily',
-    description: 'Balanced growth strategy with moderate returns',
-    features: ['Balanced risk profile', 'Higher daily returns', 'Priority support'],
-    color: '#8B5CF6',
-  },
-  {
-    id: 'plan-c',
-    name: 'Plan C',
-    dailyProfit: '5% Daily',
-    description: 'High-growth plan for experienced investors',
-    features: ['Higher returns', 'Premium benefits', 'Dedicated account manager'],
-    color: '#EC4899',
-  },
-];
+const PLAN_COLORS = ['#3B82F6', '#8B5CF6', '#EC4899', '#10B981', '#F59E0B'];
+
+const formatCurrency = (amount: number) =>
+  `Rs. ${amount.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export default function PlanSelectionScreen() {
-  const navigation = useNavigation();
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const [plans, setPlans] = useState<PlanCard[]>([]);
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [infoModal, setInfoModal] = useState({ visible: false, title: '', message: '' });
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadPlans = async () => {
+      try {
+        setLoading(true);
+        const response = await walletApi.getPlans();
+
+        if (!isMounted) {
+          return;
+        }
+
+        const livePlans = response.data.plans.map((plan, index) => ({
+          ...plan,
+          color: PLAN_COLORS[index % PLAN_COLORS.length],
+        }));
+
+        setPlans(livePlans);
+      } catch (error) {
+        if (isMounted) {
+          Alert.alert('Failed to Load Plans', error instanceof Error ? error.message : 'Unable to fetch live plans.');
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadPlans();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const handlePlanSelect = useCallback((planId: string) => {
-    setSelectedPlan(planId);
+    setSelectedPlanId(planId);
   }, []);
 
   const handleContinue = useCallback(() => {
-    if (!selectedPlan) {
+    if (!selectedPlanId) {
       setInfoModal({ visible: true, title: 'Select a Plan', message: 'Please select an investment plan to proceed.' });
       return;
     }
 
-    const selected = DUMMY_PLANS.find((p) => p.id === selectedPlan);
+    const selected = plans.find((plan) => plan._id === selectedPlanId);
     if (selected) {
-      // @ts-ignore
-      navigation.navigate('TermsCondition', { selectedPlan: selected.name });
+      navigation.navigate('TermsCondition', {
+        selectedPlanId: selected._id,
+        selectedPlanName: selected.name,
+      });
     }
-  }, [selectedPlan, navigation]);
+  }, [selectedPlanId, navigation, plans]);
+
+  const renderPlanFeatures = (plan: InvestmentPlan) => {
+    const features = [
+      `Minimum investment ${formatCurrency(plan.minInvestment)}`,
+      `Daily return rate ${plan.dailyReturnRate}%`,
+      plan.maxInvestment ? `Maximum investment ${formatCurrency(plan.maxInvestment)}` : 'No maximum investment limit',
+    ];
+
+    if (plan.description) {
+      features.unshift(plan.description);
+    }
+
+    return features;
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -72,29 +100,39 @@ export default function PlanSelectionScreen() {
 
         {/* Plans Container */}
         <View style={styles.plansContainer}>
-          {DUMMY_PLANS.map((plan) => (
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator color="#0EA5E9" />
+              <Text style={styles.loadingText}>Loading live investment plans...</Text>
+            </View>
+          ) : plans.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateTitle}>No plans available</Text>
+              <Text style={styles.emptyStateText}>Please try again later while we load the latest plan options.</Text>
+            </View>
+          ) : plans.map((plan) => (
             <Pressable
-              key={plan.id}
+              key={plan._id}
               style={[
                 styles.planCard,
-                selectedPlan === plan.id && styles.planCardActive,
+                selectedPlanId === plan._id && styles.planCardActive,
               ]}
-              onPress={() => handlePlanSelect(plan.id)}
+              onPress={() => handlePlanSelect(plan._id)}
             >
               {/* Plan Header */}
               <View style={styles.planHeader}>
                 <View style={styles.planTitleSection}>
                   <Text style={[styles.planName, { color: plan.color }]}>{plan.name}</Text>
-                  <Text style={styles.planDescription}>{plan.description}</Text>
+                  <Text style={styles.planDescription}>{plan.description || 'Live plan from the backend.'}</Text>
                 </View>
                 <View style={[styles.profitBadge, { borderColor: plan.color }]}>
-                  <Text style={[styles.profitText, { color: plan.color }]}>{plan.dailyProfit}</Text>
+                  <Text style={[styles.profitText, { color: plan.color }]}>{plan.dailyReturnRate}% Daily</Text>
                 </View>
               </View>
 
               {/* Features List */}
               <View style={styles.featuresList}>
-                {plan.features.map((feature, idx) => (
+                {renderPlanFeatures(plan).map((feature, idx) => (
                   <View key={idx} style={styles.featureRow}>
                     <Text style={styles.featureBullet}>•</Text>
                     <Text style={styles.featureText}>{feature}</Text>
@@ -103,7 +141,7 @@ export default function PlanSelectionScreen() {
               </View>
 
               {/* Selection Indicator */}
-              {selectedPlan === plan.id && (
+              {selectedPlanId === plan._id && (
                 <View style={styles.checkmark}>
                   <Text style={styles.checkmarkText}>✓</Text>
                 </View>
@@ -123,9 +161,9 @@ export default function PlanSelectionScreen() {
         {/* Action Button */}
         <View style={styles.buttonContainer}>
           <Pressable
-            style={[styles.actionButton, !selectedPlan && styles.actionButtonDisabled]}
+            style={[styles.actionButton, (!selectedPlanId || loading) && styles.actionButtonDisabled]}
             onPress={handleContinue}
-            disabled={!selectedPlan}
+            disabled={!selectedPlanId || loading}
           >
             <Text style={styles.actionButtonText}>Review Terms & Proceed</Text>
           </Pressable>
@@ -169,6 +207,35 @@ const styles = StyleSheet.create({
   plansContainer: {
     marginBottom: 24,
     gap: 14,
+  },
+  loadingContainer: {
+    paddingVertical: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  loadingText: {
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  emptyState: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  emptyStateTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 6,
+  },
+  emptyStateText: {
+    fontSize: 12,
+    color: '#64748B',
+    lineHeight: 18,
   },
   planCard: {
     backgroundColor: '#FFFFFF',

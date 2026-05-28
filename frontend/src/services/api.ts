@@ -1,5 +1,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
 
+declare var process: any;
+
 // Expo Go / Android emulator cannot use `localhost` to reach the machine running the API.
 // 10.0.2.2 maps the Android emulator back to the host machine.
 // You can override this by setting EXPO_PUBLIC_API_BASE_URL in your app config.
@@ -30,10 +32,8 @@ api.interceptors.request.use(
         if (config.headers && typeof config.headers.set === 'function') {
           config.headers.set('Authorization', `Bearer ${token}`);
         } else {
-          config.headers = {
-            ...config.headers,
-            Authorization: `Bearer ${token}`,
-          };
+          // Fallback for older axios versions or custom header objects
+          (config.headers as any)['Authorization'] = `Bearer ${token}`;
         }
       }
     }

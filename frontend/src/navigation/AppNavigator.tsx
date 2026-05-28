@@ -5,17 +5,21 @@ import { useAuth } from '../context/AuthContext';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import PlanSelectionScreen from '../screens/PlanSelectionScreen';
-import TermsAndConditionsScreen from '../screens/TermsAndConditionsScreen';
+import TermsConditionScreen from '../screens/TermsConditionScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import AnalysisScreen from '../screens/AnalysisScreen';
+import DepositRequestScreen from '../screens/DepositRequestScreen';
+import WithdrawalRequestScreen from '../screens/WithdrawalRequestScreen';
 
 export type RootStackParamList = {
   Login: { email?: string; password?: string } | undefined;
   Register: undefined;
   PlanSelection: undefined;
-  TermsCondition: { selectedPlan: string };
+  TermsCondition: { selectedPlanId: string; selectedPlanName: string };
   Dashboard: undefined;
   Analysis: undefined;
+  DepositRequest: undefined;
+  WithdrawalRequest: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -47,7 +51,7 @@ export default function AppNavigator() {
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="PlanSelection" component={PlanSelectionScreen} />
-      <Stack.Screen name="TermsCondition" component={TermsAndConditionsScreen} />
+      <Stack.Screen name="TermsCondition" component={TermsConditionScreen} />
       <Stack.Screen 
         name="Dashboard" 
         component={DashboardScreen} 
@@ -56,6 +60,8 @@ export default function AppNavigator() {
         }}
       />
       <Stack.Screen name="Analysis" component={AnalysisScreen} />
+      <Stack.Screen name="DepositRequest" component={DepositRequestScreen} />
+      <Stack.Screen name="WithdrawalRequest" component={WithdrawalRequestScreen} />
     </Stack.Navigator>
   );
 }

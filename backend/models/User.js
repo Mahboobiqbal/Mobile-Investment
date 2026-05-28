@@ -40,9 +40,13 @@ const userSchema = new mongoose.Schema(
 			default: 0,
 			min: [0, 'Balance cannot drop below zero'],
 		},
+		activeCategory: {
+			type: mongoose.Schema.Types.ObjectId,
+			ref: 'InvestmentCategory',
+			default: null,
+		},
 		activePlan: {
 			type: String,
-			enum: ['None', 'Plan A', 'Plan B', 'Plan C'],
 			default: 'None',
 		},
 		isVerified: {

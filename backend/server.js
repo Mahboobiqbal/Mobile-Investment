@@ -4,23 +4,30 @@ const cors = require('cors');
 const express = require('express');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const swaggerUi = require('swagger-ui-express');
 
 const connectDb = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const walletRoutes = require('./routes/walletRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const swaggerSpec = require('./swagger');
 
 const app = express();
 
-app.use(helmet());
-app.use(cors());
-app.use(express.json());
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://localhost:5000'],
+  credentials: true,
+}));
+app.use(express.json({ limit: '1mb' }));
 
-const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, 
-  max: 100, 
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, { explorer: true }));
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   message: 'Too many requests from this IP, please try again later'
 });
-app.use('/api/', globalLimiter);
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -29,7 +36,9 @@ const authLimiter = rateLimit({
 });
 
 app.use('/api/auth', authLimiter, authRoutes);
-app.use('/api/wallet', walletRoutes);
+app.use('/api/wallet', apiLimiter, walletRoutes);
+const adminAuthMiddleware = require('./middleware/adminAuthMiddleware');
+app.use('/api/admin', adminAuthMiddleware, adminRoutes);
 
 app.get('/', (req, res) => {
 	res.status(200).json({

@@ -1,9 +1,19 @@
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
 
 const User = require('../models/User');
 const Transaction = require('../models/Transaction');
+
+const transporter = nodemailer.createTransport({
+  service: process.env.EMAIL_SERVICE || 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD,
+  },
+});
 
 const signToken = (user) =>
   jwt.sign(
@@ -147,6 +157,105 @@ const updatePassword = async (req, res) => {
   }
 };
 
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(200).json({ message: 'If this email is registered, an OTP has been sent' });
+    }
+
+    const otp = crypto.randomInt(100000, 999999).toString();
+    user.otpCode = otp;
+    user.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+    await user.save();
+
+    try {
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: user.email,
+        subject: 'Password Reset OTP',
+        text: `Your OTP for password reset is: ${otp}\n\nThis OTP is valid for 10 minutes.\n\nIf you did not request this, please ignore this email.`,
+      });
+    } catch (emailError) {
+      console.error('Failed to send email:', emailError.message);
+    }
+
+    return res.status(200).json({ message: 'If this email is registered, an OTP has been sent' });
+  } catch (error) {
+    return res.status(500).json({ message: error.message || 'Failed to process request' });
+  }
+};
+
+const verifyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ message: 'Email and OTP are required' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user || !user.otpCode || !user.otpExpires) {
+      return res.status(400).json({ message: 'No OTP request found for this email' });
+    }
+
+    if (user.otpCode !== otp) {
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+
+    if (new Date() > user.otpExpires) {
+      return res.status(400).json({ message: 'OTP has expired' });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    user.otpCode = resetToken;
+    user.otpExpires = new Date(Date.now() + 15 * 60 * 1000);
+    await user.save();
+
+    return res.status(200).json({ message: 'OTP verified successfully', resetToken });
+  } catch (error) {
+    return res.status(500).json({ message: error.message || 'OTP verification failed' });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  try {
+    const { email, resetToken, newPassword } = req.body;
+    if (!email || !resetToken || !newPassword) {
+      return res.status(400).json({ message: 'Email, resetToken, and newPassword are required' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user || !user.otpCode || !user.otpExpires) {
+      return res.status(400).json({ message: 'No reset request found' });
+    }
+
+    if (user.otpCode !== resetToken) {
+      return res.status(400).json({ message: 'Invalid reset token' });
+    }
+
+    if (new Date() > user.otpExpires) {
+      return res.status(400).json({ message: 'Reset token has expired' });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.otpCode = null;
+    user.otpExpires = null;
+    await user.save();
+
+    return res.status(200).json({ message: 'Password reset successfully' });
+  } catch (error) {
+    return res.status(500).json({ message: error.message || 'Password reset failed' });
+  }
+};
+
 const getUserDashboardStats = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -225,5 +334,8 @@ module.exports = {
   loginUser,
   getUserProfile,
   updatePassword,
+  forgotPassword,
+  verifyOtp,
+  resetPassword,
   getUserDashboardStats,
 };

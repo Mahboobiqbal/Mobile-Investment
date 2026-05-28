@@ -1,5 +1,7 @@
 const Transaction = require('../models/Transaction');
 const User = require('../models/User');
+const Plan = require('../models/Plan');
+const InvestmentCategory = require('../models/InvestmentCategory');
 
 const submitDeposit = async (req, res) => {
   try {
@@ -37,13 +39,8 @@ const requestWithdrawal = async (req, res) => {
       return res.status(400).json({ message: 'targetPhone is required' });
     }
 
-    const updatedUser = await User.findOneAndUpdate(
-      { _id: req.user.id, currentBalance: { $gte: amount } },
-      { $inc: { currentBalance: -amount } },
-      { new: true }
-    );
-
-    if (!updatedUser) {
+    const user = await User.findById(req.user.id);
+    if (!user || user.currentBalance < amount) {
       return res.status(400).json({ message: 'Insufficient balance to request withdrawal' });
     }
 
@@ -55,7 +52,7 @@ const requestWithdrawal = async (req, res) => {
       status: 'pending',
     });
 
-    return res.status(201).json({ message: 'Withdrawal requested successfully', transaction, currentBalance: updatedUser.currentBalance });
+    return res.status(201).json({ message: 'Withdrawal requested successfully. Awaiting admin processing.', transaction, currentBalance: user.currentBalance });
   } catch (error) {
     return res.status(500).json({ message: error.message || 'Withdrawal request failed' });
   }
@@ -64,8 +61,15 @@ const requestWithdrawal = async (req, res) => {
 const selectPlan = async (req, res) => {
   try {
     const { planName } = req.body;
-    if (!planName || !['Plan A', 'Plan B', 'Plan C', 'None'].includes(planName)) {
-      return res.status(400).json({ message: 'Valid planName is required' });
+    if (!planName) {
+      return res.status(400).json({ message: 'planName is required' });
+    }
+
+    if (planName !== 'None') {
+      const plan = await Plan.findOne({ name: planName, isActive: true });
+      if (!plan) {
+        return res.status(400).json({ message: 'Invalid or inactive plan' });
+      }
     }
 
     const user = await User.findById(req.user.id);
@@ -89,11 +93,16 @@ const getTransactions = async (req, res) => {
 
 const distributeDailyProfit = async (req, res) => {
   try {
-    const profitRates = {
-      'Plan A': 0.02,
-      'Plan B': 0.035,
-      'Plan C': 0.05,
-    };
+    const apiKey = req.headers['x-admin-key'];
+    if (!apiKey || apiKey !== process.env.ADMIN_API_KEY) {
+      return res.status(403).json({ message: 'Forbidden. Admin API key required.' });
+    }
+
+    const activePlans = await Plan.find({ isActive: true });
+    const profitRates = {};
+    for (const plan of activePlans) {
+      profitRates[plan.name] = plan.dailyReturnRate;
+    }
 
     // Find all users with an active plan (not 'None' and not null)
     const users = await User.find({
@@ -114,7 +123,7 @@ const distributeDailyProfit = async (req, res) => {
       try {
         const rate = profitRates[user.activePlan];
         if (!rate) {
-          console.warn(`Unknown plan: ${user.activePlan} for user ${user._id}`);
+          console.warn(`Unknown or inactive plan: ${user.activePlan} for user ${user._id}`);
           continue;
         }
 
@@ -160,10 +169,49 @@ const distributeDailyProfit = async (req, res) => {
   }
 };
 
+const getActivePlans = async (req, res) => {
+  try {
+    const plans = await Plan.find({ isActive: true })
+      .populate('category', 'name slug')
+      .select('category name dailyReturnRate minInvestment maxInvestment description');
+    return res.status(200).json({ plans });
+  } catch (error) {
+    return res.status(500).json({ message: error.message || 'Failed to fetch plans' });
+  }
+};
+
+const getActiveCategories = async (req, res) => {
+  try {
+    const categories = await InvestmentCategory.find({ isActive: true }).sort({ name: 1 });
+    return res.status(200).json({ categories });
+  } catch (error) {
+    return res.status(500).json({ message: error.message || 'Failed to fetch categories' });
+  }
+};
+
+const getCategoryWithPlans = async (req, res) => {
+  try {
+    const categories = await InvestmentCategory.find({ isActive: true }).sort({ name: 1 });
+    const plans = await Plan.find({ isActive: true }).populate('category', 'name slug');
+
+    const result = categories.map((cat) => ({
+      ...cat.toObject(),
+      plans: plans.filter((p) => p.category && p.category._id.toString() === cat._id.toString()),
+    }));
+
+    return res.status(200).json({ systems: result });
+  } catch (error) {
+    return res.status(500).json({ message: error.message || 'Failed to fetch investment systems' });
+  }
+};
+
 module.exports = {
   submitDeposit,
   requestWithdrawal,
   selectPlan,
   getTransactions,
   distributeDailyProfit,
+  getActivePlans,
+  getActiveCategories,
+  getCategoryWithPlans,
 };

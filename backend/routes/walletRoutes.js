@@ -1,24 +1,177 @@
 const express = require('express');
 const { submitDeposit, requestWithdrawal, selectPlan, getTransactions, distributeDailyProfit, getActivePlans, getActiveCategories, getCategoryWithPlans } = require('../controllers/walletController');
+const { requestMutualFundRedemption, getUserMutualFundRequests } = require('../controllers/mutualFundController');
 const authMiddleware = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-// Public routes - no auth required
+/**
+ * @openapi
+ * /wallet/categories:
+ *   get:
+ *     tags: [Wallet - Public]
+ *     summary: Get active investment categories
+ *     responses:
+ *       200:
+ *         description: List of active categories
+ */
 router.get('/categories', getActiveCategories);
+
+/**
+ * @openapi
+ * /wallet/systems:
+ *   get:
+ *     tags: [Wallet - Public]
+ *     summary: Get categories with their plans
+ *     responses:
+ *       200:
+ *         description: Systems with nested plans
+ */
 router.get('/systems', getCategoryWithPlans);
+
+/**
+ * @openapi
+ * /wallet/plans:
+ *   get:
+ *     tags: [Wallet - Public]
+ *     summary: Get all active plans
+ *     responses:
+ *       200:
+ *         description: List of active plans
+ */
 router.get('/plans', getActivePlans);
 
-// Apply auth middleware to all remaining wallet routes
 router.use(authMiddleware);
 
+/**
+ * @openapi
+ * /wallet/deposit:
+ *   post:
+ *     tags: [Wallet - Auth]
+ *     summary: Submit a deposit request
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [amount, transactionId]
+ *             properties:
+ *               amount: { type: number, minimum: 1 }
+ *               transactionId: { type: string }
+ *     responses:
+ *       201:
+ *         description: Deposit submitted, pending approval
+ */
 router.post('/deposit', submitDeposit);
+
+/**
+ * @openapi
+ * /wallet/withdraw:
+ *   post:
+ *     tags: [Wallet - Auth]
+ *     summary: Request a withdrawal
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [amount, targetPhone]
+ *             properties:
+ *               amount: { type: number, minimum: 1 }
+ *               targetPhone: { type: string }
+ *     responses:
+ *       201:
+ *         description: Withdrawal requested, pending admin processing
+ */
 router.post('/withdraw', requestWithdrawal);
+
+/**
+ * @openapi
+ * /wallet/select-plan:
+ *   post:
+ *     tags: [Wallet - Auth]
+ *     summary: Select an investment plan
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [planName]
+ *             properties:
+ *               planName: { type: string }
+ *     responses:
+ *       200:
+ *         description: Plan selected successfully
+ */
 router.post('/select-plan', selectPlan);
+
+/**
+ * @openapi
+ * /wallet/transactions:
+ *   get:
+ *     tags: [Wallet - Auth]
+ *     summary: Get user's transactions
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: List of user transactions
+ */
 router.get('/transactions', getTransactions);
 
-// In production, this will run automatically every 24 hours using a cron-job package like node-cron.
-// For testing and development, we trigger it manually via this endpoint.
+/**
+ * @openapi
+ * /wallet/mutual-funds/request:
+ *   post:
+ *     tags: [Wallet - Auth]
+ *     summary: Request mutual fund redemption (account ≥ 1 month, amount > 500)
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [amount]
+ *             properties:
+ *               amount: { type: number, minimum: 501 }
+ *     responses:
+ *       201:
+ *         description: Redemption request submitted
+ *       400:
+ *         description: Validation error (account age / amount / balance)
+ */
+router.post('/mutual-funds/request', requestMutualFundRedemption);
+
+/**
+ * @openapi
+ * /wallet/mutual-funds/requests:
+ *   get:
+ *     tags: [Wallet - Auth]
+ *     summary: Get user's mutual fund requests
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: List of user's mutual fund requests
+ */
+router.get('/mutual-funds/requests', getUserMutualFundRequests);
+
+/**
+ * @openapi
+ * /wallet/trigger-daily-roi:
+ *   post:
+ *     tags: [Wallet - Auth]
+ *     summary: Trigger daily ROI distribution (dev/testing only)
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: ROI distributed
+ */
 router.post('/trigger-daily-roi', distributeDailyProfit);
 
 module.exports = router;

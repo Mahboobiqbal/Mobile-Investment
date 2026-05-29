@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import api from '../api/axios';
 import {
   Plus, Edit3, Trash2, X, Layers, ToggleLeft, ToggleRight, Search,
-  Hash, FileText, Eye, EyeOff
+  Hash, Eye, EyeOff
 } from 'lucide-react';
 
 interface Category {

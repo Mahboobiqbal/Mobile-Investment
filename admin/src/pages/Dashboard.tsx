@@ -1,4 +1,3 @@
-import React from 'react';
 import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { Users, TrendingUp, Settings, Layers } from 'lucide-react';
 import Transactions from './Transactions';

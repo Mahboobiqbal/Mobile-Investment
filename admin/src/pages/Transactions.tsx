@@ -162,7 +162,6 @@ export default function Transactions() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('pending');
   const [search, setSearch] = useState('');
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const fetchTransactions = useCallback(async (page = 1) => {
     setLoading(true);
@@ -186,14 +185,11 @@ export default function Transactions() {
 
   const handleReview = async (txId: string, action: 'approve' | 'reject' | 'withdraw') => {
     if (!window.confirm(`Are you sure you want to ${action} this transaction?`)) return;
-    setActionLoading(txId);
     try {
       await api.post('/admin/review-transaction', { transactionId: txId, action });
       fetchTransactions(pagination.page);
     } catch (err: any) {
       alert(err.response?.data?.message || 'Action failed');
-    } finally {
-      setActionLoading(null);
     }
   };
 

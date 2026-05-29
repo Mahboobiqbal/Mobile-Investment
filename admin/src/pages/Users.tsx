@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import {
-  User as UserIcon, Phone, Mail, Wallet,
+  User as UserIcon,
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
-  Search, Shield, Calendar,
+  Search, Calendar,
   Users as UsersIcon, BadgeCheck, Target, DollarSign, ArrowUpDown,
   X, Edit3, Eye,
 } from 'lucide-react';

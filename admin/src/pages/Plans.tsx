@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import api from '../api/axios';
 import {
   Plus, Edit3, Trash2, X, FolderOpen, Search,
-  LayoutGrid, ToggleLeft, ToggleRight, Percent, DollarSign,
+  LayoutGrid, ToggleLeft, ToggleRight,
   Infinity, Ban
 } from 'lucide-react';
 

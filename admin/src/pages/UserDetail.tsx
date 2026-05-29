@@ -2,8 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import {
-  ArrowLeft, User, Mail, Phone, Wallet, TrendingUp, TrendingDown,
-  Clock, CheckCircle, Ban, ArrowDownCircle, ArrowUpCircle, DollarSign,
+  ArrowLeft, Mail, Phone, Wallet, TrendingUp, TrendingDown,
+  Clock, CheckCircle, Ban, ArrowDownCircle, ArrowUpCircle,
   Calendar, Hash, Target, Activity, PieChart
 } from 'lucide-react';
 

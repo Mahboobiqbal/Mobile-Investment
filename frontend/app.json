@@ -1,12 +1,27 @@
 {
   "expo": {
-    "name": "frontend",
-    "slug": "frontend",
+    "name": "SmartInvest",
+    "slug": "smartinvest",
     "plugins": [
       "expo-secure-store"
     ],
+    "icon": "./src/assets/images/smartinvest-icon.png",
+    "splash": {
+      "image": "./src/assets/images/smartinvest-splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "android": {
-      "package": "com.anonymous.frontend"
+      "package": "com.smartinvest.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/images/smartinvest-icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "dc2c5627-0328-4dc1-8e7f-cad156ab0053"
+      }
     }
   }
 }

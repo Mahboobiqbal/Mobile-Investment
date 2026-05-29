@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1242" height="2688" viewBox="0 0 1242 2688">
+  <rect width="100%" height="100%" fill="#ffffff" />
+  <g transform="translate(120,200)">
+    <circle cx="500" cy="400" r="200" fill="#1E90FF" />
+    <path d="M100 2200 L420 1200 L820 2000 L1180 400" stroke="#2E8B57" stroke-width="40" fill="none" stroke-linecap="round" />
+    <text x="0" y="2550" font-family="Arial, Helvetica, sans-serif" font-size="120" fill="#0f172a">SmartInvest</text>
+  </g>
+</svg>

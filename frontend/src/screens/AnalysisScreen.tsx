@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   FlatList,
   RefreshControl,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
@@ -155,7 +157,7 @@ export default function AnalysisScreen() {
   const stats = getTransactionStats(filteredTransactions);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 0 }]}>
       {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()}>

@@ -7,6 +7,7 @@ import {
   Pressable,
   SafeAreaView,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -88,7 +89,7 @@ export default function DepositRequestScreen() {
   }, [amount, transactionId, validateForm, navigation]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 0 }]}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Header */}
@@ -109,6 +110,23 @@ export default function DepositRequestScreen() {
               3. Submit the deposit request{'\n'}
               4. Wait for admin verification (usually within 24 hours){'\n'}
               5. Your balance updates automatically once approved
+            </Text>
+          </View>
+
+          <View style={styles.accountCard}>
+            <Text style={styles.accountTitle}>Business Account Details</Text>
+            <View style={styles.accountRow}>
+              <Text style={styles.accountLabel}>Account Name</Text>
+              <Text style={styles.accountValue}>Invest In Trees Pvt Ltd</Text>
+            </View>
+            <View style={styles.accountDivider} />
+            <View style={styles.accountRow}>
+              <Text style={styles.accountLabel}>Account Number</Text>
+              <Text style={styles.accountValue}>0300-1234567</Text>
+            </View>
+            <View style={styles.accountDivider} />
+            <Text style={styles.accountNote}>
+              Send your payment to the account above, then submit the transaction ID below. A receipt will be generated and sent to admin for approval.
             </Text>
           </View>
 
@@ -248,6 +266,48 @@ const styles = StyleSheet.create({
     color: '#475569',
     lineHeight: 18,
     fontWeight: '500',
+  },
+  accountCard: {
+    backgroundColor: '#0F172A',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 24,
+  },
+  accountTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 12,
+  },
+  accountRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 6,
+  },
+  accountLabel: {
+    fontSize: 12,
+    color: '#94A3B8',
+    fontWeight: '600',
+  },
+  accountValue: {
+    fontSize: 13,
+    color: '#FFFFFF',
+    fontWeight: '700',
+    textAlign: 'right',
+    flexShrink: 1,
+  },
+  accountDivider: {
+    height: 1,
+    backgroundColor: '#1E293B',
+    marginVertical: 6,
+  },
+  accountNote: {
+    marginTop: 8,
+    fontSize: 12,
+    color: '#CBD5E1',
+    lineHeight: 17,
   },
   formGroup: {
     marginBottom: 16,

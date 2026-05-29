@@ -10,6 +10,7 @@ import {
   StyleSheet,
   Dimensions,
   Platform,
+  StatusBar,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { walletApi } from '../services/api/walletApi';
@@ -51,7 +52,7 @@ export default function TermsConditionScreen() {
   }, [hasAgreed, navigation, selectedPlanId, selectedPlanName]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 0 }]}>
       <View style={styles.topSection}>
         <Text style={styles.title}>Platform Terms of Service</Text>
         <Text style={styles.subtitle}>

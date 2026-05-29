@@ -7,6 +7,7 @@ import {
   Pressable,
   SafeAreaView,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -59,6 +60,16 @@ export default function WithdrawalRequestScreen() {
       return false;
     }
 
+    const remainingBalanceAfterWithdrawal = availableBalance - numAmount;
+
+    if (remainingBalanceAfterWithdrawal < 500) {
+      Alert.alert(
+        'Withdrawal Not Allowed',
+        'Your withdrawal cannot reduce the account balance below Rs. 500.'
+      );
+      return false;
+    }
+
     return true;
   }, [amount, availableBalance]);
 
@@ -98,9 +109,10 @@ export default function WithdrawalRequestScreen() {
 
   const numAmount = amount ? parseFloat(amount) : 0;
   const remainingBalance = Math.max(0, availableBalance - numAmount);
+  const withdrawalWouldDropBelowMinimum = numAmount > 0 && remainingBalance < 500;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 0 }]}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Header */}
@@ -122,6 +134,22 @@ export default function WithdrawalRequestScreen() {
               <Text style={styles.balanceIconText}>💰</Text>
             </View>
           </View>
+
+          {availableBalance <= 500 ? (
+            <View style={styles.warningBox}>
+              <Text style={styles.warningIcon}>⚠️</Text>
+              <Text style={styles.warningText}>
+                Withdrawals are disabled until your balance is above Rs. 500.
+              </Text>
+            </View>
+          ) : withdrawalWouldDropBelowMinimum ? (
+            <View style={styles.warningBox}>
+              <Text style={styles.warningIcon}>⚠️</Text>
+              <Text style={styles.warningText}>
+                This withdrawal would reduce your balance below Rs. 500.
+              </Text>
+            </View>
+          ) : null}
 
           {/* Amount Field */}
           <View style={styles.formGroup}>
@@ -186,9 +214,12 @@ export default function WithdrawalRequestScreen() {
         {/* Submit Button */}
         <View style={styles.footerButton}>
           <Pressable
-            style={[styles.submitButton, (isSubmitting || !amount.trim()) && styles.submitButtonDisabled]}
+            style={[
+              styles.submitButton,
+              (isSubmitting || !amount.trim() || withdrawalWouldDropBelowMinimum || availableBalance <= 500) && styles.submitButtonDisabled,
+            ]}
             onPress={handleSubmitWithdrawal}
-            disabled={isSubmitting || !amount.trim()}
+            disabled={isSubmitting || !amount.trim() || withdrawalWouldDropBelowMinimum || availableBalance <= 500}
           >
             {isSubmitting ? (
               <ActivityIndicator color="#FFFFFF" />
@@ -360,6 +391,25 @@ const styles = StyleSheet.create({
     color: '#B45309',
     fontWeight: '500',
     lineHeight: 15,
+  },
+  warningBox: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 10,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  warningIcon: {
+    fontSize: 18,
+  },
+  warningText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#92400E',
+    lineHeight: 16,
   },
   phoneBox: {
     backgroundColor: '#F0F9FF',

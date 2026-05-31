@@ -1,11 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
 
-declare var process: any;
-
-// Expo Go / Android emulator cannot use `localhost` to reach the machine running the API.
-// 10.0.2.2 maps the Android emulator back to the host machine.
-// You can override this by setting EXPO_PUBLIC_API_BASE_URL in your app config.
-const LOCAL_API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://10.0.2.2:5000/api';
+import { appConfig } from '../config/appConfig';
 
 type AuthTokenProvider = () => string | null | Promise<string | null>;
 
@@ -16,7 +11,7 @@ export const setAuthTokenProvider = (provider: AuthTokenProvider): void => {
 };
 
 const api: AxiosInstance = axios.create({
-  baseURL: LOCAL_API_BASE_URL,
+  baseURL: appConfig.apiBaseUrl,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

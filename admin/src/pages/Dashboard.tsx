@@ -1,15 +1,17 @@
 import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
-import { Users, TrendingUp, Settings, Layers } from 'lucide-react';
+import { Users, TrendingUp, Settings, Layers, Home as HomeIcon } from 'lucide-react';
 import Transactions from './Transactions';
 import UsersPage from './Users';
 import UserDetail from './UserDetail';
 import Plans from './Plans';
 import Categories from './Categories';
+import Home from './Home';
 
 const Dashboard = () => {
   const location = useLocation();
 
   const navItems = [
+    { path: '/', label: 'Home', icon: HomeIcon },
     { path: '/transactions', label: 'Transactions', icon: TrendingUp },
     { path: '/users', label: 'Users', icon: Users },
     { path: '/categories', label: 'Systems', icon: Layers },
@@ -18,6 +20,7 @@ const Dashboard = () => {
 
   const isActive = (path: string) => {
     if (path === '/users') return location.pathname.startsWith('/users');
+    if (path === '/') return location.pathname === '/' || location.pathname === '/Home' || location.pathname === '';
     return location.pathname === path;
   };
 
@@ -51,7 +54,7 @@ const Dashboard = () => {
 
       <main className="flex-1 overflow-y-auto p-8">
         <Routes>
-          <Route path="/" element={<Navigate to="/transactions" replace />} />
+          <Route path="/" element={<Home />} />
           <Route path="/transactions" element={<Transactions />} />
           <Route path="/users" element={<UsersPage />} />
           <Route path="/users/:userId" element={<UserDetail />} />

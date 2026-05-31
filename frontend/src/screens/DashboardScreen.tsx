@@ -11,6 +11,8 @@ import {
   Text,
   TextInput,
   View,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import { AxiosError } from 'axios';
 import { useNavigation } from '@react-navigation/native';
@@ -145,6 +147,13 @@ export default function DashboardScreen() {
   };
 
   const handleBalanceToggle = () => {
+    // If balance is currently visible, hide it immediately without asking for PIN.
+    if (showBalance) {
+      setShowBalance(false);
+      return;
+    }
+
+    // If balance is hidden, require PIN to show it.
     setShowPinModal(true);
     setPinCodeInput('');
   };
@@ -152,13 +161,14 @@ export default function DashboardScreen() {
   const handlePinSubmit = () => {
     const CORRECT_PIN = '0000';
     if (pinCodeInput === CORRECT_PIN) {
-      setShowBalance(!showBalance);
+      // Only used to show the balance (we never call PIN to hide)
+      setShowBalance(true);
       setShowPinModal(false);
       setPinCodeInput('');
       setSuccessModal({
         visible: true,
-        title: 'Balance Updated',
-        message: `Your balance is now ${!showBalance ? 'visible' : 'hidden'}.`,
+        title: 'Balance Visible',
+        message: 'Your balance is now visible.',
       });
     } else {
       setErrorModal({
@@ -210,6 +220,7 @@ export default function DashboardScreen() {
   };
 
   const balanceDisplay = showBalance ? formatCurrency(user?.currentBalance || 0) : 'Rs. ••••••';
+  const activePlanDisplay = user?.activePlan && user.activePlan !== 'None' ? user.activePlan : 'No plan selected yet';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -343,7 +354,7 @@ export default function DashboardScreen() {
           <View style={styles.summaryCard}>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Active Plan</Text>
-              <Text style={styles.summaryValue}>{user?.activePlan || 'No Plan'}</Text>
+              <Text style={styles.summaryValue}>{activePlanDisplay}</Text>
             </View>
             <View style={styles.summaryDivider} />
             <View style={styles.summaryRow}>
@@ -444,7 +455,8 @@ const styles = StyleSheet.create({
   headerGreen: {
     backgroundColor: '#00A86B',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 12,
+    paddingVertical: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',

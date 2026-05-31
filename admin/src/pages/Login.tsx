@@ -5,7 +5,7 @@ const Login = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    navigate('/transactions', { replace: true });
+    navigate('/', { replace: true });
   }, [navigate]);
 
   return null;

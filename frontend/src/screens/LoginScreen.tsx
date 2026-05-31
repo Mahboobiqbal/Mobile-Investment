@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AxiosError } from 'axios';
-import { Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -52,7 +52,8 @@ export default function LoginScreen() {
 
       await login(token, normalizedUser);
 
-      navigation.replace(user.activePlan && user.activePlan !== 'None' ? 'Dashboard' : 'PlanSelection' as never);
+      // Always navigate to Dashboard after login; plan selection is reachable from Dashboard.
+      navigation.navigate('Dashboard' as never);
     } catch (error) {
       const axiosError = error as AxiosError<{ message?: string }>;
       const message = axiosError.response?.data?.message || 'Something went wrong';
@@ -70,7 +71,7 @@ export default function LoginScreen() {
   }, [route.params]);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 0 }]}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
         <View style={styles.card}>
           <Text style={styles.title}>Welcome Back</Text>

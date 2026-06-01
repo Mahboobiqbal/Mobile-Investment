@@ -82,12 +82,12 @@ function PaginationBar({ pagination, onPageChange }: {
   };
 
   return (
-    <div className="glass rounded-2xl px-6 py-4 flex items-center justify-between">
-      <p className="text-sm text-slate-500">
+    <div className="glass rounded-2xl px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <p className="text-xs sm:text-sm text-slate-500">
         Showing <span className="font-semibold text-slate-800">{from}</span> to <span className="font-semibold text-slate-800">{to}</span> of{' '}
         <span className="font-semibold text-slate-800">{total}</span> results
       </p>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 overflow-x-auto">
         <button disabled={page <= 1} onClick={() => onPageChange(1)}
           className="rounded-xl p-2 text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed">
           <ChevronsLeft className="h-4 w-4" />
@@ -221,42 +221,42 @@ export default function Transactions() {
     : transactions;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="glass-card p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-slate-900">Transactions</h1>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+      <div className="glass-card p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+          <div className="space-y-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Transactions</h1>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 sm:px-3 py-0.5 sm:py-1 text-[11px] sm:text-xs font-semibold text-slate-600">
                 <ListFilter className="h-3 w-3" />
                 {totalCount.toLocaleString()} total
               </span>
             </div>
-            <p className="text-sm text-slate-500">Review, approve, and manage all financial activity</p>
+            <p className="text-xs sm:text-sm text-slate-500">Review, approve, and manage all financial activity</p>
           </div>
-          <div className="flex items-center gap-2">
-            <button className="btn btn-ghost text-xs gap-2 rounded-xl px-4 py-2.5 border border-slate-200">
+          <div className="flex items-center gap-2 shrink-0">
+            <button className="btn btn-ghost text-xs gap-2 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 border border-slate-200">
               <Filter className="h-3.5 w-3.5" />
-              Filter
+              <span className="hidden sm:inline">Filter</span>
             </button>
-            <button className="btn btn-ghost text-xs gap-2 rounded-xl px-4 py-2.5 border border-slate-200">
+            <button className="btn btn-ghost text-xs gap-2 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 border border-slate-200">
               <Download className="h-3.5 w-3.5" />
-              Export
+              <span className="hidden sm:inline">Export</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {tabs.map((tab) => {
           const count = counts[tab.key as keyof typeof counts];
           const isActive = activeTab === tab.key;
           const Icon = tab.icon;
-          return (
+            return (
             <button key={tab.key} onClick={() => { setActiveTab(tab.key); setSearch(''); }}
-              className={`group relative overflow-hidden rounded-2xl p-5 text-left transition-all duration-300 ${
+              className={`group relative overflow-hidden rounded-2xl p-3.5 sm:p-5 text-left transition-all duration-300 ${
                 isActive
                   ? 'bg-white shadow-xl shadow-indigo-500/10 ring-2 ring-indigo-500/20'
                   : 'bg-white/70 backdrop-blur-sm border border-slate-200/70 hover:shadow-lg hover:border-slate-300'
@@ -264,17 +264,17 @@ export default function Transactions() {
               {/* Background gradient blob */}
               <div className={`absolute -right-8 -top-8 h-24 w-24 rounded-full bg-gradient-to-br ${tab.gradient} opacity-5 transition-all duration-500 group-hover:scale-150 ${isActive ? 'scale-125' : ''}`} />
               <div className="relative">
-                <div className={`mb-3 inline-flex rounded-xl p-2.5 bg-gradient-to-br ${tab.gradient} shadow-lg`}
+                <div className={`mb-2 sm:mb-3 inline-flex rounded-xl p-2 sm:p-2.5 bg-gradient-to-br ${tab.gradient} shadow-lg`}
                   style={{ boxShadow: isActive ? `0 8px 24px -4px rgba(var(--${tab.color}-500), 0.3)` : undefined }}>
-                  <Icon className="h-4 w-4 text-white" />
+                  <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
                 </div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{tab.label}</p>
-                <div className="mt-1 flex items-baseline gap-2">
-                  <p className={`text-2xl font-bold ${isActive ? 'text-slate-900' : 'text-slate-900'}`}>
+                <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-500">{tab.label}</p>
+                <div className="mt-0.5 sm:mt-1 flex items-baseline gap-1.5 sm:gap-2">
+                  <p className="text-lg sm:text-2xl font-bold text-slate-900">
                     {loading ? '-' : count.toLocaleString()}
                   </p>
                   {count > 0 && (
-                    <span className={`text-xs font-medium ${count > 10 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                    <span className={`text-[10px] sm:text-xs font-medium ${count > 10 ? 'text-emerald-600' : 'text-amber-600'}`}>
                       {count > 10 ? `↑ ${Math.round(count / totalCount * 100)}%` : `↓ ${Math.round(count / totalCount * 100)}%`}
                     </span>
                   )}
@@ -287,7 +287,7 @@ export default function Transactions() {
 
       {/* Search Bar */}
       <div className="relative">
-        <div className="glass rounded-2xl px-4 py-3 flex items-center gap-4">
+        <div className="glass rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2 sm:gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input type="text" placeholder="Search by name, email, transaction ID, or phone..."
@@ -314,12 +314,12 @@ export default function Transactions() {
       ) : (
         <div className="space-y-3">
           {filtered.length === 0 ? (
-            <div className="glass rounded-2xl py-20 px-8 text-center">
-              <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200">
-                <Search className="h-10 w-10 text-slate-400" />
+            <div className="glass rounded-2xl py-14 sm:py-20 px-6 sm:px-8 text-center">
+              <div className="mx-auto mb-5 flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200">
+                <Search className="h-8 w-8 sm:h-10 sm:w-10 text-slate-400" />
               </div>
-              <h3 className="text-xl font-bold text-slate-800 mb-2">No transactions found</h3>
-              <p className="text-slate-500 max-w-sm mx-auto text-sm">
+              <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-2">No transactions found</h3>
+              <p className="text-slate-500 max-w-sm mx-auto text-xs sm:text-sm">
                 {search
                   ? 'No matches for your search. Try a different name, email, or transaction ID.'
                   : `There are no ${activeTab} transactions to review right now.`}
@@ -340,61 +340,62 @@ export default function Transactions() {
 
               return (
                 <div key={tx._id}
-                  className="glass rounded-2xl p-5 transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/5 hover:border-indigo-200/50 animate-fade-in"
+                  className="glass rounded-2xl p-3.5 sm:p-5 transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/5 hover:border-indigo-200/50 animate-fade-in"
                   style={{ animationDelay: `${index * 50}ms` }}>
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start justify-between gap-3 sm:gap-4">
                     {/* Left: Avatar + Info */}
-                    <div className="flex min-w-0 flex-1 items-center gap-4">
-                      <div className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white shadow-lg ${
+                    <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
+                      <div className={`relative flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl text-xs sm:text-sm font-bold text-white shadow-lg ${
                         isDeposit
                           ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-emerald-500/25'
                           : 'bg-gradient-to-br from-orange-500 to-rose-500 shadow-orange-500/25'
                       }`}>
                         {getInitials(tx.user.name)}
-                        <div className={`absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white ${isDeposit ? 'bg-emerald-500' : 'bg-orange-500'}`}>
+                        <div className={`absolute -bottom-1 -right-1 flex h-4 w-4 sm:h-5 sm:w-5 items-center justify-center rounded-full border-2 border-white ${isDeposit ? 'bg-emerald-500' : 'bg-orange-500'}`}>
                           {isDeposit ? <ArrowDownCircle className="h-2.5 w-2.5 text-white" /> : <ArrowUpCircle className="h-2.5 w-2.5 text-white" />}
                         </div>
                       </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2.5 flex-wrap">
-                          <span className="text-sm font-bold text-slate-900">{tx.user.name}</span>
-                          <span className={`inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 sm:gap-2.5 flex-wrap">
+                          <span className="text-sm font-bold text-slate-900 truncate max-w-[140px] sm:max-w-none">{tx.user.name}</span>
+                          <span className={`inline-flex items-center gap-1 rounded-lg px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider ${
                             isDeposit ? 'bg-emerald-50 text-emerald-700' : 'bg-orange-50 text-orange-700'
                           }`}>
-                            {isDeposit ? <ArrowDownCircle className="h-3 w-3" /> : <ArrowUpCircle className="h-3 w-3" />}
+                            {isDeposit ? <ArrowDownCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> : <ArrowUpCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3" />}
                             {tx.type}
                           </span>
                           <StatusBadge status={tx.status} />
                         </div>
-                        <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
-                          <span className="flex items-center gap-1.5">
-                            <User className="h-3 w-3" />
-                            {tx.user.email}
+                        <div className="mt-1 sm:mt-1.5 flex flex-wrap items-center gap-x-2.5 sm:gap-x-4 gap-y-1 text-[11px] sm:text-xs text-slate-500">
+                          <span className="flex items-center gap-1 sm:gap-1.5 min-w-0">
+                            <User className="h-3 w-3 shrink-0" />
+                            <span className="truncate max-w-[160px] sm:max-w-none">{tx.user.email}</span>
                           </span>
                           {isDeposit && tx.transactionId && (
-                            <span className="flex items-center gap-1.5">
+                            <span className="flex items-center gap-1 sm:gap-1.5">
                               <Hash className="h-3 w-3" />
-                              TID: {tx.transactionId}
+                              <span className="hidden sm:inline">TID:</span> {tx.transactionId}
                             </span>
                           )}
                           {!isDeposit && tx.targetPhone && (
-                            <span className="flex items-center gap-1.5">
+                            <span className="flex items-center gap-1 sm:gap-1.5">
                               <Phone className="h-3 w-3" />
                               {tx.targetPhone}
                             </span>
                           )}
-                          <span className="flex items-center gap-1.5">
+                          <span className="flex items-center gap-1 sm:gap-1.5">
                             <Calendar className="h-3 w-3" />
-                            {formatDate(tx.createdAt)}
+                            <span className="hidden sm:inline">{formatDate(tx.createdAt)}</span>
+                            <span className="sm:hidden">{formatDate(tx.createdAt).split(',')[0]}</span>
                           </span>
                         </div>
                       </div>
                     </div>
 
                     {/* Right: Amount + Actions */}
-                    <div className="flex shrink-0 items-center gap-4">
+                    <div className="flex shrink-0 flex-col items-end gap-1.5 sm:flex-row sm:items-center sm:gap-4">
                       <div className="text-right">
-                        <p className={`text-xl font-bold ${isDeposit ? 'text-emerald-600' : 'text-orange-600'}`}>
+                        <p className={`text-base sm:text-xl font-bold ${isDeposit ? 'text-emerald-600' : 'text-orange-600'}`}>
                           {isDeposit ? '+' : '-'}Rs. {tx.amount.toLocaleString()}
                         </p>
                       </div>
@@ -424,7 +425,7 @@ export default function Transactions() {
 
                   {/* Mobile Actions */}
                   {canAction && (
-                    <div className="sm:hidden mt-4 pt-4 border-t border-slate-100 flex items-center gap-2">
+                    <div className="sm:hidden mt-3 pt-3 border-t border-slate-100 flex items-center gap-2">
                       {isDeposit ? (
                         <>
                           <ActionButton variant="approve" icon={ShieldCheck} label="Approve"

@@ -154,24 +154,24 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="space-y-6 animate-fade-in">
-        <div className="flex items-center justify-between">
+      <div className="space-y-4 sm:space-y-6 animate-fade-in">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="space-y-2">
-            <div className="h-8 w-64 rounded-xl bg-slate-200 animate-pulse" />
-            <div className="h-5 w-48 rounded-lg bg-slate-100 animate-pulse" />
+            <div className="h-7 sm:h-8 w-48 sm:w-64 rounded-xl bg-slate-200 animate-pulse" />
+            <div className="h-4 sm:h-5 w-36 sm:w-48 rounded-lg bg-slate-100 animate-pulse" />
           </div>
-          <div className="h-10 w-32 rounded-xl bg-slate-200 animate-pulse" />
+          <div className="h-9 w-24 sm:w-32 rounded-xl bg-slate-200 animate-pulse" />
         </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           {[1, 2, 3, 4].map(i => (
-            <div key={i} className="h-32 rounded-2xl bg-slate-100 animate-pulse relative overflow-hidden">
+            <div key={i} className="h-28 sm:h-32 rounded-2xl bg-slate-100 animate-pulse relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:gap-6 xl:grid-cols-3">
           {[1, 2, 3].map(i => (
-            <div key={i} className="h-80 rounded-2xl bg-slate-100 animate-pulse" />
+            <div key={i} className="h-72 sm:h-80 rounded-2xl bg-slate-100 animate-pulse" />
           ))}
         </div>
       </div>
@@ -196,78 +196,80 @@ export default function Home() {
   const today = currentTime.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-slate-900">
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+          <div className="space-y-1 min-w-0">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 truncate">
                 {greeting}, Admin
               </h1>
-              <Sparkles className="h-5 w-5 text-amber-400 animate-float" />
+              <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-amber-400 animate-float shrink-0" />
             </div>
-            <p className="flex items-center gap-2 text-sm text-slate-500">
-              <Calendar className="h-4 w-4" />
-              {today}
-              <span className="mx-2">·</span>
+            <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs sm:text-sm text-slate-500">
+              <span className="flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5" />
+                {today}
+              </span>
+              <span className="hidden sm:inline mx-1">·</span>
               <span className="inline-flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                 System is live
               </span>
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <button className="btn btn-ghost relative p-2.5 rounded-xl">
-              <Bell className="h-5 w-5" />
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <button className="btn btn-ghost relative p-2 sm:p-2.5 rounded-xl">
+              <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
               <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white">3</span>
             </button>
-            <button className="btn btn-secondary text-xs gap-2">
+            <button className="btn btn-secondary text-xs gap-2 px-3 sm:px-4">
               <RefreshCw className="h-3.5 w-3.5" />
-              Refresh
+              <span className="hidden sm:inline">Refresh</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 p-5 group relative overflow-hidden hover:shadow-lg transition-all">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 p-4 sm:p-5 group relative overflow-hidden hover:shadow-lg transition-all">
           <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-gradient-to-br from-indigo-500/10 to-indigo-600/5 transition-all duration-500 group-hover:scale-150" />
           <div className="relative">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Users</span>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-lg shadow-indigo-500/25">
-                <Users className="h-5 w-5 text-white" />
+              <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-500">Total Users</span>
+              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-lg shadow-indigo-500/25">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </div>
             </div>
-            <p className="text-2xl font-bold tracking-tight mt-3 text-slate-900">
+            <p className="text-xl sm:text-2xl font-bold tracking-tight mt-2 sm:mt-3 text-slate-900">
               <CountUp value={data.users.total} />
             </p>
-            <div className="mt-2 flex items-center gap-2 text-xs">
+            <div className="mt-1.5 sm:mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] sm:text-xs">
               <span className="flex items-center gap-1 text-emerald-600 font-medium">
                 <UserPlus className="h-3 w-3" />
                 +{data.users.verified} verified
               </span>
-              <span className="text-slate-300">·</span>
+              <span className="text-slate-300 hidden sm:inline">·</span>
               <span className="text-slate-500">{conversionRate.toFixed(1)}% investors</span>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 p-5 group relative overflow-hidden hover:shadow-lg transition-all">
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 p-4 sm:p-5 group relative overflow-hidden hover:shadow-lg transition-all">
           <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 transition-all duration-500 group-hover:scale-150" />
           <div className="relative">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Active Investors</span>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/25">
-                <TrendingUp className="h-5 w-5 text-white" />
+              <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-500">Active Investors</span>
+              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/25">
+                <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </div>
             </div>
-            <p className="text-2xl font-bold tracking-tight mt-3 text-slate-900">
+            <p className="text-xl sm:text-2xl font-bold tracking-tight mt-2 sm:mt-3 text-slate-900">
               <CountUp value={data.users.investors} />
             </p>
-            <div className="mt-2 flex items-center gap-1 text-xs text-slate-500">
+            <div className="mt-1.5 sm:mt-2 flex items-center gap-1 text-[11px] sm:text-xs text-slate-500">
               <span className="flex items-center gap-1 text-emerald-600 font-medium">
                 <ArrowUpRight className="h-3 w-3" />
                 +{data.users.total - data.users.investors > 0 ? data.users.total - data.users.investors : 0} potential
@@ -276,19 +278,20 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 p-5 group relative overflow-hidden hover:shadow-lg transition-all">
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 p-4 sm:p-5 group relative overflow-hidden hover:shadow-lg transition-all">
           <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 transition-all duration-500 group-hover:scale-150" />
           <div className="relative">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Balance</span>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-cyan-600 shadow-lg shadow-cyan-500/25">
-                <Wallet className="h-5 w-5 text-white" />
+              <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-500">Total Balance</span>
+              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-cyan-600 shadow-lg shadow-cyan-500/25">
+                <Wallet className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </div>
             </div>
-            <p className="text-2xl font-bold tracking-tight mt-3 text-slate-900">
-              Rs. <CountUp value={data.users.totalBalance} />
+            <p className="text-lg sm:text-2xl font-bold tracking-tight mt-2 sm:mt-3 text-slate-900">
+              <span className="text-sm sm:text-base font-semibold text-slate-500 mr-0.5">Rs.</span>
+              <CountUp value={data.users.totalBalance} />
             </p>
-            <div className="mt-2 flex items-center gap-1 text-xs text-slate-500">
+            <div className="mt-1.5 sm:mt-2 flex items-center gap-1 text-[11px] sm:text-xs text-slate-500">
               <span className="flex items-center gap-1 text-emerald-600 font-medium">
                 <Banknote className="h-3 w-3" />
                 Across all users
@@ -297,19 +300,19 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 p-5 group relative overflow-hidden hover:shadow-lg transition-all">
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 p-4 sm:p-5 group relative overflow-hidden hover:shadow-lg transition-all">
           <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-gradient-to-br from-amber-500/10 to-amber-600/5 transition-all duration-500 group-hover:scale-150" />
           <div className="relative">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Active Plans</span>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 shadow-lg shadow-amber-500/25">
-                <LayoutGrid className="h-5 w-5 text-white" />
+              <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-500">Active Plans</span>
+              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 shadow-lg shadow-amber-500/25">
+                <LayoutGrid className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </div>
             </div>
-            <p className="text-2xl font-bold tracking-tight mt-3 text-slate-900">
+            <p className="text-xl sm:text-2xl font-bold tracking-tight mt-2 sm:mt-3 text-slate-900">
               <CountUp value={data.plans.total} />
             </p>
-            <div className="mt-2 flex items-center gap-1 text-xs text-slate-500">
+            <div className="mt-1.5 sm:mt-2 flex items-center gap-1 text-[11px] sm:text-xs text-slate-500">
               <span className="flex items-center gap-1 text-amber-600 font-medium">
                 <Target className="h-3 w-3" />
                 {data.categories.active} categories
@@ -320,10 +323,10 @@ export default function Home() {
       </div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 xl:grid-cols-3">
         {/* 14-Day Activity Bar Chart */}
-        <div className="xl:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 p-5">
-          <div className="flex items-center justify-between mb-5">
+        <div className="xl:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 p-4 sm:p-5">
+          <div className="flex flex-wrap items-start sm:items-center justify-between gap-2 mb-3 sm:mb-5">
             <div>
               <h2 className="text-sm font-bold text-slate-900">14-Day Activity</h2>
               <p className="text-xs text-slate-500 mt-0.5">Daily deposits & withdrawals overview</p>
@@ -339,7 +342,7 @@ export default function Home() {
               </div>
             </div>
           </div>
-          <div className="h-72">
+          <div className="h-64 sm:h-72">
             {dailyChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={dailyChartData} barGap={2}>
@@ -363,15 +366,15 @@ export default function Home() {
         </div>
 
         {/* Transaction Status Donut */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 p-5">
-          <div className="flex items-center justify-between mb-5">
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 p-4 sm:p-5">
+          <div className="flex items-center justify-between mb-3 sm:mb-5">
             <div>
               <h2 className="text-sm font-bold text-slate-900">Transaction Status</h2>
               <p className="text-xs text-slate-500 mt-0.5">Current distribution</p>
             </div>
             <PieChart className="h-4 w-4 text-slate-400" />
           </div>
-          <div className="h-56">
+          <div className="h-48 sm:h-56">
             <ResponsiveContainer width="100%" height="100%">
               <RechartsPieChart>
                 <Pie
@@ -404,17 +407,17 @@ export default function Home() {
       </div>
 
       {/* Second Row - User Growth + Scatter + Financial Flow */}
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 xl:grid-cols-3">
         {/* User Growth Area Chart */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 p-5">
-          <div className="flex items-center justify-between mb-5">
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 p-4 sm:p-5">
+          <div className="flex items-center justify-between mb-3 sm:mb-5">
             <div>
               <h2 className="text-sm font-bold text-slate-900">User Growth</h2>
               <p className="text-xs text-slate-500 mt-0.5">Last 12 months</p>
             </div>
             <LineChart className="h-4 w-4 text-slate-400" />
           </div>
-          <div className="h-64">
+          <div className="h-56 sm:h-64">
             {monthlyChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={monthlyChartData}>
@@ -443,15 +446,15 @@ export default function Home() {
         </div>
 
         {/* Scatter Chart */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 p-5">
-          <div className="flex items-center justify-between mb-5">
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 p-4 sm:p-5">
+          <div className="flex items-center justify-between mb-3 sm:mb-5">
             <div>
               <h2 className="text-sm font-bold text-slate-900">Deposits vs Withdrawals</h2>
               <p className="text-xs text-slate-500 mt-0.5">Daily correlation scatter</p>
             </div>
             <ScatterChart className="h-4 w-4 text-slate-400" />
           </div>
-          <div className="h-64">
+          <div className="h-56 sm:h-64">
             {scatterData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <RechartsScatterChart>
@@ -486,15 +489,15 @@ export default function Home() {
         </div>
 
         {/* Financial Flow */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 p-5">
-          <div className="flex items-center justify-between mb-5">
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 p-4 sm:p-5">
+          <div className="flex items-center justify-between mb-3 sm:mb-5">
             <div>
               <h2 className="text-sm font-bold text-slate-900">Financial Flow</h2>
               <p className="text-xs text-slate-500 mt-0.5">Overall deposits vs withdrawals</p>
             </div>
             <Wallet className="h-4 w-4 text-slate-400" />
           </div>
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <div className="relative">
               <div className="flex justify-between mb-2">
                 <span className="text-xs font-medium text-slate-600 flex items-center gap-1.5">
@@ -546,10 +549,10 @@ export default function Home() {
       </div>
 
       {/* Bottom Row - Top Investors + Transaction Summary */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
         {/* Top Investors */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 p-5">
-          <div className="flex items-center justify-between mb-5">
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 p-4 sm:p-5">
+          <div className="flex items-center justify-between mb-3 sm:mb-5">
             <div>
               <h2 className="text-sm font-bold text-slate-900">Top Investors</h2>
               <p className="text-xs text-slate-500 mt-0.5">Highest balance holders</p>
@@ -558,10 +561,10 @@ export default function Home() {
           </div>
           <div className="space-y-2">
             {data.topUsers.map((user, i) => (
-              <div key={user._id} className="flex items-center justify-between rounded-xl bg-slate-50 p-3 transition-all hover:bg-slate-100 border border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl text-sm font-bold text-white shadow-md ${
+              <div key={user._id} className="flex items-center justify-between gap-2 rounded-xl bg-slate-50 p-2.5 sm:p-3 transition-all hover:bg-slate-100 border border-slate-100">
+                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                  <div className="relative shrink-0">
+                    <div className={`flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl text-xs sm:text-sm font-bold text-white shadow-md ${
                       i === 0 ? 'bg-gradient-to-br from-amber-400 to-amber-600' :
                       i === 1 ? 'bg-gradient-to-br from-slate-400 to-slate-600' :
                       i === 2 ? 'bg-gradient-to-br from-amber-700 to-amber-900' :
@@ -575,12 +578,12 @@ export default function Home() {
                       </span>
                     )}
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">{user.name}</p>
-                    <p className="text-xs text-slate-500">{user.email}</p>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-slate-900">{user.name}</p>
+                    <p className="truncate text-[11px] sm:text-xs text-slate-500">{user.email}</p>
                   </div>
                 </div>
-                <span className="text-sm font-bold text-emerald-600">Rs. {user.currentBalance.toLocaleString()}</span>
+                <span className="text-xs sm:text-sm font-bold text-emerald-600 shrink-0">Rs. {user.currentBalance.toLocaleString()}</span>
               </div>
             ))}
             {data.topUsers.length === 0 && (
@@ -593,46 +596,46 @@ export default function Home() {
         </div>
 
         {/* Quick Transaction Summary */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 p-5">
-          <div className="flex items-center justify-between mb-5">
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-200/50 p-4 sm:p-5">
+          <div className="flex items-center justify-between mb-3 sm:mb-5">
             <div>
               <h2 className="text-sm font-bold text-slate-900">Transaction Overview</h2>
               <p className="text-xs text-slate-500 mt-0.5">Quick summary of all activity</p>
             </div>
             <Clock className="h-4 w-4 text-slate-400" />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-4 border border-emerald-200/30">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total</span>
-                <ArrowUpRight className="h-4 w-4 text-emerald-500" />
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+            <div className="rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-3 sm:p-4 border border-emerald-200/30">
+              <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                <span className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Total</span>
+                <ArrowUpRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-500" />
               </div>
-              <p className="text-2xl font-bold text-slate-900">{data.transactions.total.toLocaleString()}</p>
-              <p className="text-xs text-slate-500 mt-1">All time transactions</p>
+              <p className="text-xl sm:text-2xl font-bold text-slate-900">{data.transactions.total.toLocaleString()}</p>
+              <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 sm:mt-1">All time transactions</p>
             </div>
-            <div className="rounded-xl bg-gradient-to-br from-amber-50 to-amber-100/50 p-4 border border-amber-200/30">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pending</span>
-                <Clock className="h-4 w-4 text-amber-500" />
+            <div className="rounded-xl bg-gradient-to-br from-amber-50 to-amber-100/50 p-3 sm:p-4 border border-amber-200/30">
+              <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                <span className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Pending</span>
+                <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-500" />
               </div>
-              <p className="text-2xl font-bold text-slate-900">{data.transactions.pending.toLocaleString()}</p>
-              <p className="text-xs text-slate-500 mt-1">Awaiting review</p>
+              <p className="text-xl sm:text-2xl font-bold text-slate-900">{data.transactions.pending.toLocaleString()}</p>
+              <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 sm:mt-1">Awaiting review</p>
             </div>
-            <div className="rounded-xl bg-gradient-to-br from-blue-50 to-blue-100/50 p-4 border border-blue-200/30">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Deposits</span>
-                <Wallet className="h-4 w-4 text-blue-500" />
+            <div className="rounded-xl bg-gradient-to-br from-blue-50 to-blue-100/50 p-3 sm:p-4 border border-blue-200/30">
+              <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                <span className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Deposits</span>
+                <Wallet className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-500" />
               </div>
-              <p className="text-2xl font-bold text-slate-900">Rs. {data.transactions.totalDeposits.toLocaleString()}</p>
-              <p className="text-xs text-slate-500 mt-1">Total deposited</p>
+              <p className="text-lg sm:text-2xl font-bold text-slate-900">Rs. {data.transactions.totalDeposits.toLocaleString()}</p>
+              <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 sm:mt-1">Total deposited</p>
             </div>
-            <div className="rounded-xl bg-gradient-to-br from-rose-50 to-rose-100/50 p-4 border border-rose-200/30">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Withdrawals</span>
-                <Banknote className="h-4 w-4 text-rose-500" />
+            <div className="rounded-xl bg-gradient-to-br from-rose-50 to-rose-100/50 p-3 sm:p-4 border border-rose-200/30">
+              <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                <span className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Withdrawals</span>
+                <Banknote className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-rose-500" />
               </div>
-              <p className="text-2xl font-bold text-slate-900">Rs. {data.transactions.totalWithdrawals.toLocaleString()}</p>
-              <p className="text-xs text-slate-500 mt-1">Total withdrawn</p>
+              <p className="text-lg sm:text-2xl font-bold text-slate-900">Rs. {data.transactions.totalWithdrawals.toLocaleString()}</p>
+              <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 sm:mt-1">Total withdrawn</p>
             </div>
           </div>
         </div>

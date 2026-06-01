@@ -14,6 +14,7 @@ const {
   createPlan,
   updatePlan,
   deletePlan,
+  getDashboardAnalytics,
 } = require('../controllers/adminController');
 const {
   getAllMutualFundRequests,
@@ -341,6 +342,21 @@ router.put('/plans/:planId', updatePlan);
  *         description: Forbidden - valid admin API key required
  */
 router.delete('/plans/:planId', deletePlan);
+
+/**
+ * @openapi
+ * /admin/analytics:
+ *   get:
+ *     tags: [Admin - Analytics]
+ *     summary: Get dashboard analytics with charts data
+ *     security: [{ adminApiKey: [] }]
+ *     responses:
+ *       200:
+ *         description: Analytics data for dashboard
+ *       403:
+ *         description: Forbidden - valid admin API key required
+ */
+router.get('/analytics', getDashboardAnalytics);
 
 /**
  * @openapi

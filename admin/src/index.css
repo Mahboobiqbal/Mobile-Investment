@@ -3,25 +3,69 @@
 @tailwind utilities;
 
 @layer base {
+  * {
+    @apply border-slate-200;
+  }
   body {
-    @apply bg-slate-50 text-slate-900 antialiased;
+    @apply bg-gradient-to-br from-slate-50 via-white to-slate-100 text-slate-900 antialiased;
   }
 }
 
 @layer components {
+  .glass {
+    @apply bg-white backdrop-blur-xl border border-slate-200/80 shadow-md shadow-slate-200/50;
+  }
+  .glass-dark {
+    @apply bg-slate-800 backdrop-blur-xl border border-slate-700/50 shadow-lg shadow-slate-900/20;
+  }
+  .glass-card {
+    @apply glass rounded-2xl transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/10 hover:border-indigo-300/60;
+  }
+  .gradient-border {
+    @apply relative overflow-hidden;
+  }
+  .gradient-border::before {
+    content: '';
+    @apply absolute inset-0 rounded-2xl p-[1px] bg-gradient-to-r from-indigo-400 via-indigo-500 to-indigo-600;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
   .btn {
-    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.97];
   }
   .btn-primary {
-    @apply bg-indigo-600 text-white hover:bg-indigo-700 focus-visible:ring-indigo-500;
+    @apply bg-gradient-to-r from-indigo-600 to-indigo-500 text-white hover:from-indigo-700 hover:to-indigo-600 shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 focus-visible:ring-indigo-500;
   }
   .btn-secondary {
-    @apply bg-slate-200 text-slate-900 hover:bg-slate-300 focus-visible:ring-slate-500;
+    @apply bg-slate-100 text-slate-700 hover:bg-slate-200 focus-visible:ring-slate-400;
   }
   .btn-danger {
-    @apply bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500;
+    @apply bg-gradient-to-r from-red-600 to-rose-500 text-white hover:from-red-700 hover:to-rose-600 shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 focus-visible:ring-red-500;
   }
-  .card {
-    @apply rounded-xl border border-slate-200 bg-white shadow-sm;
+  .btn-ghost {
+    @apply text-slate-600 hover:bg-slate-100 hover:text-slate-900;
   }
+  .input-field {
+    @apply w-full rounded-xl border border-slate-200 bg-white/80 py-2.5 pl-10 pr-4 text-sm outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 focus:bg-white;
+  }
+  .stat-value {
+    @apply text-2xl font-bold tracking-tight;
+  }
+  .stat-label {
+    @apply text-xs font-semibold uppercase tracking-wider text-slate-500;
+  }
+  .chart-container {
+    @apply glass-card p-5;
+  }
+  .animate-stagger > * {
+    @apply animate-fade-in;
+  }
+  .animate-stagger > *:nth-child(1) { animation-delay: 0ms; }
+  .animate-stagger > *:nth-child(2) { animation-delay: 80ms; }
+  .animate-stagger > *:nth-child(3) { animation-delay: 160ms; }
+  .animate-stagger > *:nth-child(4) { animation-delay: 240ms; }
+  .animate-stagger > *:nth-child(5) { animation-delay: 320ms; }
+  .animate-stagger > *:nth-child(6) { animation-delay: 400ms; }
 }

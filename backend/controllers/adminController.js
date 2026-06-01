@@ -350,6 +350,98 @@ const updatePlan = async (req, res) => {
   }
 };
 
+const getDashboardAnalytics = async (req, res) => {
+  try {
+    const [userStats, transactionStats, planStats, categoryStats] = await Promise.all([
+      Promise.all([
+        User.countDocuments({}),
+        User.countDocuments({ isVerified: true }),
+        User.countDocuments({ activePlan: { $ne: 'None' } }),
+        User.aggregate([{ $group: { _id: null, totalBalance: { $sum: '$currentBalance' } } }]),
+      ]),
+      Promise.all([
+        Transaction.countDocuments({}),
+        Transaction.countDocuments({ status: 'pending' }),
+        Transaction.countDocuments({ status: 'approved' }),
+        Transaction.countDocuments({ status: 'withdrawn' }),
+        Transaction.countDocuments({ status: 'rejected' }),
+        Transaction.aggregate([
+          { $match: { status: 'approved', type: 'Deposit' } },
+          { $group: { _id: null, totalDeposits: { $sum: '$amount' } } }
+        ]),
+        Transaction.aggregate([
+          { $match: { $or: [{ status: 'withdrawn' }, { status: 'approved', type: 'Withdrawal' }] } },
+          { $group: { _id: null, totalWithdrawals: { $sum: '$amount' } } }
+        ]),
+      ]),
+      Plan.countDocuments({}),
+      InvestmentCategory.countDocuments({ isActive: true }),
+    ]);
+
+    const dailyTransactions = await Transaction.aggregate([
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+          deposits: {
+            $sum: { $cond: [{ $eq: ['$type', 'Deposit'] }, '$amount', 0] }
+          },
+          withdrawals: {
+            $sum: { $cond: [{ $eq: ['$type', 'Withdrawal'] }, '$amount', 0] }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: -1 } },
+      { $limit: 30 }
+    ]);
+
+    const monthlyGrowth = await User.aggregate([
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m', date: '$createdAt' } },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: -1 } },
+      { $limit: 12 }
+    ]);
+
+    const topUsers = await User.find({})
+      .select('name email currentBalance')
+      .sort({ currentBalance: -1 })
+      .limit(5);
+
+    return res.status(200).json({
+      users: {
+        total: userStats[0],
+        verified: userStats[1],
+        investors: userStats[2],
+        totalBalance: userStats[3][0]?.totalBalance || 0,
+      },
+      transactions: {
+        total: transactionStats[0],
+        pending: transactionStats[1],
+        approved: transactionStats[2],
+        withdrawn: transactionStats[3],
+        rejected: transactionStats[4],
+        totalDeposits: transactionStats[5][0]?.totalDeposits || 0,
+        totalWithdrawals: transactionStats[6][0]?.totalWithdrawals || 0,
+      },
+      plans: {
+        total: planStats,
+      },
+      categories: {
+        active: categoryStats,
+      },
+      dailyTransactions,
+      monthlyGrowth: monthlyGrowth.reverse(),
+      topUsers,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message || 'Failed to fetch analytics' });
+  }
+};
+
 const deletePlan = async (req, res) => {
   try {
     const { planId } = req.params;
@@ -378,4 +470,5 @@ module.exports = {
   createPlan,
   updatePlan,
   deletePlan,
+  getDashboardAnalytics,
 };

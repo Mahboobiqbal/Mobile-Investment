@@ -16,7 +16,7 @@ const app = express();
 
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5000'],
+  origin: ['http://localhost:3000', 'http://localhost:5000', 'https://investintrees.vercel.app'],
   credentials: true,
 }));
 app.use(express.json({ limit: '1mb' }));

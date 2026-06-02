@@ -10,6 +10,8 @@ const connectDb = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const walletRoutes = require('./routes/walletRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const notificationsRoutes = require('./routes/notificationsRoutes');
+
 const swaggerSpec = require('./swagger');
 
 const app = express();
@@ -39,6 +41,8 @@ app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/wallet', apiLimiter, walletRoutes);
 const adminAuthMiddleware = require('./middleware/adminAuthMiddleware');
 app.use('/api/admin', adminAuthMiddleware, adminRoutes);
+app.use('/api/admin', adminAuthMiddleware, notificationsRoutes);
+
 
 // Public community routes
 const postsRoutes = require('./routes/postsRoutes');

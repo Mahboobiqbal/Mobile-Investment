@@ -13,6 +13,8 @@ import {
   ScatterChart as RechartsScatterChart, Scatter,
 } from 'recharts';
 import api from '../api/axios';
+import NotificationBell from '../components/NotificationBell';
+
 
 interface UserStats {
   total: number; verified: number; investors: number; totalBalance: number;
@@ -220,10 +222,8 @@ export default function Home() {
             </p>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <button className="btn btn-ghost relative p-2 sm:p-2.5 rounded-xl">
-              <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
-              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white">3</span>
-            </button>
+            <NotificationBell />
+
             <button className="btn btn-secondary text-xs gap-2 px-3 sm:px-4">
               <RefreshCw className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Refresh</span>

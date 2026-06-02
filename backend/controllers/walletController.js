@@ -2,6 +2,7 @@ const Transaction = require('../models/Transaction');
 const User = require('../models/User');
 const Plan = require('../models/Plan');
 const InvestmentCategory = require('../models/InvestmentCategory');
+const { createAdminNotification } = require('./notificationsController');
 
 const submitDeposit = async (req, res) => {
   try {
@@ -22,6 +23,19 @@ const submitDeposit = async (req, res) => {
       transactionId,
       status: 'pending',
     });
+
+    // Notify admin that a deposit was requested
+    try {
+      const user = await User.findById(req.user.id).select('email');
+      await createAdminNotification({
+        title: 'New Deposit Requested',
+        message: `Deposit request submitted (TID: ${transactionId}, Amount: ${amount}).`,
+        meta: { transactionId, amount, userId: req.user.id, userEmail: user?.email },
+      });
+    } catch (e) {
+      // notification failure shouldn't block user flow
+      console.error('Failed to create admin notification (deposit):', e.message);
+    }
 
     return res.status(201).json({ message: 'Deposit submitted successfully. Waiting for admin approval.', transaction });
   } catch (error) {
@@ -51,6 +65,17 @@ const requestWithdrawal = async (req, res) => {
       targetPhone,
       status: 'pending',
     });
+
+    // Notify admin that a withdrawal was requested
+    try {
+      await createAdminNotification({
+        title: 'New Withdrawal Requested',
+        message: `Withdrawal request submitted (Amount: ${amount}).`,
+        meta: { amount, targetPhone, userId: req.user.id, userEmail: user?.email },
+      });
+    } catch (e) {
+      console.error('Failed to create admin notification (withdrawal):', e.message);
+    }
 
     return res.status(201).json({ message: 'Withdrawal requested successfully. Awaiting admin processing.', transaction, currentBalance: user.currentBalance });
   } catch (error) {

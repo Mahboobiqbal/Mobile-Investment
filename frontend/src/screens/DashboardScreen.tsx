@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   Pressable,
   RefreshControl,
@@ -13,6 +12,7 @@ import {
   View,
   Platform,
   StatusBar,
+  useWindowDimensions,
 } from 'react-native';
 import { AxiosError } from 'axios';
 import { useNavigation } from '@react-navigation/native';
@@ -56,6 +56,11 @@ interface ApiError {
 export default function DashboardScreen() {
   const { logout } = useAuth();
   const navigation = useNavigation();
+  const { height: screenHeight } = useWindowDimensions();
+  
+  // Detects shorter screen forms dynamically
+  const isSmallScreen = screenHeight < 780;
+
   const [dashboardData, setDashboardData] = useState<DashboardData>({
     user: null,
     stats: null,
@@ -82,10 +87,23 @@ export default function DashboardScreen() {
   const [infoModal, setInfoModal] = useState({ visible: false, title: '', message: '', icon: '🎯', isComingSoon: false });
   const [menuVisible, setMenuVisible] = useState(false);
 
+  // Blueprint Static Matrix Data for Investment Plans
+  const investmentPlans = [
+    { id: '1', name: 'DIGITAL TREE', icon: '🌳', cat1: '-', cat2: '-', min: 'Rs. 5,000', profit: '1.5% - 2%' },
+    { id: '2', name: 'FARMING', icon: '🚜', cat1: 'LIVE STOCK', cat2: 'AGRICULTURE', min: 'Rs. 10,000', profit: '1.5% - 2%' },
+    { id: '3', name: 'RENTAL', icon: '🏢', cat1: 'CAR', cat2: 'APARTMENT', min: 'Rs. 20,000', profit: '2.5% - 3%' },
+    { id: '4', name: 'TRADING', icon: '📈', cat1: 'FOREX', cat2: 'PHYSICAL', min: 'Rs. 10,000', profit: '2.5% - 4%' },
+  ];
+
+  // Blueprint Matrix Data for My Plans Summary Table
+  const planSummary = [
+    { plan: 'PLAN-1', investment: 'Rs. 25,000', weekly: 'Rs. 375', total: 'Rs. 1,500' },
+    { plan: 'PLAN-4', investment: 'Rs. 40,000', weekly: 'Rs. 1,000', total: 'Rs. 5,000' },
+  ];
+
   const fetchDashboardData = useCallback(async () => {
     try {
       setError(null);
-
       const [profileRes, statsRes] = await Promise.all([
         api.get<UserProfileResponse>('/auth/profile'),
         api.get<DashboardStatsResponse>('/auth/dashboard-stats'),
@@ -131,7 +149,6 @@ export default function DashboardScreen() {
         setConfirmModal({ ...confirmModal, visible: false });
         try {
           await logout();
-          // Use reset to completely clear the navigation state and go back to Login
           navigation.reset({
             index: 0,
             routes: [{ name: 'Login' as never }],
@@ -158,13 +175,10 @@ export default function DashboardScreen() {
   };
 
   const handleBalanceToggle = () => {
-    // If balance is currently visible, hide it immediately without asking for PIN.
     if (showBalance) {
       setShowBalance(false);
       return;
     }
-
-    // If balance is hidden, require PIN to show it.
     setShowPinModal(true);
     setPinCodeInput('');
   };
@@ -172,7 +186,6 @@ export default function DashboardScreen() {
   const handlePinSubmit = () => {
     const CORRECT_PIN = '0000';
     if (pinCodeInput === CORRECT_PIN) {
-      // Only used to show the balance (we never call PIN to hide)
       setShowBalance(true);
       setShowPinModal(false);
       setPinCodeInput('');
@@ -195,32 +208,17 @@ export default function DashboardScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#00A86B" />
+          <ActivityIndicator size="large" color="#008F5A" />
           <Text style={styles.loadingText}>Loading your dashboard...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  const user = dashboardData.user || {
-    id: '',
-    name: 'User',
-    email: '',
-    role: 'user' as const,
-    currentBalance: 0,
-  };
   const stats = dashboardData.stats || {
     totalDepositsApproved: 0,
     totalWithdrawalsApproved: 0,
     totalROIEarnings: 0,
-    message: undefined,
-  };
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning';
-    if (hour < 18) return 'Good Afternoon';
-    return 'Good Evening';
   };
 
   const formatCurrency = (amount: number) => {
@@ -230,22 +228,62 @@ export default function DashboardScreen() {
     })}`;
   };
 
-  const balanceDisplay = showBalance ? formatCurrency(user?.currentBalance || 0) : 'Rs. ••••••';
-  const activePlanDisplay = user?.activePlan && user.activePlan !== 'None' ? user.activePlan : 'No plan selected yet';
+  const balanceDisplay = showBalance ? formatCurrency(dashboardData.user?.currentBalance || 0) : 'Rs. 25,000.00';
+  const displayedUserName = dashboardData.user?.name || 'User';
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header with Green Background */}
-      <View style={styles.headerGreen}>
-        <View style={styles.headerContent}>
-          <Text style={styles.greetingText}>{getGreeting()}</Text>
-          <Text style={styles.userNameText}>{user?.name || 'User'}</Text>
+      <StatusBar barStyle="light-content" backgroundColor="#008F5A" />
+
+      {/* CHANGED: 1. FIXED HEIGHT MODULAR GRADIENT HEADER */}
+      <View style={styles.headerContainer}>
+        {/* Simulating clear smooth top-down native color blending layers (#008F5A -> #00A86B) */}
+        <View style={StyleSheet.absoluteFill}>
+          {/* <View style={{ flex: 1, backgroundColor: '#008F5A' }} /> */}
+          <View style={{ flex: 2, backgroundColor: '#078355' }} />
+          <View style={{ flex: 1, backgroundColor: '#00A86B' }} />
         </View>
-        <Pressable style={styles.headerIcon} onPress={handleOpenMenu} hitSlop={10}>
-          <Text style={styles.moreIcon}>⋮</Text>
-        </Pressable>
+
+        <View style={styles.headerTopBar}>
+          <Pressable style={styles.headerHamburger} onPress={handleOpenMenu} hitSlop={10}>
+            <Text style={styles.hamburgerIcon}>☰</Text>
+          </Pressable>
+
+          <View style={styles.headerGreetingWrap}>
+            <Text style={styles.greetingText}>Good Morning</Text>
+            <Text style={styles.userNameText} numberOfLines={1}>{displayedUserName}</Text>
+          </View>
+
+          <Pressable style={styles.headerNotif} hitSlop={10} onPress={() => {}}>
+            <Text style={styles.notifIcon}>🔔</Text>
+            <View style={styles.notifDot} />
+          </Pressable>
+        </View>
+
+        {/* CHANGED: 2. FLOATING ABSOLUTE OVERLAPPING BALANCE BLOCK CONTAINER */}
+        <View style={styles.floatingCardPositioner}>
+          <View style={[styles.walletCard, { padding: isSmallScreen ? 12 : 16 }]}>
+            <View style={styles.walletCardLeft}>
+              <Text style={styles.walletLabel}>WALLET BALANCE</Text>
+              <Text style={[styles.walletAmount, { fontSize: isSmallScreen ? 20 : 24 }]}>{balanceDisplay}</Text>
+              <Text style={styles.walletSubtext}>Your current funds</Text>
+            </View>
+            
+            <View style={styles.verticalDivider} />
+
+            <View style={styles.walletCardRight}>
+              <Pressable style={styles.walletCircleIcon} onPress={handleBalanceToggle}>
+                <Text style={{ fontSize: isSmallScreen ? 16 : 20 }}>👛</Text>
+              </Pressable>
+              <Pressable style={[styles.addMoneyButton, { paddingVertical: isSmallScreen ? 6 : 8 }]} onPress={() => navigation.navigate('DepositRequest' as never)}>
+                <Text style={styles.addMoneyText}>Add Money</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
       </View>
 
+      {/* Sidemenu Drawer Overlay */}
       <Modal visible={menuVisible} transparent animationType="fade" onRequestClose={() => setMenuVisible(false)}>
         <Pressable style={styles.menuOverlay} onPress={() => setMenuVisible(false)}>
           <View style={styles.menuCard}>
@@ -268,155 +306,146 @@ export default function DashboardScreen() {
         </Pressable>
       </Modal>
 
-      <ScrollView
-        style={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#00A86B']} />}
-      >
-        {/* Floating Wallet Card */}
-        <View style={styles.walletCardContainer}>
-          <View style={styles.walletCard}>
-            <View style={styles.walletCardLeft}>
-              <Text style={styles.walletLabel}>Wallet Balance</Text>
-              <Text style={styles.walletAmount}>{balanceDisplay}</Text>
-              <Text style={styles.walletSubtext}>Your current funds</Text>
-            </View>
+      {/* Main Container Layout (no vertical scroll) */}
+      <View style={styles.scrollContentModifier}>
+        {/* Dynamic Spacing Wrapper to condense components on shorter devices */}
+        <View style={{ gap: isSmallScreen ? 12 : 20, marginTop: isSmallScreen ? 12 : 20 }}>
 
-            <View style={styles.walletCardDivider} />
+          {/* 3. FINANCIAL ANALYTICS HORIZONTAL SLIDER */}
+          <View>
+            <Text style={[styles.sectionTitle, { marginBottom: isSmallScreen ? 6 : 10 }]}>Financial Analytics</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.analyticsHorizontalContent}>
 
-            <View style={styles.walletCardRight}>
-              <Pressable style={styles.eyeButtonContainer} onPress={handleBalanceToggle}>
-                <Text style={styles.eyeButton}>{showBalance ? '👁' : '🔒'}</Text>
+              <View style={[styles.analyticsHCard, { borderBottomColor: '#8B5CF6' }]}>
+                <Text style={styles.analyticsHIcon}>📊</Text>
+                <Text style={styles.analyticsHLabel}>TOTAL INVESTMENT</Text>
+                <Text style={[styles.analyticsHValue, { color: '#6D28D9' }]}>Rs. 50,000.00</Text>
+              </View>
+
+              <View style={[styles.analyticsHCard, { borderBottomColor: '#008F5A' }]}>
+                <Text style={styles.analyticsHIcon}>📈</Text>
+                <Text style={styles.analyticsHLabel}>TOTAL ROI PROFIT</Text>
+                <Text style={[styles.analyticsHValue, { color: '#008F5A' }]}>{formatCurrency(stats.totalROIEarnings)}</Text>
+              </View>
+
+              <View style={[styles.analyticsHCard, { borderBottomColor: '#3B82F6' }]}>
+                <Text style={styles.analyticsHIcon}>💳</Text>
+                <Text style={styles.analyticsHLabel}>TOTAL DEPOSITED</Text>
+                <Text style={[styles.analyticsHValue, { color: '#0284C7' }]}>{formatCurrency(stats.totalDepositsApproved)}</Text>
+              </View>
+
+              <View style={[styles.analyticsHCard, { borderBottomColor: '#F59E0B' }]}>
+                <Text style={styles.analyticsHIcon}>💰</Text>
+                <Text style={styles.analyticsHLabel}>TOTAL WITHDRAWN</Text>
+                <Text style={[styles.analyticsHValue, { color: '#D97706' }]}>{formatCurrency(stats.totalWithdrawalsApproved)}</Text>
+              </View>
+            </ScrollView>
+          </View>
+
+
+          {/* 4. CAPSULE QUICK ACTIONS */}
+          <View>
+            <Text style={[styles.sectionTitle, { marginBottom: isSmallScreen ? 6 : 10 }]}>Quick Actions</Text>
+            <View style={styles.quickActionsRow}>
+              <Pressable style={[styles.actionCapsule, styles.actionCapsuleDeposit, { paddingVertical: isSmallScreen ? 8 : 12 }]} onPress={() => navigation.navigate('DepositRequest' as never)}>
+                <View style={styles.capsuleLeftRow}>
+                  <Text style={{ marginRight: 4 }}>💳</Text>
+                  <Text style={[styles.actionCapsuleText, { color: '#008F5A' }]}>Deposit</Text>
+                </View>
+                <Text style={[styles.actionCapsuleArrow, { color: '#008F5A' }]}>›</Text>
               </Pressable>
-              <Pressable style={styles.addMoneyButton} onPress={() => navigation.navigate('DepositRequest' as never)}>
-                <Text style={styles.addMoneyText}>Add Money</Text>
+
+              <Pressable style={[styles.actionCapsule, styles.actionCapsuleWithdraw, { paddingVertical: isSmallScreen ? 8 : 12 }]} onPress={() => navigation.navigate('WithdrawalRequest' as never)}>
+                <View style={styles.capsuleLeftRow}>
+                  <Text style={{ marginRight: 4 }}>🏛️</Text>
+                  <Text style={[styles.actionCapsuleText, { color: '#DB2777' }]}>Withdraw</Text>
+                </View>
+                <Text style={[styles.actionCapsuleArrow, { color: '#DB2777' }]}>›</Text>
+              </Pressable>
+
+              <Pressable style={[styles.actionCapsule, styles.actionCapsulePlans, { paddingVertical: isSmallScreen ? 8 : 12 }]} onPress={() => navigation.navigate('Systems' as never)}>
+                <View style={styles.capsuleLeftRow}>
+                  <Text style={{ marginRight: 4 }}>📊</Text>
+                  <Text style={[styles.actionCapsuleText, { color: '#2563EB' }]}>Plans</Text>
+                </View>
+                <Text style={[styles.actionCapsuleArrow, { color: '#2563EB' }]}>›</Text>
               </Pressable>
             </View>
           </View>
-        </View>
 
-        {/* Financial Analytics Grid */}
-        <View style={styles.analyticsSection}>
-          <Text style={styles.sectionTitle}>Financial Analytics</Text>
-          <View style={styles.analyticsGrid}>
-            {/* Total Investment Card */}
-            <View style={styles.analyticsCard}>
-              <Text style={styles.analyticsLabel}>Total Investment</Text>
-              <Text style={[styles.analyticsValue, styles.investmentColor]}>
-                {formatCurrency(user?.currentBalance || 0)}
-              </Text>
-              <View style={[styles.analyticsIndicator, { backgroundColor: '#8B5CF6' }]} />
+          {/* 5. INVESTMENT PLANS DATA MATRIX TABLE */}
+          <View>
+            <View style={styles.tableHeaderNavigationRow}>
+              <Text style={styles.sectionTitle}>Investment Plans</Text>
+              <Pressable onPress={() => navigation.navigate('Systems' as never)}>
+                <Text style={styles.viewAllLink}>View All ›</Text>
+              </Pressable>
             </View>
 
-            {/* ROI Card */}
-            <View style={styles.analyticsCard}>
-              <Text style={styles.analyticsLabel}>Total ROI Profit</Text>
-              <Text style={[styles.analyticsValue, styles.roiColor]}>
-                {formatCurrency(stats.totalROIEarnings)}
-              </Text>
-              <View style={styles.analyticsIndicator} />
-            </View>
+            <View style={styles.tableMainWrapperCard}>
+              <View style={styles.tableHeaderBackgroundRow}>
+                <Text style={[styles.thElement, { flex: 0.6, textAlign: 'center' }]}>S.NO.</Text>
+                <Text style={[styles.thElement, { flex: 2 }]}>PROJECT</Text>
+                <Text style={[styles.thElement, { flex: 1.5, textAlign: 'center' }]}>CATEGORY-1</Text>
+                <Text style={[styles.thElement, { flex: 1.5, textAlign: 'center' }]}>CATEGORY-2</Text>
+                <Text style={[styles.thElement, { flex: 1.8, textAlign: 'right' }]}>MIN INVESTMENT</Text>
+                <Text style={[styles.thElement, { flex: 1.8, textAlign: 'right' }]}>WEEKLY PROFIT %</Text>
+              </View>
 
-            {/* Deposited Card */}
-            <View style={styles.analyticsCard}>
-              <Text style={styles.analyticsLabel}>Total Deposited</Text>
-              <Text style={[styles.analyticsValue, styles.depositColor]}>
-                {formatCurrency(stats.totalDepositsApproved)}
-              </Text>
-              <View style={[styles.analyticsIndicator, { backgroundColor: '#0EA5E9' }]} />
-            </View>
-
-            {/* Withdrawn Card */}
-            <View style={styles.analyticsCard}>
-              <Text style={styles.analyticsLabel}>Total Withdrawn</Text>
-              <Text style={[styles.analyticsValue, styles.withdrawColor]}>
-                {formatCurrency(stats.totalWithdrawalsApproved)}
-              </Text>
-              <View style={[styles.analyticsIndicator, { backgroundColor: '#F59E0B' }]} />
+              {investmentPlans.map((row) => (
+                <View key={row.id} style={[styles.tableDataRow, { paddingVertical: isSmallScreen ? 6 : 10 }]}>
+                  <Text style={[styles.tdElement, { flex: 0.6, textAlign: 'center', color: '#64748B' }]}>{row.id}</Text>
+                  <View style={[{ flex: 2, flexDirection: 'row', alignItems: 'center' }]}>
+                    <Text style={{ marginRight: 4, fontSize: 11 }}>{row.icon}</Text>
+                    <Text style={{ fontSize: 9, fontWeight: '800', color: '#1E293B' }}>{row.name}</Text>
+                  </View>
+                  <Text style={[styles.tdElement, { flex: 1.5, textAlign: 'center', color: '#64748B' }]}>{row.cat1}</Text>
+                  <Text style={[styles.tdElement, { flex: 1.5, textAlign: 'center', color: '#64748B' }]}>{row.cat2}</Text>
+                  <Text style={[styles.tdElement, { flex: 1.8, textAlign: 'right', color: '#047857', fontWeight: '700' }]}>{row.min}</Text>
+                  <Text style={[styles.tdElement, { flex: 1.8, textAlign: 'right', color: '#059669', fontWeight: '700' }]}>{row.profit}</Text>
+                </View>
+              ))}
             </View>
           </View>
-        </View>
 
-        {/* Quick Actions Grid */}
-        <View style={styles.quickActionsSection}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.quickActionsGrid}>
-            {/* Deposit Action */}
-            <Pressable
-              style={styles.actionItem}
-              onPress={() => navigation.navigate('DepositRequest' as never)}
-            >
-              <View style={[styles.actionCircle, styles.depositActionBg]}>
-                <Text style={styles.actionIcon}>💳</Text>
+          {/* 6. MY PLANS SUMMARY */}
+          <View>
+            <Text style={[styles.sectionTitle, { marginBottom: isSmallScreen ? 6 : 10 }]}>My Plans Summary</Text>
+            <View style={styles.tableMainWrapperCard}>
+              <View style={styles.tableHeaderBackgroundRow}>
+                <Text style={[styles.thElement, { flex: 1.5 }]}>PLAN</Text>
+                <Text style={[styles.thElement, { flex: 2, textAlign: 'center' }]}>INVESTMENT</Text>
+                <Text style={[styles.thElement, { flex: 2, textAlign: 'center' }]}>WEEKLY PROFIT</Text>
+                <Text style={[styles.thElement, { flex: 2, textAlign: 'right' }]}>TOTAL PROFIT</Text>
               </View>
-              <Text style={styles.actionLabel}>Deposit</Text>
-            </Pressable>
 
-            {/* Withdraw Action */}
-            <Pressable
-              style={styles.actionItem}
-              onPress={() => navigation.navigate('WithdrawalRequest' as never)}
-            >
-              <View style={[styles.actionCircle, styles.withdrawActionBg]}>
-                <Text style={styles.actionIcon}>🏦</Text>
+              {planSummary.map((row, index) => (
+                <View key={index} style={[styles.tableDataRow, { paddingVertical: isSmallScreen ? 6 : 10 }]}>
+                  <Text style={[styles.tdElement, { flex: 1.5, fontWeight: '700', color: '#334155' }]}>{row.plan}</Text>
+                  <Text style={[styles.tdElement, { flex: 2, textAlign: 'center', color: '#047857', fontWeight: '600' }]}>{row.investment}</Text>
+                  <Text style={[styles.tdElement, { flex: 2, textAlign: 'center', color: '#059669', fontWeight: '600' }]}>{row.weekly}</Text>
+                  <Text style={[styles.tdElement, { flex: 2, textAlign: 'right', color: '#047857', fontWeight: '700' }]}>{row.total}</Text>
+                </View>
+              ))}
+
+              {/* Combined Direct Cashout Footer Strip */}
+              <View style={[styles.innerWithdrawStrip, { padding: isSmallScreen ? 8 : 12 }]}>
+                <View>
+                  <Text style={styles.withdrawStripLabel}>TOTAL WITHDRAWABLE</Text>
+                  <Text style={[styles.withdrawStripValue, { fontSize: isSmallScreen ? 13 : 15 }]}>Rs. 1,500.00</Text>
+                </View>
+                <Pressable style={[styles.withdrawStripButton, { paddingVertical: isSmallScreen ? 6 : 8 }]} onPress={() => navigation.navigate('WithdrawalRequest' as never)}>
+                  <Text style={styles.withdrawStripButtonArrow}>↑</Text>
+                  <Text style={styles.withdrawStripButtonText}>Withdraw</Text>
+                </Pressable>
               </View>
-              <Text style={styles.actionLabel}>Withdraw</Text>
-            </Pressable>
-
-            {/* Plans Action */}
-            <Pressable
-              style={styles.actionItem}
-              onPress={() => navigation.navigate('Systems' as never)}
-            >
-              <View style={[styles.actionCircle, styles.plansActionBg]}>
-                <Text style={styles.actionIcon}>📊</Text>
-              </View>
-              <Text style={styles.actionLabel}>Plans</Text>
-            </Pressable>
-
-            {/* Community Action */}
-            {/* <Pressable
-              style={styles.actionItem}
-              onPress={() => navigation.navigate('Community' as never)}
-            >
-              <View style={[styles.actionCircle, styles.plansActionBg]}>
-                <Text style={styles.actionIcon}>💬</Text>
-              </View>
-              <Text style={styles.actionLabel}>Community</Text>
-            </Pressable> */}
-          </View>
-        </View>
-
-        {/* Investment Summary Section */}
-        <View style={styles.summarySection}>
-          <View style={styles.summaryHeader}>
-            <Text style={styles.sectionTitle}>Investment Summary</Text>
-            <Pressable onPress={() => navigation.navigate('Analysis' as never)}>
-              <Text style={styles.seeAnalysisLink}>See Analysis →</Text>
-            </Pressable>
-          </View>
-
-          <View style={styles.summaryCard}>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Active Plan</Text>
-              <Text style={styles.summaryValue}>{activePlanDisplay}</Text>
             </View>
-            <View style={styles.summaryDivider} />
-            {/* <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Net Balance</Text>
-              <Text style={[styles.summaryValue, styles.balanceHighlight]}>
-                {formatCurrency(
-                  stats.totalDepositsApproved + stats.totalROIEarnings - stats.totalWithdrawalsApproved
-                )}
-              </Text>
-            </View> */}
           </View>
-        </View>
 
-        {/* Footer Spacing */}
-        <View style={styles.footer} />
+        </View>
       </ScrollView>
 
-      {/* PIN Modal */}
+      {/* PIN Verification Modal */}
       <Modal visible={showPinModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.pinCodeModal}>
@@ -433,19 +462,10 @@ export default function DashboardScreen() {
               onChangeText={setPinCodeInput}
             />
             <View style={styles.pinModalButtons}>
-              <Pressable
-                style={[styles.pinModalButton, styles.pinCancelButton]}
-                onPress={() => {
-                  setShowPinModal(false);
-                  setPinCodeInput('');
-                }}
-              >
+              <Pressable style={[styles.pinModalButton, styles.pinCancelButton]} onPress={() => { setShowPinModal(false); setPinCodeInput(''); }}>
                 <Text style={styles.pinCancelButtonText}>Cancel</Text>
               </Pressable>
-              <Pressable
-                style={[styles.pinModalButton, styles.pinConfirmButton]}
-                onPress={handlePinSubmit}
-              >
+              <Pressable style={[styles.pinModalButton, styles.pinConfirmButton]} onPress={handlePinSubmit}>
                 <Text style={styles.pinConfirmButtonText}>Confirm</Text>
               </Pressable>
             </View>
@@ -453,40 +473,11 @@ export default function DashboardScreen() {
         </View>
       </Modal>
 
-      {/* Modals */}
-      <SuccessModal
-        visible={successModal.visible}
-        title={successModal.title}
-        message={successModal.message}
-        onClose={() => setSuccessModal({ ...successModal, visible: false })}
-      />
-
-      <ErrorModal
-        visible={errorModal.visible}
-        title={errorModal.title}
-        message={errorModal.message}
-        onClose={() => setErrorModal({ ...errorModal, visible: false })}
-      />
-
-      <ConfirmationModal
-        visible={confirmModal.visible}
-        title={confirmModal.title}
-        message={confirmModal.message}
-        isDangerous={confirmModal.isDangerous}
-        confirmText={confirmModal.isDangerous ? 'Log Out' : 'Confirm'}
-        onCancel={() => setConfirmModal({ ...confirmModal, visible: false })}
-        onConfirm={confirmModal.onConfirm}
-      />
-
-      <InfoModal
-        visible={infoModal.visible}
-        title={infoModal.title}
-        message={infoModal.message}
-        icon={infoModal.icon}
-        isComingSoon={infoModal.isComingSoon}
-        buttonText={infoModal.isComingSoon ? 'Okay' : 'Got it'}
-        onClose={() => setInfoModal({ ...infoModal, visible: false })}
-      />
+      {/* Global Modals Context */}
+      <SuccessModal visible={successModal.visible} title={successModal.title} message={successModal.message} onClose={() => setSuccessModal({ ...successModal, visible: false })} />
+      <ErrorModal visible={errorModal.visible} title={errorModal.title} message={errorModal.message} onClose={() => setErrorModal({ ...errorModal, visible: false })} />
+      <ConfirmationModal visible={confirmModal.visible} title={confirmModal.title} message={confirmModal.message} isDangerous={confirmModal.isDangerous} confirmText={confirmModal.isDangerous ? 'Log Out' : 'Confirm'} onCancel={() => setConfirmModal({ ...confirmModal, visible: false })} onConfirm={confirmModal.onConfirm} />
+      <InfoModal visible={infoModal.visible} title={infoModal.title} message={infoModal.message} icon={infoModal.icon} isComingSoon={infoModal.isComingSoon} buttonText={infoModal.isComingSoon ? 'Okay' : 'Got it'} onClose={() => setInfoModal({ ...infoModal, visible: false })} />
     </SafeAreaView>
   );
 }
@@ -494,85 +485,344 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F7FA',
+    backgroundColor: '#F8FAFC',
   },
-  headerGreen: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#00A86B',
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 12,
-    paddingVertical: 12,
+  // CHANGED: Fixed 180px container height layout parameters
+  headerContainer: {
+    height: 180,
+    width: '100%',
+    position: 'relative',
+    zIndex: 10,
+  },
+  headerTopBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    zIndex: 100,
-    elevation: 5,
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) + 8 : 24,
   },
-  headerContent: {
-    flex: 1,
-  },
-  greetingText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginBottom: 2,
-  },
-  userNameText: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  headerIcon: {
+  headerHamburger: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+  },
+  hamburgerIcon: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  headerGreetingWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  greetingText: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.85)',
+    letterSpacing: 0.3,
+  },
+  userNameText: {
+    fontSize: 19,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  headerNotif: {
+    width: 40,
+    height: 40,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  notifIcon: {
+    color: '#FFFFFF',
+    fontSize: 22,
+  },
+  notifDot: {
+    position: 'absolute',
+    top: 6,
+    right: 2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+    borderWidth: 1.5,
+    borderColor: '#00A86B', // Matches the gradient baseline highlight edge color
+  },
+  // CHANGED: Absolute overlapping position alignment parameters 
+  floatingCardPositioner: {
+    position: 'absolute',
+    bottom: -40, 
+    left: 16,
+    right: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    zIndex: 20,
+    elevation: 6,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+  },
+  walletCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  walletCardLeft: {
+    flex: 1,
+  },
+  walletLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#94A3B8',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  walletAmount: {
+    fontWeight: '900',
+    color: '#0F172A',
+  },
+  walletSubtext: {
+    fontSize: 10,
+    color: '#94A3B8',
+    marginTop: 4,
+  },
+  // NEW: Center Vertical divider rule
+  verticalDivider: {
+    width: 1,
+    height: '80%',
+    backgroundColor: '#E2E8F0',
+    marginHorizontal: 12,
+  },
+  walletCardRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  walletCircleIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#E6F3ED',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  logoutIcon: {
-    fontSize: 20,
+  addMoneyButton: {
+    backgroundColor: '#008F5A',
+    paddingHorizontal: 14,
+    borderRadius: 10,
+  },
+  addMoneyText: {
+    fontSize: 11,
+    fontWeight: '700',
     color: '#FFFFFF',
+  },
+  scrollContent: {
+    flex: 1,
+  },
+  scrollContentModifier: {
+    paddingHorizontal: 16,
+    paddingTop: 50, // Added padding space layout buffer so content clears the floating absolute overlapping card position
+    paddingBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1E293B',
+  },
+  analyticsHorizontalContent: {
+    paddingRight: 8,
+    gap: 10,
+  },
+  analyticsHCard: {
+    width: 125,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 12,
+    borderBottomWidth: 3,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  analyticsHIcon: {
+    fontSize: 15,
+    marginBottom: 6,
+  },
+  analyticsHLabel: {
+    fontSize: 8.5,
+    fontWeight: '800',
+    color: '#94A3B8',
+    letterSpacing: 0.1,
+    marginBottom: 4,
+  },
+  analyticsHValue: {
+    fontSize: 11.5,
+    fontWeight: '900',
+  },
+  quickActionsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionCapsule: {
+    flex: 1,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+  },
+  capsuleLeftRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionCapsuleText: {
+    fontSize: 11,
     fontWeight: '700',
   },
-  moreIcon: {
-    fontSize: 22,
+  actionCapsuleArrow: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  actionCapsuleDeposit: {
+    backgroundColor: '#E6F3ED',
+    borderColor: '#C2E3D4',
+  },
+  actionCapsuleWithdraw: {
+    backgroundColor: '#FCE7F3',
+    borderColor: '#FBCFE8',
+  },
+  actionCapsulePlans: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#DBEAFE',
+  },
+  tableHeaderNavigationRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  viewAllLink: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#008F5A',
+  },
+  tableMainWrapperCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    overflow: 'hidden',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  tableHeaderBackgroundRow: {
+    backgroundColor: '#008F5A',
+    flexDirection: 'row',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  thElement: {
+    fontSize: 8,
+    fontWeight: '800',
     color: '#FFFFFF',
+  },
+  tableDataRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  tdElement: {
+    fontSize: 9.5,
+  },
+  innerWithdrawStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  withdrawStripLabel: {
+    fontSize: 8.5,
+    fontWeight: '800',
+    color: '#94A3B8',
+    letterSpacing: 0.3,
+  },
+  withdrawStripValue: {
     fontWeight: '900',
-    marginTop: -2,
+    color: '#008F5A',
+    marginTop: 2,
+  },
+  withdrawStripButton: {
+    backgroundColor: '#008F5A',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  withdrawStripButtonArrow: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  withdrawStripButtonText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    color: '#475569',
+    fontSize: 14,
+    fontWeight: '600',
   },
   menuOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.32)',
-    alignItems: 'flex-end',
+    backgroundColor: 'rgba(15, 23, 42, 0.2)',
+    alignItems: 'flex-start',
     paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) + 12 : 56,
-    paddingRight: 14,
+    paddingLeft: 14,
   },
   menuCard: {
-    width: 240,
-    borderRadius: 18,
+    width: 230,
+    borderRadius: 16,
     backgroundColor: '#FFFFFF',
-    paddingVertical: 8,
+    paddingVertical: 6,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.16,
-    shadowRadius: 20,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 6,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
   },
   menuIcon: {
-    width: 28,
-    fontSize: 18,
+    width: 24,
+    fontSize: 16,
     color: '#0F172A',
-    marginRight: 10,
+    marginRight: 8,
     textAlign: 'center',
   },
   menuIconDanger: {
@@ -582,310 +832,69 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   menuTitle: {
-    fontSize: 14,
-    fontWeight: '800',
+    fontSize: 13,
+    fontWeight: '700',
     color: '#0F172A',
   },
   menuTitleDanger: {
     color: '#DC2626',
   },
   menuSubtitle: {
-    marginTop: 2,
-    fontSize: 11,
+    marginTop: 1,
+    fontSize: 10,
     color: '#64748B',
   },
   menuDivider: {
     height: 1,
     backgroundColor: '#E2E8F0',
-    marginHorizontal: 14,
-  },
-  scrollContent: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) + 60 : 76,
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    color: '#475569',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  walletCardContainer: {
-    marginTop: 20,
-    marginBottom: 20,
-    paddingHorizontal: 0,
-  },
-  walletCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 6,
-  },
-  walletCardLeft: {
-    flex: 1,
-    marginRight: 12,
-  },
-  walletLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#94A3B8',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 6,
-  },
-  walletAmount: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 4,
-  },
-  walletSubtext: {
-    fontSize: 12,
-    color: '#CBD5E1',
-    fontWeight: '500',
-  },
-  walletCardDivider: {
-    width: 1,
-    height: 60,
-    backgroundColor: '#E2E8F0',
     marginHorizontal: 12,
-  },
-  walletCardRight: {
-    alignItems: 'center',
-    gap: 10,
-  },
-  eyeButtonContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#F1F5F9',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  eyeButton: {
-    fontSize: 20,
-  },
-  addMoneyButton: {
-    backgroundColor: '#00A86B',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-  },
-  addMoneyText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    textAlign: 'center',
-  },
-  analyticsSection: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginBottom: 12,
-  },
-  analyticsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-  },
-  analyticsCard: {
-    width: '48%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 14,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-    marginBottom: 12,
-  },
-  analyticsLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#94A3B8',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-    marginBottom: 8,
-  },
-  analyticsValue: {
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  roiColor: {
-    color: '#10B981',
-  },
-  investmentColor: {
-    color: '#8B5CF6',
-  },
-  depositColor: {
-    color: '#0EA5E9',
-  },
-  withdrawColor: {
-    color: '#F59E0B',
-  },
-  analyticsIndicator: {
-    height: 3,
-    backgroundColor: '#10B981',
-    borderRadius: 2,
-  },
-  quickActionsSection: {
-    marginBottom: 24,
-  },
-  quickActionsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    gap: 12,
-  },
-  actionItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  actionCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  depositActionBg: {
-    backgroundColor: '#DBEAFE',
-  },
-  withdrawActionBg: {
-    backgroundColor: '#FEE2E2',
-  },
-  plansActionBg: {
-    backgroundColor: '#DCFCE7',
-  },
-  actionIcon: {
-    fontSize: 24,
-  },
-  actionLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#0F172A',
-    textAlign: 'center',
-  },
-  summarySection: {
-    marginBottom: 24,
-  },
-  summaryHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  seeAnalysisLink: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#00A86B',
-  },
-  summaryCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 10,
-  },
-  summaryLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#64748B',
-  },
-  summaryValue: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  balanceHighlight: {
-    color: '#00A86B',
-    fontSize: 16,
-  },
-  summaryDivider: {
-    height: 1,
-    backgroundColor: '#E2E8F0',
-  },
-  footer: {
-    height: 40,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   pinCodeModal: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 32,
+    borderRadius: 16,
+    padding: 24,
     width: '80%',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 10,
+    elevation: 8,
   },
   pinModalTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '700',
     color: '#0F172A',
-    marginBottom: 8,
     textAlign: 'center',
   },
   pinModalSubtitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#64748B',
     textAlign: 'center',
-    marginBottom: 24,
-    fontWeight: '500',
+    marginTop: 4,
+    marginBottom: 16,
   },
   pinCodeInput: {
-    height: 60,
-    borderWidth: 2,
+    height: 50,
+    borderWidth: 1.5,
     borderColor: '#E2E8F0',
-    borderRadius: 12,
-    fontSize: 28,
+    borderRadius: 10,
+    fontSize: 22,
     fontWeight: '700',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
     color: '#0F172A',
-    letterSpacing: 8,
+    letterSpacing: 6,
   },
   pinModalButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
+    gap: 10,
   },
   pinModalButton: {
     flex: 1,
-    height: 50,
-    borderRadius: 10,
+    height: 44,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -893,87 +902,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
   },
   pinCancelButtonText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#64748B',
   },
   pinConfirmButton: {
-    backgroundColor: '#00A86B',
+    backgroundColor: '#008F5A',
   },
   pinConfirmButtonText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#FFFFFF',
-  },
-  transactionModal: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
-    paddingBottom: 30,
-    marginTop: 'auto',
-    maxHeight: '80%',
-  },
-  transactionModalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginBottom: 4,
-  },
-  transactionModalSubtitle: {
-    fontSize: 13,
-    color: '#64748B',
-    marginBottom: 20,
-    fontWeight: '500',
-  },
-  formGroup: {
-    marginBottom: 16,
-  },
-  formLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#334155',
-    marginBottom: 8,
-  },
-  formInput: {
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: '#0F172A',
-    backgroundColor: '#FFFFFF',
-  },
-  transactionModalButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 20,
-  },
-  transactionButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#E2E8F0',
-  },
-  cancelButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#475569',
-  },
-  submitButton: {
-    backgroundColor: '#00A86B',
-  },
-  submitButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  submitButtonDisabled: {
-    opacity: 0.65,
   },
 });

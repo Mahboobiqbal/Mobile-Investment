@@ -78,11 +78,12 @@ function BottomTabs() {
   const activeTab = getTabForRoute(routeName);
 
   const tabs: Array<{ key: TabKey; label: string; icon: string; route: MainRouteName }> = [
-    { key: 'Home', label: 'Home', icon: '⌂', route: 'Dashboard' },
-    { key: 'Community', label: 'Community', icon: '◉', route: 'Community' },
-    { key: 'Analysis', label: 'Analysis', icon: '▤', route: 'Analysis' },
+    { key: 'Home', label: 'Dashboard', icon: '🏠', route: 'Dashboard' },
+    { key: 'Analysis', label: 'Investments', icon: '📊', route: 'Analysis' },
+    { key: 'Community', label: 'Wallet', icon: '👛', route: 'Community' },
     { key: 'Profile', label: 'Profile', icon: '☺', route: 'Profile' },
   ];
+
 
   return (
     <View style={styles.tabBar}>
@@ -105,7 +106,7 @@ function BottomTabs() {
   );
 }
 
-function ScreenShell({ children }: { children: React.ReactNode }) {
+function MainShell({ children }: { children: React.ReactNode }) {
   return (
     <View style={styles.shell}>
       <View style={styles.screenArea}>{children}</View>
@@ -117,20 +118,21 @@ function ScreenShell({ children }: { children: React.ReactNode }) {
 function MainTabs() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
-      <Stack.Screen name="Dashboard" children={() => <ScreenShell><DashboardScreen /></ScreenShell>} />
-      <Stack.Screen name="Community" children={() => <ScreenShell><CommunityScreen /></ScreenShell>} />
-      <Stack.Screen name="Analysis" children={() => <ScreenShell><AnalysisScreen /></ScreenShell>} />
-      <Stack.Screen name="Settings" children={() => <ScreenShell><SettingsScreen /></ScreenShell>} />
-      <Stack.Screen name="Profile" children={() => <ScreenShell><ProfileScreen /></ScreenShell>} />
-      <Stack.Screen name="PlanSelection" children={() => <ScreenShell><PlanSelectionScreen /></ScreenShell>} />
-      <Stack.Screen name="Systems" children={() => <ScreenShell><SystemsScreen /></ScreenShell>} />
-      <Stack.Screen name="SystemPlans" children={() => <ScreenShell><SystemPlansScreen /></ScreenShell>} />
-      <Stack.Screen name="TermsCondition" children={() => <ScreenShell><TermsConditionScreen /></ScreenShell>} />
-      <Stack.Screen name="DepositRequest" children={() => <ScreenShell><DepositRequestScreen /></ScreenShell>} />
-      <Stack.Screen name="WithdrawalRequest" children={() => <ScreenShell><WithdrawalRequestScreen /></ScreenShell>} />
+      <Stack.Screen name="Dashboard" children={() => <MainShell><DashboardScreen /></MainShell>} />
+      <Stack.Screen name="Community" children={() => <MainShell><CommunityScreen /></MainShell>} />
+      <Stack.Screen name="Analysis" children={() => <MainShell><AnalysisScreen /></MainShell>} />
+      <Stack.Screen name="Settings" children={() => <MainShell><SettingsScreen /></MainShell>} />
+      <Stack.Screen name="Profile" children={() => <MainShell><ProfileScreen /></MainShell>} />
+      <Stack.Screen name="PlanSelection" children={() => <MainShell><PlanSelectionScreen /></MainShell>} />
+      <Stack.Screen name="Systems" children={() => <MainShell><SystemsScreen /></MainShell>} />
+      <Stack.Screen name="SystemPlans" children={() => <MainShell><SystemPlansScreen /></MainShell>} />
+      <Stack.Screen name="TermsCondition" children={() => <MainShell><TermsConditionScreen /></MainShell>} />
+      <Stack.Screen name="DepositRequest" children={() => <MainShell><DepositRequestScreen /></MainShell>} />
+      <Stack.Screen name="WithdrawalRequest" children={() => <MainShell><WithdrawalRequestScreen /></MainShell>} />
     </Stack.Navigator>
   );
 }
+
 
 export default function AppNavigator() {
   const { loading } = useAuth();
@@ -177,24 +179,25 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     position: 'absolute',
-    left: 14,
-    right: 14,
-    bottom: 14,
-    height: 76,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 78,
     paddingHorizontal: 10,
+    paddingTop: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: 'rgba(15, 23, 42, 0.96)',
-    borderRadius: 26,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'flex-start',
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.22,
-    shadowRadius: 24,
-    elevation: 14,
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 8,
   },
+
   tabItem: {
     flex: 1,
     alignItems: 'center',
@@ -216,9 +219,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.04)',
   },
   tabIconWrapActive: {
-    backgroundColor: '#00A86B',
+    backgroundColor: '#008751',
     transform: [{ scale: 1.04 }],
   },
+
   tabIcon: {
     fontSize: 18,
     color: '#A8B3C7',

@@ -116,13 +116,13 @@ export default function WithdrawalRequestScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Header */}
-          <View style={styles.header}>
+          {/* <View style={styles.header}>
             <Pressable onPress={() => navigation.goBack()} hitSlop={10}>
               <Text style={styles.backButton}>← Back</Text>
             </Pressable>
             <Text style={styles.title}>Request Withdrawal</Text>
             <View style={{ width: 30 }} />
-          </View>
+          </View> */}
 
           {/* Balance Info Card */}
           <View style={styles.balanceCard}>

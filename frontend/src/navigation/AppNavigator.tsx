@@ -1,6 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useNavigation, useNavigationState } from '@react-navigation/native';
-import { ActivityIndicator, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { ActivityIndicator, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '../context/AuthContext';
 import LoginScreen from '../screens/LoginScreen';
@@ -37,20 +37,7 @@ export type RootStackParamList = {
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
-
-type TabKey = 'Home' | 'Community' | 'Analysis' | 'Profile';
-type MainRouteName =
-  | 'Dashboard'
-  | 'Community'
-  | 'Analysis'
-  | 'Settings'
-  | 'Profile'
-  | 'PlanSelection'
-  | 'Systems'
-  | 'SystemPlans'
-  | 'TermsCondition'
-  | 'DepositRequest'
-  | 'WithdrawalRequest';
+const Tab = createBottomTabNavigator<RootStackParamList>();
 
 function LoadingScreen() {
   return (
@@ -61,87 +48,69 @@ function LoadingScreen() {
   );
 }
 
-function getTabForRoute(routeName: string): TabKey {
-  switch (routeName) {
-    case 'Community':
-      return 'Community';
-    case 'Analysis':
-      return 'Analysis';
-    case 'Profile':
-      return 'Profile';
-    default:
-      return 'Home';
-  }
-}
-
 function BottomTabs() {
-  const navigation = useNavigation<any>();
-  const routeName = useNavigationState((state) => state.routes[state.index]?.name || 'Dashboard');
-  const activeTab = getTabForRoute(routeName);
-
-  const tabs: Array<{ key: TabKey; label: string; icon: string; route: MainRouteName }> = [
-    { key: 'Home', label: 'Dashboard', icon: '🏠', route: 'Dashboard' },
-    { key: 'Analysis', label: 'Investments', icon: '📊', route: 'Analysis' },
-    { key: 'Community', label: 'Wallet', icon: '👛', route: 'Community' },
-    { key: 'Profile', label: 'Profile', icon: '☺', route: 'Profile' },
-  ];
-
-
   return (
-    <View style={styles.tabBar}>
-      {tabs.map((tab) => {
-        const focused = activeTab === tab.key;
-        return (
-          <Pressable
-            key={tab.key}
-            onPress={() => {
-              if (routeName === tab.route) return;
-
-              navigation.reset({
-                index: 0,
-                routes: [{ name: tab.route }],
-              });
-            }}
-            style={({ pressed }) => [styles.tabItem, pressed && styles.tabItemPressed]}
-          >
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarShowLabel: true,
+        tabBarActiveTintColor: '#FFFFFF',
+        tabBarInactiveTintColor: '#94A3B8',
+        tabBarStyle: styles.tabBar,
+        tabBarLabelStyle: styles.tabLabel,
+      }}
+    >
+      <Tab.Screen
+        name="Dashboard"
+        component={DashboardScreen}
+        options={{
+          tabBarLabel: 'Dashboard',
+          tabBarIcon: ({ focused }) => (
             <View style={[styles.tabIconWrap, focused && styles.tabIconWrapActive]}>
-              <Text style={[styles.tabIcon, focused && styles.tabIconActive]}>{tab.icon}</Text>
+              <Text style={[styles.tabIcon, focused && styles.tabIconActive]}>🏠</Text>
             </View>
-            <Text style={[styles.tabLabel, focused && styles.tabLabelActive]}>{tab.label}</Text>
-          </Pressable>
-        );
-      })}
-    </View>
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Analysis"
+        component={AnalysisScreen}
+        options={{
+          tabBarLabel: 'Investments',
+          tabBarIcon: ({ focused }) => (
+            <View style={[styles.tabIconWrap, focused && styles.tabIconWrapActive]}>
+              <Text style={[styles.tabIcon, focused && styles.tabIconActive]}>📊</Text>
+            </View>
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Community"
+        component={CommunityScreen}
+        options={{
+          tabBarLabel: 'Wallet',
+          tabBarIcon: ({ focused }) => (
+            <View style={[styles.tabIconWrap, focused && styles.tabIconWrapActive]}>
+              <Text style={[styles.tabIcon, focused && styles.tabIconActive]}>👛</Text>
+            </View>
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{
+          tabBarLabel: 'Profile',
+          tabBarIcon: ({ focused }) => (
+            <View style={[styles.tabIconWrap, focused && styles.tabIconWrapActive]}>
+              <Text style={[styles.tabIcon, focused && styles.tabIconActive]}>☺</Text>
+            </View>
+          ),
+        }}
+      />
+    </Tab.Navigator>
   );
 }
-
-function MainShell({ children }: { children: React.ReactNode }) {
-  return (
-    <View style={styles.shell}>
-      <View style={styles.screenArea}>{children}</View>
-      <BottomTabs />
-    </View>
-  );
-}
-
-function MainTabs() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
-      <Stack.Screen name="Dashboard" children={() => <MainShell><DashboardScreen /></MainShell>} />
-      <Stack.Screen name="Community" children={() => <MainShell><CommunityScreen /></MainShell>} />
-      <Stack.Screen name="Analysis" children={() => <MainShell><AnalysisScreen /></MainShell>} />
-      <Stack.Screen name="Settings" children={() => <MainShell><SettingsScreen /></MainShell>} />
-      <Stack.Screen name="Profile" children={() => <MainShell><ProfileScreen /></MainShell>} />
-      <Stack.Screen name="PlanSelection" children={() => <MainShell><PlanSelectionScreen /></MainShell>} />
-      <Stack.Screen name="Systems" children={() => <MainShell><SystemsScreen /></MainShell>} />
-      <Stack.Screen name="SystemPlans" children={() => <MainShell><SystemPlansScreen /></MainShell>} />
-      <Stack.Screen name="TermsCondition" children={() => <MainShell><TermsConditionScreen /></MainShell>} />
-      <Stack.Screen name="DepositRequest" children={() => <MainShell><DepositRequestScreen /></MainShell>} />
-      <Stack.Screen name="WithdrawalRequest" children={() => <MainShell><WithdrawalRequestScreen /></MainShell>} />
-    </Stack.Navigator>
-  );
-}
-
 
 export default function AppNavigator() {
   const { loading } = useAuth();
@@ -151,9 +120,9 @@ export default function AppNavigator() {
   }
 
   return (
-    <Stack.Navigator 
+    <Stack.Navigator
       initialRouteName="Login"
-      screenOptions={{ 
+      screenOptions={{
         headerShown: false,
         animation: 'slide_from_right',
       }}
@@ -161,7 +130,42 @@ export default function AppNavigator() {
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-      <Stack.Screen name="MainTabs" component={MainTabs} options={{ gestureEnabled: false }} />
+      <Stack.Screen name="MainTabs" component={BottomTabs} options={{ gestureEnabled: false }} />
+      <Stack.Screen
+        name="PlanSelection"
+        component={PlanSelectionScreen}
+        options={{ headerShown: true, title: 'Select Plan', headerBackTitle: 'Back' }}
+      />
+      <Stack.Screen
+        name="Systems"
+        component={SystemsScreen}
+        options={{ headerShown: true, title: 'Systems', headerBackTitle: 'Back' }}
+      />
+      <Stack.Screen
+        name="SystemPlans"
+        component={SystemPlansScreen}
+        options={{ headerShown: true, title: 'Plans', headerBackTitle: 'Back' }}
+      />
+      <Stack.Screen
+        name="TermsCondition"
+        component={TermsConditionScreen}
+        options={{ headerShown: true, title: 'Terms', headerBackTitle: 'Back' }}
+      />
+      <Stack.Screen
+        name="DepositRequest"
+        component={DepositRequestScreen}
+        options={{ headerShown: true, title: 'Deposit', headerBackTitle: 'Back' }}
+      />
+      <Stack.Screen
+        name="WithdrawalRequest"
+        component={WithdrawalRequestScreen}
+        options={{ headerShown: true, title: 'Withdraw', headerBackTitle: 'Back' }}
+      />
+      <Stack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{ headerShown: true, title: 'Settings', headerBackTitle: 'Back' }}
+      />
     </Stack.Navigator>
   );
 }
@@ -179,19 +183,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
-  shell: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  screenArea: {
-    flex: 1,
-    paddingBottom: 104,
-  },
   tabBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
     height: 78,
     paddingHorizontal: 10,
     paddingTop: 10,
@@ -207,18 +199,6 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
     elevation: 8,
   },
-
-  tabItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 18,
-    marginHorizontal: 3,
-    height: 60,
-  },
-  tabItemPressed: {
-    opacity: 0.92,
-  },
   tabIconWrap: {
     width: 36,
     height: 36,
@@ -232,7 +212,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#008751',
     transform: [{ scale: 1.04 }],
   },
-
   tabIcon: {
     fontSize: 18,
     color: '#A8B3C7',
@@ -244,11 +223,7 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontSize: 10,
-    color: '#94A3B8',
     fontWeight: '700',
     letterSpacing: 0.2,
-  },
-  tabLabelActive: {
-    color: '#FFFFFF',
   },
 });

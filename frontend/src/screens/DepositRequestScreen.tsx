@@ -6,7 +6,6 @@ import {
   Platform,
   Pressable,
   SafeAreaView,
-  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -86,33 +85,26 @@ export default function DepositRequestScreen() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [amount, transactionId, validateForm, navigation]);
+  }, [amount, transactionId, validateForm]);
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 0 }]}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Pressable onPress={() => navigation.goBack()} hitSlop={10}>
-              <Text style={styles.backButton}>← Back</Text>
-            </Pressable>
-            <Text style={styles.title}>Submit a Deposit</Text>
-            <View style={{ width: 30 }} />
-          </View>
-
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
+        
+        {/* Main Content Area */}
+        <View style={styles.mainContent}>
+          
           {/* Info Card */}
           <View style={styles.infoCard}>
             <Text style={styles.infoTitle}>How to Deposit</Text>
             <Text style={styles.infoText}>
-              1. Transfer funds to our business account via Easypaisa, JazzCash, or Bank Transfer{'\n'}
-              2. Enter the transaction ID and amount below{'\n'}
-              3. Submit the deposit request{'\n'}
-              4. Wait for admin verification (usually within 24 hours){'\n'}
-              5. Your balance updates automatically once approved
+              1. Transfer funds to our business account via Easypaisa or Bank Transfer{'\n'}
+              2. Enter the transaction ID and amount details below{'\n'}
+              3. Submit your validation request for admin verification
             </Text>
           </View>
 
+          {/* Business Details Frame */}
           <View style={styles.accountCard}>
             <Text style={styles.accountTitle}>Business Account Details</Text>
             <View style={styles.accountRow}>
@@ -124,41 +116,39 @@ export default function DepositRequestScreen() {
               <Text style={styles.accountLabel}>Account Number</Text>
               <Text style={styles.accountValue}>0300-1234567</Text>
             </View>
-            <View style={styles.accountDivider} />
-            <Text style={styles.accountNote}>
-              Send your payment to the account above, then submit the transaction ID below. A receipt will be generated and sent to admin for approval.
-            </Text>
           </View>
 
-          {/* Amount Field */}
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Amount (Rs.)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter amount to deposit"
-              placeholderTextColor="#94A3B8"
-              keyboardType="decimal-pad"
-              value={amount}
-              onChangeText={setAmount}
-              editable={!isSubmitting}
-            />
+          {/* Input Fields Content Block */}
+          <View style={styles.formBlock}>
+            {/* Amount Field */}
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Amount (Rs.)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter amount to deposit"
+                placeholderTextColor="#94A3B8"
+                keyboardType="decimal-pad"
+                value={amount}
+                onChangeText={setAmount}
+                editable={!isSubmitting}
+              />
+            </View>
+
+            {/* Transaction ID Field */}
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Transaction ID</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter transaction ID (e.g., DP123456789)"
+                placeholderTextColor="#94A3B8"
+                value={transactionId}
+                onChangeText={setTransactionId}
+                editable={!isSubmitting}
+              />
+            </View>
           </View>
 
-          {/* Transaction ID Field */}
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Transaction ID</Text>
-            <Text style={styles.fieldHelper}>From Easypaisa, JazzCash, or Bank Transfer</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter transaction ID (e.g., DP123456789)"
-              placeholderTextColor="#94A3B8"
-              value={transactionId}
-              onChangeText={setTransactionId}
-              editable={!isSubmitting}
-            />
-          </View>
-
-          {/* Summary Card */}
+          {/* Summary Framework Row */}
           <View style={styles.summaryCard}>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Deposit Amount</Text>
@@ -169,20 +159,23 @@ export default function DepositRequestScreen() {
             <View style={styles.summaryDivider} />
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Status</Text>
-              <Text style={styles.statusPending}>Pending Admin Approval</Text>
+              <Text style={styles.statusPending}>Pending Admin Verification</Text>
             </View>
           </View>
 
-          {/* Security Note */}
+          {/* Fixed Spacer to push elements into strict view boundaries */}
+          <View style={styles.flexSpacer} />
+
+          {/* Security Alert Frame */}
           <View style={styles.securityBox}>
             <Text style={styles.securityIcon}>🔒</Text>
             <Text style={styles.securityText}>
-              Your transaction is secure. Please keep your transaction ID safe for reference.
+              Your transaction records are verified via end-to-end cryptographic processing layers securely.
             </Text>
           </View>
-        </ScrollView>
+        </View>
 
-        {/* Submit Button */}
+        {/* Footer Fixed Process Button */}
         <View style={styles.footerButton}>
           <Pressable
             style={[styles.submitButton, (isSubmitting || !amount.trim() || !transactionId.trim()) && styles.submitButtonDisabled]}
@@ -226,165 +219,144 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
-  scrollContent: {
+  mainContent: {
+    flex: 1,
     paddingHorizontal: 16,
-    paddingVertical: 20,
-    paddingBottom: 100,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  backButton: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#0EA5E9',
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#0F172A',
+    paddingTop: 16,
+    paddingBottom: 10,
   },
   infoCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: 10,
+    padding: 10,
     borderLeftWidth: 4,
     borderLeftColor: '#0EA5E9',
-    marginBottom: 24,
+    marginBottom: 12,
   },
   infoTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: '#0F172A',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   infoText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#475569',
-    lineHeight: 18,
+    lineHeight: 15,
     fontWeight: '500',
   },
   accountCard: {
     backgroundColor: '#0F172A',
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 24,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
   },
   accountTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     color: '#FFFFFF',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   accountRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 6,
+    paddingVertical: 3,
   },
   accountLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#94A3B8',
     fontWeight: '600',
   },
   accountValue: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#FFFFFF',
     fontWeight: '700',
     textAlign: 'right',
-    flexShrink: 1,
   },
   accountDivider: {
     height: 1,
     backgroundColor: '#1E293B',
-    marginVertical: 6,
+    marginVertical: 4,
   },
-  accountNote: {
-    marginTop: 8,
-    fontSize: 12,
-    color: '#CBD5E1',
-    lineHeight: 17,
+  formBlock: {
+    gap: 10,
+    marginBottom: 12,
   },
   formGroup: {
-    marginBottom: 16,
+    width: '100%',
   },
   label: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: '#0F172A',
-    marginBottom: 6,
-  },
-  fieldHelper: {
-    fontSize: 11,
-    color: '#94A3B8',
-    marginBottom: 6,
-    fontWeight: '500',
+    marginBottom: 4,
   },
   input: {
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
     color: '#0F172A',
     backgroundColor: '#FFFFFF',
   },
   summaryCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: 10,
+    padding: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 4,
   },
   summaryLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: '#64748B',
   },
   summaryValue: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     color: '#0F172A',
   },
   summaryDivider: {
     height: 1,
     backgroundColor: '#E2E8F0',
-    marginVertical: 8,
+    marginVertical: 4,
   },
   statusPending: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: '#F59E0B',
   },
+  flexSpacer: {
+    flex: 1,
+  },
   securityBox: {
     backgroundColor: '#F0F9FF',
-    borderRadius: 10,
-    padding: 12,
+    borderRadius: 8,
+    padding: 10,
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
   },
   securityIcon: {
-    fontSize: 18,
+    fontSize: 14,
   },
   securityText: {
     flex: 1,
-    fontSize: 12,
+    fontSize: 11,
     color: '#0369A1',
     fontWeight: '500',
-    lineHeight: 16,
+    lineHeight: 14,
   },
   footerButton: {
     paddingHorizontal: 16,
@@ -395,8 +367,8 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     backgroundColor: '#0EA5E9',
-    paddingVertical: 14,
-    borderRadius: 10,
+    paddingVertical: 12,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -405,7 +377,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitButtonText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
     color: '#FFFFFF',
   },

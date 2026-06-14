@@ -37,7 +37,7 @@ export default function TermsConditionScreen() {
 
       try {
         await walletApi.selectPlan({ planId: selectedPlanId });
-        navigation.replace('Dashboard');
+        navigation.goBack();
       } catch (error) {
         Alert.alert(
           'Plan Selection Failed',

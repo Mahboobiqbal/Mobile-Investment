@@ -17,6 +17,7 @@ import SystemPlansScreen from '../screens/SystemPlansScreen';
 import CommunityScreen from '../screens/CommunityScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import ActivePlanHistoryScreen from '../screens/ActivePlanHistoryScreen';
 
 export type RootStackParamList = {
   Login: { email?: string; password?: string } | undefined;
@@ -26,12 +27,18 @@ export type RootStackParamList = {
   Systems: undefined;
   SystemPlans: { system?: any; systemId?: string } | undefined;
   Community: undefined;
-  TermsCondition: { selectedPlanId: string; selectedPlanName: string };
+  TermsCondition: { selectedPlanId: string; selectedPlanName: string; investmentAmount?: number } | undefined;
+  ActivePlanHistory: {
+    selectedPlanId: string;
+    selectedPlanName: string;
+    investmentAmount?: number;
+    dailyReturnRate?: number;
+  };
   Dashboard: undefined;
   Analysis: undefined;
   Settings: undefined;
   Profile: undefined;
-  DepositRequest: undefined;
+  DepositRequest: { selectedPlanId?: string; selectedPlanName?: string; investmentAmount?: number } | undefined;
   WithdrawalRequest: undefined;
   MainTabs: undefined;
 };
@@ -150,6 +157,11 @@ export default function AppNavigator() {
         name="TermsCondition"
         component={TermsConditionScreen}
         options={{ headerShown: true, title: 'Terms', headerBackTitle: 'Back' }}
+      />
+      <Stack.Screen
+        name="ActivePlanHistory"
+        component={ActivePlanHistoryScreen}
+        options={{ headerShown: true, title: 'Active Plan History', headerBackTitle: 'Back' }}
       />
       <Stack.Screen
         name="DepositRequest"

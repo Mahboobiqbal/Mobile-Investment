@@ -2,6 +2,13 @@ const Transaction = require('../models/Transaction');
 const User = require('../models/User');
 const Plan = require('../models/Plan');
 const InvestmentCategory = require('../models/InvestmentCategory');
+const UserInvestment = require('../models/UserInvestment');
+const { syncUserPlanState } = require('../utils/planState');
+
+const normalizeTransactionType = (value) => String(value || '').toLowerCase();
+const isPlanPurchaseType = (value) => normalizeTransactionType(value) === 'plan';
+const isWalletDepositType = (value) => normalizeTransactionType(value) === 'deposit';
+const isWithdrawalType = (value) => normalizeTransactionType(value) === 'withdrawal';
 
 const getPendingTransactions = async (req, res) => {
   try {
@@ -17,6 +24,12 @@ const getPendingTransactions = async (req, res) => {
 const getAllTransactions = async (req, res) => {
   try {
     const { status, page: pageStr, limit: limitStr } = req.query;
+
+    // Ensure planId / planName are always present in response for Deposit transactions
+    // even if older records were saved without them.
+    // We'll resolve missing plan info from either transaction.planId or the user's pending/active investment state.
+    
+
     const page = Math.max(1, parseInt(pageStr) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(limitStr) || 15));
     const skip = (page - 1) * limit;
@@ -60,7 +73,9 @@ const getAllTransactions = async (req, res) => {
 
 const reviewTransaction = async (req, res) => {
   try {
-    const { transactionId, action } = req.body;
+    const { transactionId, status } = req.body;
+    const action = req.body.action || (status === 'approved' ? 'approve' : status === 'rejected' ? 'reject' : status);
+
     if (!transactionId || !['approve', 'reject', 'withdraw'].includes(action)) {
       return res.status(400).json({ message: 'transactionId and action (approve/reject/withdraw) are required' });
     }
@@ -80,13 +95,54 @@ const reviewTransaction = async (req, res) => {
     }
 
     if (action === 'approve') {
-      transaction.status = 'approved';
-      if (transaction.type === 'Deposit') {
+      if (isPlanPurchaseType(transaction.type)) {
+        const planLookupId = transaction.planId || user.pendingPlanId || null;
+        const planLookupName = transaction.planName || null;
+
+        const plan = planLookupId
+          ? await Plan.findById(planLookupId).populate('category', 'name')
+          : planLookupName
+            ? await Plan.findOne({ name: planLookupName }).populate('category', 'name')
+            : null;
+
+        if (!plan) {
+          return res.status(404).json({ message: 'Selected plan not found' });
+        }
+
+        transaction.status = 'approved';
+        user.currentBalance += transaction.amount;
+
+        transaction.planId = plan._id;
+        transaction.planName = plan.name;
+        user.activePlan = plan.name;
+        user.activeCategory = plan.category._id;
+        user.pendingPlanId = null;
+        user.pendingInvestmentAmount = 0;
+
+        await UserInvestment.findOneAndUpdate(
+          { user: user._id, plan: plan._id },
+          {
+            user: user._id,
+            plan: plan._id,
+            category: plan.category._id,
+            investmentAmount: transaction.investmentAmount || transaction.amount,
+            dailyReturnRate: plan.dailyReturnRate,
+            status: 'active',
+          },
+          { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+
+        // Ensure activePlan is correctly resolved even if planId wasn't attached to the deposit at approval time.
+        // This uses existing active investment, otherwise falls back to latest approved deposit.
+        await user.save();
+        await syncUserPlanState(user._id, user);
+      } else if (isWalletDepositType(transaction.type)) {
+        transaction.status = 'approved';
         user.currentBalance += transaction.amount;
         await user.save();
       }
     } else if (action === 'withdraw') {
-      if (transaction.type !== 'Withdrawal') {
+      if (!isWithdrawalType(transaction.type)) {
         return res.status(400).json({ message: 'Only withdrawal transactions can be marked as withdrawn' });
       }
       if (user.currentBalance < transaction.amount) {
@@ -96,7 +152,15 @@ const reviewTransaction = async (req, res) => {
       user.currentBalance -= transaction.amount;
       await user.save();
     } else {
+      // Reject action
       transaction.status = 'rejected';
+
+        // If this was a plan-linked deposit rejection, clear pending plan
+      if (isPlanPurchaseType(transaction.type) && (transaction.planId || user.pendingPlanId)) {
+        user.pendingPlanId = null;
+        user.pendingInvestmentAmount = 0;
+        await user.save();
+      }
     }
 
     await transaction.save();
@@ -127,8 +191,19 @@ const getAllUsers = async (req, res) => {
       ]),
     ]);
 
+    const usersWithResolvedPlans = await Promise.all(
+      users.map(async (user) => {
+        if (user.activePlan && user.activePlan !== 'None' && user.activePlan !== '') {
+          return user;
+        }
+
+        const syncedUser = await syncUserPlanState(user._id, user);
+        return syncedUser || user;
+      })
+    );
+
     return res.status(200).json({
-      users,
+      users: usersWithResolvedPlans,
       pagination: {
         page,
         limit,
@@ -156,26 +231,27 @@ const getUserDetail = async (req, res) => {
     }
 
     const transactions = await Transaction.find({ user: userId }).sort({ createdAt: -1 });
+    const resolvedUser = await syncUserPlanState(userId, user);
 
     const stats = {
       totalDeposits: transactions
-        .filter((t) => t.type === 'Deposit' && t.status === 'approved' && !t.transactionId?.startsWith('ROI-DAILY-'))
+        .filter((t) => ['plan', 'deposit', 'Deposit'].includes(t.type) && t.status === 'approved' && !t.transactionId?.startsWith('ROI-DAILY-'))
         .reduce((sum, t) => sum + t.amount, 0),
       totalWithdrawals: transactions
-        .filter((t) => t.type === 'Withdrawal' && (t.status === 'approved' || t.status === 'withdrawn'))
+        .filter((t) => ['withdrawal', 'Withdrawal'].includes(t.type) && (t.status === 'approved' || t.status === 'withdrawn'))
         .reduce((sum, t) => sum + t.amount, 0),
       totalROI: transactions
         .filter((t) => t.transactionId?.startsWith('ROI-DAILY-'))
         .reduce((sum, t) => sum + t.amount, 0),
       pendingDeposits: transactions
-        .filter((t) => t.type === 'Deposit' && t.status === 'pending')
+        .filter((t) => ['plan', 'deposit', 'Deposit'].includes(t.type) && t.status === 'pending')
         .reduce((sum, t) => sum + t.amount, 0),
       pendingWithdrawals: transactions
-        .filter((t) => t.type === 'Withdrawal' && t.status === 'pending')
+        .filter((t) => ['withdrawal', 'Withdrawal'].includes(t.type) && t.status === 'pending')
         .reduce((sum, t) => sum + t.amount, 0),
     };
 
-    return res.status(200).json({ user, transactions, stats });
+    return res.status(200).json({ user: resolvedUser || user, transactions, stats });
   } catch (error) {
     return res.status(500).json({ message: error.message || 'Failed to fetch user details' });
   }
@@ -366,11 +442,11 @@ const getDashboardAnalytics = async (req, res) => {
         Transaction.countDocuments({ status: 'withdrawn' }),
         Transaction.countDocuments({ status: 'rejected' }),
         Transaction.aggregate([
-          { $match: { status: 'approved', type: 'Deposit' } },
+          { $match: { status: 'approved', type: { $in: ['plan', 'deposit', 'Deposit'] } } },
           { $group: { _id: null, totalDeposits: { $sum: '$amount' } } }
         ]),
         Transaction.aggregate([
-          { $match: { $or: [{ status: 'withdrawn' }, { status: 'approved', type: 'Withdrawal' }] } },
+          { $match: { $or: [{ status: 'withdrawn' }, { status: 'approved', type: 'withdrawal' }, { status: 'approved', type: 'Withdrawal' }] } },
           { $group: { _id: null, totalWithdrawals: { $sum: '$amount' } } }
         ]),
       ]),

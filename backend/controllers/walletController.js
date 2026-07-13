@@ -5,9 +5,11 @@ const InvestmentCategory = require('../models/InvestmentCategory');
 const UserInvestment = require('../models/UserInvestment');
 const { createAdminNotification } = require('./notificationsController');
 
+const normalizeTransactionType = (value) => String(value || '').toLowerCase();
+
 const submitDeposit = async (req, res) => {
   try {
-    const { amount, transactionId } = req.body;
+    const { amount, transactionId, planId, planName, investmentAmount, transactionType } = req.body;
     if (!amount || typeof amount !== 'number' || amount <= 0 || !transactionId) {
       return res.status(400).json({ message: 'A valid positive amount and transactionId are required' });
     }
@@ -16,29 +18,72 @@ const submitDeposit = async (req, res) => {
     if (existingAuth) {
       return res.status(400).json({ message: 'Transaction ID has already been submitted' });
     }
+    const user = await User.findById(req.user.id);
+    const normalizedType = transactionType ? normalizeTransactionType(transactionType) : (planId ? 'plan' : 'deposit');
+    const isPlanPurchase = normalizedType === 'plan';
+
+    let plan = null;
+    if (isPlanPurchase) {
+      if (!planId) {
+        return res.status(400).json({ message: 'planId is required for plan purchases' });
+      }
+
+      plan = await Plan.findById(planId).populate('category', 'name');
+      if (!plan || !plan.isActive) {
+        return res.status(400).json({ message: 'Invalid or inactive plan' });
+      }
+      if (amount < plan.minInvestment) {
+        return res.status(400).json({ message: `Minimum investment for this plan is ${plan.minInvestment}` });
+      }
+      if (plan.maxInvestment && amount > plan.maxInvestment) {
+        return res.status(400).json({ message: `Maximum investment for this plan is ${plan.maxInvestment}` });
+      }
+
+      user.pendingPlanId = plan._id;
+      user.pendingInvestmentAmount = investmentAmount || amount;
+      await user.save();
+    }
 
     const transaction = await Transaction.create({
       user: req.user.id,
       amount,
-      type: 'Deposit',
+      type: isPlanPurchase ? 'plan' : 'deposit',
       transactionId,
       status: 'pending',
+      planId: isPlanPurchase ? (plan?._id || planId) : null,
+      planName: isPlanPurchase ? (plan?.name || planName || '') : '',
+      investmentAmount: isPlanPurchase ? (investmentAmount || amount) : 0,
     });
 
     // Notify admin that a deposit was requested
     try {
-      const user = await User.findById(req.user.id).select('email');
+      const userData = await User.findById(req.user.id).select('email');
       await createAdminNotification({
-        title: 'New Deposit Requested',
-        message: `Deposit request submitted (TID: ${transactionId}, Amount: ${amount}).`,
-        meta: { transactionId, amount, userId: req.user.id, userEmail: user?.email },
+        title: isPlanPurchase ? 'New Plan Purchase Requested' : 'New Wallet Deposit Requested',
+        message: isPlanPurchase
+          ? `Plan purchase request submitted (Plan: ${plan?.name || planName || 'Unknown'}, TID: ${transactionId}, Amount: ${amount}).`
+          : `Wallet deposit request submitted (TID: ${transactionId}, Amount: ${amount}).`,
+        meta: {
+          transactionId,
+          amount,
+          userId: req.user.id,
+          userEmail: userData?.email,
+          planId: isPlanPurchase ? (plan?._id || planId || null) : null,
+          planName: isPlanPurchase ? (plan?.name || planName || '') : '',
+          transactionType: transaction.type,
+        },
       });
     } catch (e) {
       // notification failure shouldn't block user flow
       console.error('Failed to create admin notification (deposit):', e.message);
     }
 
-    return res.status(201).json({ message: 'Deposit submitted successfully. Waiting for admin approval.', transaction });
+    return res.status(201).json({
+      message: isPlanPurchase
+        ? 'Plan purchase submitted successfully. Waiting for admin approval.'
+        : 'Wallet deposit submitted successfully. Waiting for admin approval.',
+      transaction,
+    });
   } catch (error) {
     return res.status(500).json({ message: error.message || 'Deposit submission failed' });
   }
@@ -62,7 +107,7 @@ const requestWithdrawal = async (req, res) => {
     const transaction = await Transaction.create({
       user: req.user.id,
       amount,
-      type: 'Withdrawal',
+      type: 'withdrawal',
       targetPhone,
       status: 'pending',
     });
@@ -99,32 +144,12 @@ const selectPlan = async (req, res) => {
 
     const user = await User.findById(req.user.id);
     
-    // If amount is provided, create a UserInvestment record
-    if (typeof amount === 'number' && amount > 0) {
-      const existingInvestment = await UserInvestment.findOne({ user: req.user.id, plan: planId });
-      
-      if (existingInvestment) {
-        // Update existing investment
-        existingInvestment.investmentAmount += amount;
-        existingInvestment.status = 'active';
-        await existingInvestment.save();
-      } else {
-        // Create new investment
-        await UserInvestment.create({
-          user: req.user.id,
-          plan: planId,
-          category: plan.category._id,
-          investmentAmount: amount,
-          dailyReturnRate: plan.dailyReturnRate,
-          status: 'active',
-        });
-      }
-    }
-
-    user.activePlan = plan.name;
+    // Store pending plan (don't activate yet - wait for deposit approval)
+    user.pendingPlanId = planId;
+    user.pendingInvestmentAmount = amount || 0;
     await user.save();
 
-    return res.status(200).json({ message: `Successfully subscribed to ${plan.name}`, activePlan: user.activePlan });
+    return res.status(200).json({ message: `Plan ${plan.name} selected. Please complete deposit to activate.`, pendingPlan: plan.name });
   } catch (error) {
     return res.status(500).json({ message: error.message || 'Plan selection failed' });
   }
@@ -183,7 +208,7 @@ const distributeDailyProfit = async (req, res) => {
         const transaction = await Transaction.create({
           user: user._id,
           amount: profit,
-          type: 'Deposit',
+          type: 'deposit',
           transactionId: `ROI-DAILY-${dateString}-${user._id}`,
           status: 'approved',
         });

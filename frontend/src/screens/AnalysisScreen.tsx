@@ -20,7 +20,7 @@ import ErrorModal from '../components/ErrorModal';
 
 interface Transaction {
   _id: string;
-  type: 'Deposit' | 'Withdrawal' | 'roi';
+  type: 'plan' | 'deposit' | 'withdrawal' | 'Deposit' | 'Withdrawal' | 'roi';
   amount: number;
   status: string;
   createdAt: string;
@@ -84,8 +84,8 @@ export default function AnalysisScreen() {
 
   const getTransactionStats = (filteredTxs: Transaction[]) => {
     return {
-      deposits: filteredTxs.filter((tx) => tx.type === 'Deposit').reduce((sum, tx) => sum + tx.amount, 0),
-      withdrawals: filteredTxs.filter((tx) => tx.type === 'Withdrawal').reduce((sum, tx) => sum + tx.amount, 0),
+      deposits: filteredTxs.filter((tx) => ['plan', 'deposit', 'Deposit'].includes(tx.type)).reduce((sum, tx) => sum + tx.amount, 0),
+      withdrawals: filteredTxs.filter((tx) => ['withdrawal', 'Withdrawal'].includes(tx.type)).reduce((sum, tx) => sum + tx.amount, 0),
       roi: filteredTxs.filter((tx) => tx.type === 'roi').reduce((sum, tx) => sum + tx.amount, 0),
       count: filteredTxs.length,
     };
@@ -104,9 +104,13 @@ export default function AnalysisScreen() {
   };
 
   const getTransactionTypeLabel = (type: string) => {
-    switch (type) {
+    switch (type.toLowerCase()) {
+      case 'plan':
+        return 'Plan Purchase';
+      case 'deposit':
       case 'Deposit':
         return 'Deposit';
+      case 'withdrawal':
       case 'Withdrawal':
         return 'Withdrawal';
       case 'roi':
@@ -117,10 +121,12 @@ export default function AnalysisScreen() {
   };
 
   const getTransactionTypeColor = (type: string) => {
-    switch (type) {
-      case 'Deposit':
+    switch (type.toLowerCase()) {
+      case 'plan':
+        return '#8B5CF6';
+      case 'deposit':
         return '#0EA5E9';
-      case 'Withdrawal':
+      case 'withdrawal':
         return '#EF4444';
       case 'roi':
         return '#10B981';
@@ -130,10 +136,12 @@ export default function AnalysisScreen() {
   };
 
   const getTransactionTypeIcon = (type: string) => {
-    switch (type) {
-      case 'Deposit':
+    switch (type.toLowerCase()) {
+      case 'plan':
+        return '★';
+      case 'deposit':
         return '↓';
-      case 'Withdrawal':
+      case 'withdrawal':
         return '↑';
       case 'roi':
         return '📈';
@@ -253,7 +261,7 @@ export default function AnalysisScreen() {
 
                    <View style={styles.transactionAmountContainer}>
                      <Text style={[styles.transactionAmount, { color: getTransactionTypeColor(item.type) }]}>
-                       {item.type === 'Withdrawal' ? '-' : '+'}
+                       {['withdrawal', 'Withdrawal'].includes(item.type) ? '-' : '+'}
                        {formatCurrency(item.amount)}
                      </Text>
 <Text style={[styles.transactionStatus, { color: (item.status || '').toLowerCase() === 'approved' ? '#10B981' : '#F59E0B' }]}>

@@ -49,6 +49,15 @@ const userSchema = new mongoose.Schema(
 			type: String,
 			default: 'None',
 		},
+		pendingPlanId: {
+			type: mongoose.Schema.Types.ObjectId,
+			ref: 'Plan',
+			default: null,
+		},
+		pendingInvestmentAmount: {
+			type: Number,
+			default: 0,
+		},
 		isVerified: {
 			type: Boolean,
 			default: false,

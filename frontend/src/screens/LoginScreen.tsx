@@ -52,10 +52,14 @@ export default function LoginScreen() {
 
       await login(token, normalizedUser);
 
-      // Enter the main tab navigator after login so Home, Community, Analysis, Settings, and Profile are available.
+      const hasActivePlan = Boolean(
+        normalizedUser.activePlan &&
+          normalizedUser.activePlan !== 'None' &&
+          normalizedUser.activePlan.trim() !== ''
+      );
       navigation.reset({
         index: 0,
-        routes: [{ name: 'MainTabs' as never }],
+        routes: [{ name: (hasActivePlan ? 'MainTabs' : 'PlanSelection') as never }],
       });
     } catch (error) {
       const axiosError = error as AxiosError<{ message?: string }>;

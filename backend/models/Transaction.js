@@ -14,25 +14,38 @@ const transactionSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['Deposit', 'Withdrawal'],
+      enum: ['plan', 'deposit', 'withdrawal', 'Deposit', 'Withdrawal'],
       required: true,
     },
     transactionId: {
       type: String,
       required: function () {
-        return this.type === 'Deposit';
+        return ['plan', 'deposit', 'Deposit'].includes(this.type);
       },
     },
     targetPhone: {
       type: String,
       required: function () {
-        return this.type === 'Withdrawal';
+        return ['withdrawal', 'Withdrawal'].includes(this.type);
       },
     },
     status: {
       type: String,
       enum: ['pending', 'approved', 'rejected', 'withdrawn'],
       default: 'pending',
+    },
+    planId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Plan',
+      default: null,
+    },
+    planName: {
+      type: String,
+      default: '',
+    },
+    investmentAmount: {
+      type: Number,
+      default: 0,
     },
   },
   { timestamps: true }

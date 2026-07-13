@@ -12,9 +12,11 @@ interface Transaction {
   _id: string;
   user: { _id: string; name: string; email: string };
   amount: number;
-  type: 'Deposit' | 'Withdrawal';
+  type: 'plan' | 'deposit' | 'withdrawal' | 'Deposit' | 'Withdrawal';
   transactionId?: string;
   targetPhone?: string;
+  planId?: string | { _id: string } | null;
+  planName?: string;
   status: string;
   createdAt: string;
 }
@@ -187,7 +189,12 @@ export default function Transactions() {
     setActionLoading(txId);
     try {
       await api.post('/admin/review-transaction', { transactionId: txId, action });
+      // Refresh current tab
       fetchTransactions(pagination.page);
+      // NOTE: Users page activation indicator is driven by user.activePlan from the backend.
+      // If Users page is still stale after returning from Transactions, it will be updated on its next fetch.
+
+
     } catch (err: any) {
       alert(err.response?.data?.message || 'Action failed');
     } finally {
@@ -333,10 +340,14 @@ export default function Transactions() {
             </div>
           ) : (
             filtered.map((tx, index) => {
-              const isDeposit = tx.type === 'Deposit';
+              const normalizedType = String(tx.type || '').toLowerCase();
+              const isPlanPurchase = normalizedType === 'plan';
+              const isWalletDeposit = normalizedType === 'deposit';
+              const isDeposit = isPlanPurchase || isWalletDeposit;
               const canAction = tx.status === 'pending';
               const statusS = statusStyles[tx.status] || statusStyles.pending;
               const StatusIcon = statusS.icon;
+              const planId = typeof tx.planId === 'string' ? tx.planId : tx.planId?._id;
 
               return (
                 <div key={tx._id}
@@ -346,23 +357,25 @@ export default function Transactions() {
                     {/* Left: Avatar + Info */}
                     <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
                       <div className={`relative flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl text-xs sm:text-sm font-bold text-white shadow-lg ${
-                        isDeposit
-                          ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-emerald-500/25'
-                          : 'bg-gradient-to-br from-orange-500 to-rose-500 shadow-orange-500/25'
+                        isPlanPurchase
+                          ? 'bg-gradient-to-br from-indigo-500 to-violet-600 shadow-indigo-500/25'
+                          : isDeposit
+                            ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-emerald-500/25'
+                            : 'bg-gradient-to-br from-orange-500 to-rose-500 shadow-orange-500/25'
                       }`}>
                         {getInitials(tx.user.name)}
-                        <div className={`absolute -bottom-1 -right-1 flex h-4 w-4 sm:h-5 sm:w-5 items-center justify-center rounded-full border-2 border-white ${isDeposit ? 'bg-emerald-500' : 'bg-orange-500'}`}>
-                          {isDeposit ? <ArrowDownCircle className="h-2.5 w-2.5 text-white" /> : <ArrowUpCircle className="h-2.5 w-2.5 text-white" />}
+                        <div className={`absolute -bottom-1 -right-1 flex h-4 w-4 sm:h-5 sm:w-5 items-center justify-center rounded-full border-2 border-white ${isPlanPurchase ? 'bg-indigo-500' : isDeposit ? 'bg-emerald-500' : 'bg-orange-500'}`}>
+                          {isPlanPurchase ? <Sparkles className="h-2.5 w-2.5 text-white" /> : isDeposit ? <ArrowDownCircle className="h-2.5 w-2.5 text-white" /> : <ArrowUpCircle className="h-2.5 w-2.5 text-white" />}
                         </div>
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 sm:gap-2.5 flex-wrap">
                           <span className="text-sm font-bold text-slate-900 truncate max-w-[140px] sm:max-w-none">{tx.user.name}</span>
                           <span className={`inline-flex items-center gap-1 rounded-lg px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider ${
-                            isDeposit ? 'bg-emerald-50 text-emerald-700' : 'bg-orange-50 text-orange-700'
+                            isPlanPurchase ? 'bg-indigo-50 text-indigo-700' : isDeposit ? 'bg-emerald-50 text-emerald-700' : 'bg-orange-50 text-orange-700'
                           }`}>
-                            {isDeposit ? <ArrowDownCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> : <ArrowUpCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3" />}
-                            {tx.type}
+                            {isPlanPurchase ? <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> : isDeposit ? <ArrowDownCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> : <ArrowUpCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3" />}
+                            {isPlanPurchase ? 'Plan Purchase' : isDeposit ? 'Deposit' : 'Withdrawal'}
                           </span>
                           <StatusBadge status={tx.status} />
                         </div>
@@ -375,6 +388,18 @@ export default function Transactions() {
                             <span className="flex items-center gap-1 sm:gap-1.5">
                               <Hash className="h-3 w-3" />
                               <span className="hidden sm:inline">TID:</span> {tx.transactionId}
+                            </span>
+                          )}
+                          {isPlanPurchase && tx.planName && (
+                            <span className="flex items-center gap-1 sm:gap-1.5">
+                              <Sparkles className="h-3 w-3" />
+                              <span className="hidden sm:inline">Plan:</span> {tx.planName}
+                            </span>
+                          )}
+                          {isPlanPurchase && planId && (
+                            <span className="flex items-center gap-1 sm:gap-1.5">
+                              <Hash className="h-3 w-3" />
+                              <span className="hidden sm:inline">Plan ID:</span> {planId}
                             </span>
                           )}
                           {!isDeposit && tx.targetPhone && (
@@ -395,15 +420,15 @@ export default function Transactions() {
                     {/* Right: Amount + Actions */}
                     <div className="flex shrink-0 flex-col items-end gap-1.5 sm:flex-row sm:items-center sm:gap-4">
                       <div className="text-right">
-                        <p className={`text-base sm:text-xl font-bold ${isDeposit ? 'text-emerald-600' : 'text-orange-600'}`}>
-                          {isDeposit ? '+' : '-'}Rs. {tx.amount.toLocaleString()}
+                        <p className={`text-base sm:text-xl font-bold ${isPlanPurchase || isDeposit ? 'text-emerald-600' : 'text-orange-600'}`}>
+                          {isPlanPurchase || isDeposit ? '+' : '-'}Rs. {tx.amount.toLocaleString()}
                         </p>
                       </div>
 
                       {/* Action Buttons for pending */}
                       {canAction && (
                         <div className="hidden sm:flex items-center gap-1.5">
-                          {isDeposit ? (
+                          {isPlanPurchase || isDeposit ? (
                             <>
                               <ActionButton variant="approve" icon={ShieldCheck} label="Approve"
                                 onClick={() => handleReview(tx._id, 'approve')} loading={actionLoading === tx._id} />
@@ -426,7 +451,7 @@ export default function Transactions() {
                   {/* Mobile Actions */}
                   {canAction && (
                     <div className="sm:hidden mt-3 pt-3 border-t border-slate-100 flex items-center gap-2">
-                      {isDeposit ? (
+                      {isPlanPurchase || isDeposit ? (
                         <>
                           <ActionButton variant="approve" icon={ShieldCheck} label="Approve"
                             onClick={() => handleReview(tx._id, 'approve')} loading={actionLoading === tx._id} />

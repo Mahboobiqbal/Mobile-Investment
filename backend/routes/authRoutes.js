@@ -1,6 +1,6 @@
 const express = require('express');
 
-const { forgotPassword, getUserDashboardStats, getUserInvestments, getUserProfile, loginUser, registerUser, resetPassword, updatePassword, verifyOtp } = require('../controllers/authController');
+const { forgotPassword, getUserDashboardStats, getUserInvestments, getUserProfile, loginUser, registerUser, resetPassword, updatePassword, updateUserProfile, verifyOtp } = require('../controllers/authController');
 const authMiddleware = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -142,6 +142,8 @@ router.post('/reset-password', resetPassword);
  *         description: User profile
  */
 router.get('/profile', authMiddleware, getUserProfile);
+
+router.put('/profile', authMiddleware, updateUserProfile);
 
 /**
  * @openapi

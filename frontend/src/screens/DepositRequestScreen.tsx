@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -11,11 +11,12 @@ import {
   Text,
   TextInput,
   View,
+  ScrollView,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { AxiosError } from 'axios';
 
-import { walletApi } from '../services/api/walletApi';
+import { walletApi, type InvestmentPlan } from '../services/api/walletApi';
 import { useAuth } from '../context/AuthContext';
 import SuccessModal from '../components/SuccessModal';
 import ErrorModal from '../components/ErrorModal';
@@ -24,16 +25,47 @@ interface ApiErrorResponse {
   message?: string;
 }
 
+type DepositRoute = RouteProp<
+  { DepositRequest: { selectedPlanId?: string; selectedPlanName?: string; investmentAmount?: number } | undefined },
+  'DepositRequest'
+>;
+
+const isPlanPurchase = (selectedPlanId?: string) => Boolean(selectedPlanId);
+
 export default function DepositRequestScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
+  const route = useRoute<DepositRoute>();
   const { userData } = useAuth();
 
-  const [amount, setAmount] = useState('');
+  const selectedPlanId = route.params?.selectedPlanId;
+  const selectedPlanName = route.params?.selectedPlanName;
+  const investmentAmount = route.params?.investmentAmount;
+
+  const [amount, setAmount] = useState(investmentAmount ? String(investmentAmount) : '');
   const [transactionId, setTransactionId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const [plan, setPlan] = useState<InvestmentPlan | null>(null);
+  const [planLoading, setPlanLoading] = useState(false);
   const [successModal, setSuccessModal] = useState({ visible: false });
   const [errorModal, setErrorModal] = useState({ visible: false, title: '', message: '' });
+
+  useEffect(() => {
+    if (selectedPlanId) {
+      const fetchPlan = async () => {
+        setPlanLoading(true);
+        try {
+          const response = await walletApi.getPlans();
+          const foundPlan = response.data.plans.find((p: InvestmentPlan) => p._id === selectedPlanId);
+          setPlan(foundPlan || null);
+        } catch (error) {
+          console.error('Failed to fetch plan:', error);
+        } finally {
+          setPlanLoading(false);
+        }
+      };
+      fetchPlan();
+    }
+  }, [selectedPlanId]);
 
   const validateForm = useCallback(() => {
     if (!amount.trim()) {
@@ -47,13 +79,23 @@ export default function DepositRequestScreen() {
       return false;
     }
 
+    if (plan && numAmount < plan.minInvestment) {
+      Alert.alert('Invalid Amount', `Minimum investment for this plan is Rs. ${plan.minInvestment.toLocaleString('en-PK')}.`);
+      return false;
+    }
+
+    if (plan && plan.maxInvestment && numAmount > plan.maxInvestment) {
+      Alert.alert('Invalid Amount', `Maximum investment for this plan is Rs. ${plan.maxInvestment.toLocaleString('en-PK')}.`);
+      return false;
+    }
+
     if (!transactionId.trim()) {
       Alert.alert('Missing Transaction ID', 'Please enter your Easypaisa or bank transaction ID.');
       return false;
     }
 
     return true;
-  }, [amount, transactionId]);
+  }, [amount, transactionId, plan]);
 
   const handleSubmitDeposit = useCallback(async () => {
     if (!validateForm()) {
@@ -68,6 +110,10 @@ export default function DepositRequestScreen() {
       await walletApi.deposit({
         amount: numAmount,
         transactionId: transactionId.trim(),
+        transactionType: isPlanPurchase(selectedPlanId) ? 'plan' : 'deposit',
+        planId: selectedPlanId,
+        planName: selectedPlanName,
+        investmentAmount: isPlanPurchase(selectedPlanId) ? (investmentAmount || numAmount) : 0,
       });
 
       setSuccessModal({ visible: true });
@@ -85,15 +131,55 @@ export default function DepositRequestScreen() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [amount, transactionId, validateForm]);
+  }, [amount, investmentAmount, selectedPlanId, selectedPlanName, transactionId, validateForm]);
+
+  const formatCurrency = (amt: number) =>
+    `Rs. ${amt.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  const dailyReturn = plan && amount ? parseFloat(amount) * plan.dailyReturnRate : 0;
+  const weeklyReturn = dailyReturn * 7;
+  const monthlyReturn = dailyReturn * 30;
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 0 }]}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
-        
-        {/* Main Content Area */}
-        <View style={styles.mainContent}>
-          
+        <ScrollView contentContainerStyle={styles.mainContent} showsVerticalScrollIndicator={false}>
+
+          {/* Plan Summary Card */}
+          {selectedPlanName && (
+            <View style={styles.planSummaryCard}>
+              <Text style={styles.planSummaryTitle}>Selected Plan: {selectedPlanName}</Text>
+              {plan && (
+                <>
+                  <View style={styles.planSummaryRow}>
+                    <Text style={styles.planSummaryLabel}>Daily Return Rate</Text>
+                    <Text style={styles.planSummaryValue}>{(plan.dailyReturnRate * 100).toFixed(2)}%</Text>
+                  </View>
+                  <View style={styles.planSummaryDivider} />
+                  <View style={styles.planSummaryRow}>
+                    <Text style={styles.planSummaryLabel}>Investment Amount</Text>
+                    <Text style={styles.planSummaryValue}>{formatCurrency(parseFloat(amount) || 0)}</Text>
+                  </View>
+                  <View style={styles.planSummaryDivider} />
+                  <View style={styles.planSummaryRow}>
+                    <Text style={styles.planSummaryLabel}>Projected Daily Return</Text>
+                    <Text style={styles.planSummaryValueHighlight}>{formatCurrency(dailyReturn)}</Text>
+                  </View>
+                  <View style={styles.planSummaryDivider} />
+                  <View style={styles.planSummaryRow}>
+                    <Text style={styles.planSummaryLabel}>Projected Weekly Return</Text>
+                    <Text style={styles.planSummaryValue}>{formatCurrency(weeklyReturn)}</Text>
+                  </View>
+                  <View style={styles.planSummaryDivider} />
+                  <View style={styles.planSummaryRow}>
+                    <Text style={styles.planSummaryLabel}>Projected Monthly Return</Text>
+                    <Text style={styles.planSummaryValue}>{formatCurrency(monthlyReturn)}</Text>
+                  </View>
+                </>
+              )}
+            </View>
+          )}
+
           {/* Info Card */}
           <View style={styles.infoCard}>
             <Text style={styles.infoTitle}>How to Deposit</Text>
@@ -125,13 +211,16 @@ export default function DepositRequestScreen() {
               <Text style={styles.label}>Amount (Rs.)</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Enter amount to deposit"
+                placeholder={investmentAmount ? `Pre-filled: ${formatCurrency(investmentAmount)}` : 'Enter amount to deposit'}
                 placeholderTextColor="#94A3B8"
                 keyboardType="decimal-pad"
                 value={amount}
                 onChangeText={setAmount}
-                editable={!isSubmitting}
+                editable={!isSubmitting && !investmentAmount}
               />
+              {investmentAmount && (
+                <Text style={styles.prefilledNote}>Amount pre-filled from plan selection</Text>
+              )}
             </View>
 
             {/* Transaction ID Field */}
@@ -148,24 +237,6 @@ export default function DepositRequestScreen() {
             </View>
           </View>
 
-          {/* Summary Framework Row */}
-          <View style={styles.summaryCard}>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Deposit Amount</Text>
-              <Text style={styles.summaryValue}>
-                {amount ? `Rs. ${parseFloat(amount).toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
-              </Text>
-            </View>
-            <View style={styles.summaryDivider} />
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Status</Text>
-              <Text style={styles.statusPending}>Pending Admin Verification</Text>
-            </View>
-          </View>
-
-          {/* Fixed Spacer to push elements into strict view boundaries */}
-          <View style={styles.flexSpacer} />
-
           {/* Security Alert Frame */}
           <View style={styles.securityBox}>
             <Text style={styles.securityIcon}>🔒</Text>
@@ -173,7 +244,7 @@ export default function DepositRequestScreen() {
               Your transaction records are verified via end-to-end cryptographic processing layers securely.
             </Text>
           </View>
-        </View>
+        </ScrollView>
 
         {/* Footer Fixed Process Button */}
         <View style={styles.footerButton}>
@@ -197,7 +268,12 @@ export default function DepositRequestScreen() {
         title="Deposit Submitted!"
         message="Your balance will update automatically as soon as the admin verifies your transaction ID."
         autoCloseMs={2500}
-        onClose={() => navigation.goBack()}
+        onClose={() =>
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'MainTabs' }],
+          })
+        }
       />
 
       {/* Error Modal */}
@@ -220,10 +296,50 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   mainContent: {
-    flex: 1,
+    flexGrow: 1,
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 10,
+  },
+  planSummaryCard: {
+    backgroundColor: '#F0FDF4',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  planSummaryTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#052E16',
+    marginBottom: 12,
+  },
+  planSummaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  planSummaryLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#166534',
+  },
+  planSummaryValue: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#15803D',
+  },
+  planSummaryValueHighlight: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#052E16',
+  },
+  planSummaryDivider: {
+    height: 1,
+    backgroundColor: '#DCFCE7',
+    marginVertical: 4,
   },
   infoCard: {
     backgroundColor: '#FFFFFF',
@@ -302,42 +418,11 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     backgroundColor: '#FFFFFF',
   },
-  summaryCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: 10,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  summaryLabel: {
-    fontSize: 11,
+  prefilledNote: {
+    fontSize: 10,
+    color: '#059669',
     fontWeight: '600',
-    color: '#64748B',
-  },
-  summaryValue: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  summaryDivider: {
-    height: 1,
-    backgroundColor: '#E2E8F0',
-    marginVertical: 4,
-  },
-  statusPending: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#F59E0B',
-  },
-  flexSpacer: {
-    flex: 1,
+    marginTop: 4,
   },
   securityBox: {
     backgroundColor: '#F0F9FF',

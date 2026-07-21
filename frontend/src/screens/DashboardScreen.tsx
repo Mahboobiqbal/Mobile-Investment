@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -15,7 +15,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { AxiosError } from 'axios';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import api from '../services/api';
@@ -35,6 +35,7 @@ interface UserProfileResponse {
     role: 'user' | 'admin';
     currentBalance: number;
     activePlan?: string;
+    pendingInvestmentAmount?: number;
     phone?: string;
     dp?: string;
     isVerified?: boolean;
@@ -62,7 +63,7 @@ interface InvestmentPlan {
 interface UserInvestment {
   _id: string;
   user: string;
-  plan: InvestmentPlan;
+  plan?: InvestmentPlan | null;
   category: { _id: string; name: string };
   investmentAmount: number;
   dailyReturnRate: number;
@@ -85,7 +86,7 @@ interface ApiError {
 }
 
 export default function DashboardScreen() {
-  const { logout } = useAuth();
+  const { logout, refreshUserData } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { height: screenHeight } = useWindowDimensions();
   
@@ -136,6 +137,7 @@ export default function DashboardScreen() {
       });
       setSystems(systemsRes.data.systems || []);
       setInvestments(investmentsRes.data.investments || []);
+      await refreshUserData();
     } catch (err) {
       const axiosError = err as AxiosError<ApiError>;
       const errorMessage = axiosError.response?.data?.message || axiosError.message || 'Failed to load dashboard data';
@@ -150,11 +152,13 @@ export default function DashboardScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [refreshUserData]);
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchDashboardData();
+    }, [fetchDashboardData])
+  );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -263,6 +267,9 @@ export default function DashboardScreen() {
 
  const balanceDisplay = showBalance ? formatCurrency(dashboardData.user?.currentBalance || 0) : '••••••';
   const displayedUserName = dashboardData.user?.name || 'User';
+  // Prefer backend investments status; activePlan can be name-based and may be stale.
+  const hasActivePlan = investments.some((investment) => investment.status === 'active') ||
+    Boolean(dashboardData.user?.activePlan && dashboardData.user.activePlan !== 'None');
 
   return (
     <SafeAreaView style={styles.container}>
@@ -307,11 +314,9 @@ export default function DashboardScreen() {
             <View style={styles.verticalDivider} />
 
             <View style={styles.walletCardRight}>
-              <Pressable style={styles.walletCircleIcon} onPress={handleBalanceToggle} hitSlop={10}>
+              <Pressable onPress={handleBalanceToggle} hitSlop={10}>
+
                 <Text style={{ fontSize: isSmallScreen ? 14 : 18 }}>{showBalance ? '👁️' : '🔒'}</Text>
-              </Pressable>
-              <Pressable style={[styles.addMoneyButton, { paddingVertical: isSmallScreen ? 5 : 8 }]} onPress={() => navigation.navigate('DepositRequest' as never)}>
-                <Text style={styles.addMoneyText}>Add Money</Text>
               </Pressable>
             </View>
           </View>
@@ -411,10 +416,10 @@ export default function DashboardScreen() {
             </View>
           </View>
 
-          {/* 5. INVESTMENT PLANS DATA MATRIX TABLE */}
+          {/* 5. ACTIVE PLAN DATA MATRIX TABLE */}
           <View>
             <View style={styles.tableHeaderNavigationRow}>
-              <Text style={styles.sectionTitle}>Investment Plans</Text>
+              <Text style={styles.sectionTitle}>Active Plan</Text>
               <Pressable onPress={() => navigation.navigate('Systems' as never)}>
                 <Text style={styles.viewAllLink}>View All ›</Text>
               </Pressable>
@@ -423,43 +428,102 @@ export default function DashboardScreen() {
             <View style={styles.tableMainWrapperCard}>
               <View style={styles.tableHeaderBackgroundRow}>
                 <Text style={[styles.thElement, { flex: 0.6, textAlign: 'center' }]}>S.NO.</Text>
-                <Text style={[styles.thElement, { flex: 2 }]}>PROJECT</Text>
-                <Text style={[styles.thElement, { flex: 1.5, textAlign: 'center' }]}>CAT-1</Text>
-                <Text style={[styles.thElement, { flex: 1.5, textAlign: 'center' }]}>CAT-2</Text>
+                <Text style={[styles.thElement, { flex: 2 }]}>
+                  Active Plan
+                </Text>
+                <Text style={[styles.thElement, { flex: 1.5, textAlign: 'center' }]}>
+                  {hasActivePlan ? 'ACTIVE' : 'CAT-1'}
+                </Text>
+                <Text style={[styles.thElement, { flex: 1.5, textAlign: 'center' }]}>
+                  {hasActivePlan ? '' : 'CAT-2'}
+                </Text>
                 <Text style={[styles.thElement, { flex: 1.8, textAlign: 'right' }]}>MIN INVEST</Text>
                 <Text style={[styles.thElement, { flex: 1.8, textAlign: 'right' }]}>WEEKLY %</Text>
               </View>
 
-{/* Investment Plans Table - showing all available plans */}
-              {systems.length > 0 ? (
-                systems.flatMap((system, sysIdx) => 
-                  (system.plans || []).map((plan, planIdx) => ({
-                    id: plan._id,
-                    name: plan.name,
-                    icon: system.name?.charAt(0) || '📊',
-                    cat1: system.name || '-',
-                    cat2: '-',
-                    min: `Rs. ${plan.minInvestment?.toLocaleString() || '0'}`,
-                    profit: `${(plan.dailyReturnRate * 100).toFixed(1)}% Daily`,
-                  }))
-                ).slice(0, 4).map((row, index) => (
-                  <View key={row.id} style={[styles.tableDataRow, { paddingVertical: isSmallScreen ? 5 : 8 }]}>
-                    <Text style={[styles.tdElement, { flex: 0.6, textAlign: 'center', color: '#64748B' }]}>{index + 1}</Text>
-                    <View style={[{ flex: 2, flexDirection: 'row', alignItems: 'center' }]}>
-                      <Text style={{ marginRight: 4, fontSize: 10 }}>{row.icon}</Text>
-                      <Text numberOfLines={1} style={{ fontSize: 9, fontWeight: '800', color: '#1E293B' }}>{row.name}</Text>
+              {/* Active Plan (clickable) */}
+              {(() => {
+                const activeInvestments = investments.filter((investment) => investment.status === 'active');
+                const activeInvestment = activeInvestments[0];
+                const fallbackPlan = dashboardData.user?.activePlan && dashboardData.user.activePlan !== 'None'
+                  ? systems
+                      .flatMap((system) => system.plans?.map((plan) => ({ plan, system })) ?? [])
+                      .find((row) => row.plan.name === dashboardData.user?.activePlan)
+                  : null;
+
+                const plan = activeInvestment?.plan || fallbackPlan?.plan;
+
+                if (!plan) {
+                  return (
+                    <View style={[styles.tableDataRow, { paddingVertical: 12 }]}>
+                      <Text style={[styles.tdElement, { flex: 8, textAlign: 'center', color: '#64748B', fontStyle: 'italic' }]}
+                      >
+                        No active plan available
+                      </Text>
                     </View>
-                    <Text numberOfLines={1} style={[styles.tdElement, { flex: 1.5, textAlign: 'center', color: '#64748B' }]}>{row.cat1}</Text>
-                    <Text numberOfLines={1} style={[styles.tdElement, { flex: 1.5, textAlign: 'center', color: '#64748B' }]}>{row.cat2}</Text>
-                    <Text numberOfLines={1} style={[styles.tdElement, { flex: 1.8, textAlign: 'right', color: '#047857', fontWeight: '700' }]}>{row.min}</Text>
-                    <Text numberOfLines={1} style={[styles.tdElement, { flex: 1.8, textAlign: 'right', color: '#059669', fontWeight: '700' }]}>{row.profit}</Text>
-                  </View>
-                ))
-              ) : (
-                <View style={[styles.tableDataRow, { paddingVertical: 12 }]}>
-                  <Text style={[styles.tdElement, { flex: 8, textAlign: 'center', color: '#64748B', fontStyle: 'italic' }]}>No investment plans available</Text>
-                </View>
-              )}
+                  );
+                }
+
+                const investmentAmount = activeInvestment?.investmentAmount || dashboardData.user?.pendingInvestmentAmount || 0;
+                const dailyReturnRate = activeInvestment?.dailyReturnRate || plan.dailyReturnRate;
+
+                // Try to map system/category display, but do not block UI if mapping fails.
+                const matchedSystem = systems
+                  .flatMap((s) => s.plans?.map((p) => ({ p, system: s })) ?? [])
+                  .find((row) => row.p._id === plan._id);
+
+                const icon = matchedSystem?.system?.name?.charAt(0) || '📊';
+                const cat1 = matchedSystem?.system?.name || activeInvestment.category?.name || '-';
+
+                const activeRow = {
+                  id: plan._id,
+                  name: plan.name,
+                  investmentAmount,
+                  dailyReturnRate,
+                  icon,
+                  cat1,
+                  cat2: '-',
+                  min: `Rs. ${plan.minInvestment?.toLocaleString?.() ?? '0'}`,
+                  profit: `${(((dailyReturnRate) * 100) as number).toFixed(1)}% Daily`,
+                };
+
+                return (
+                  <Pressable
+                    onPress={() =>
+                      navigation.navigate('ActivePlanHistory', {
+                        selectedPlanId: activeRow.id,
+                        selectedPlanName: activeRow.name,
+                        investmentAmount: activeRow.investmentAmount,
+                        dailyReturnRate: activeRow.dailyReturnRate,
+                      })
+                    }
+                    style={({ pressed }) => [
+                      styles.tableDataRow,
+                      { paddingVertical: isSmallScreen ? 5 : 8, backgroundColor: pressed ? 'rgba(16,185,129,0.08)' : '#ECFDF5' },
+                    ]}
+                  >
+                    <Text style={[styles.tdElement, { flex: 0.6, textAlign: 'center', color: '#047857', fontWeight: '800' }]}>•</Text>
+                    <View style={[{ flex: 2, flexDirection: 'row', alignItems: 'center' }]}>
+                      <Text style={{ marginRight: 4, fontSize: 10 }}>{activeRow.icon}</Text>
+                      <Text numberOfLines={1} style={{ fontSize: 9, fontWeight: '900', color: '#065F46' }}>
+                        {activeRow.name}
+                      </Text>
+                    </View>
+                    <Text numberOfLines={1} style={[styles.tdElement, { flex: 1.5, textAlign: 'center', color: '#047857', fontWeight: '800' }]}>
+                      ACTIVE
+                    </Text>
+                    <Text numberOfLines={1} style={[styles.tdElement, { flex: 1.5, textAlign: 'center', color: '#64748B' }]}>
+                      {activeRow.cat2}
+                    </Text>
+                    <Text numberOfLines={1} style={[styles.tdElement, { flex: 1.8, textAlign: 'right', color: '#047857', fontWeight: '800' }]}>
+                      {activeRow.min}
+                    </Text>
+                    <Text numberOfLines={1} style={[styles.tdElement, { flex: 1.8, textAlign: 'right', color: '#059669', fontWeight: '800' }]}>
+                      {activeRow.profit}
+                    </Text>
+                  </Pressable>
+                );
+              })()}
             </View>
           </View>
 
@@ -693,24 +757,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-  },
-  walletCircleIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#E6F3ED',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  addMoneyButton: {
-    backgroundColor: '#008F5A',
-    paddingHorizontal: 12,
-    borderRadius: 8,
-  },
-  addMoneyText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#FFFFFF',
   },
   scrollContent: {
     flex: 1,

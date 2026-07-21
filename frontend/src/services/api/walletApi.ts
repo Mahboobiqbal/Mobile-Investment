@@ -27,7 +27,7 @@ export interface Transaction {
   _id: string;
   user: string;
   amount: number;
-  type: 'Deposit' | 'Withdrawal' | string;
+  type: 'plan' | 'deposit' | 'withdrawal' | 'Deposit' | 'Withdrawal' | string;
   transactionId?: string;
   targetPhone?: string;
   status: 'pending' | 'approved' | 'rejected' | 'withdrawn' | string;
@@ -51,7 +51,7 @@ export const walletApi = {
   getPlans: () => api.get<{ plans: InvestmentPlan[] }>('/wallet/plans'),
 
   // Auth / Protected
-  deposit: (data: { amount: number; transactionId: string }) =>
+  deposit: (data: { amount: number; transactionId: string; planId?: string; planName?: string; investmentAmount?: number; transactionType?: 'plan' | 'deposit' }) =>
     api.post<{ message: string; transaction: Transaction }>('/wallet/deposit', data),
 
   withdraw: (data: { amount: number; targetPhone: string }) =>

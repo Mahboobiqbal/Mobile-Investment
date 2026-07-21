@@ -32,6 +32,12 @@ export interface AuthResponse {
   user?: User;
 }
 
+export interface UpdateProfileData {
+  name?: string;
+  phone?: string;
+  dp?: string;
+}
+
 export interface DashboardStats {
   totalDepositsApproved: number;
   totalWithdrawalsApproved: number;
@@ -81,6 +87,9 @@ export const authApi = {
 
   getProfile: () =>
     api.get<{ user: User }>('/auth/profile'),
+
+  updateProfile: (data: UpdateProfileData) =>
+    api.put<AuthResponse>('/auth/profile', data),
 
   updatePassword: (data: { currentPassword?: string; newPassword?: string }) =>
     api.put<{ message: string }>('/auth/update-password', data),

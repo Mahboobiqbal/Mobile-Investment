@@ -15,6 +15,8 @@ export interface UserData {
   activePlan?: string;
   isVerified?: boolean;
   dp?: string;
+  pendingPlanId?: string;
+  pendingInvestmentAmount?: number;
 }
 
 export interface AuthState {
@@ -27,6 +29,7 @@ interface AuthContextValue extends AuthState {
   login: (token: string, userData: UserData) => Promise<void>;
   logout: () => Promise<void>;
   refreshUserData: () => Promise<void>;
+  needsPlanSelection: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -63,6 +66,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthTokenProvider(() => null);
     setAuthState({ token: null, loading: false, userData: null });
   }, []);
+
+  const needsPlanSelection = useCallback(() => {
+    const user = authState.userData;
+    return !user?.activePlan || user.activePlan === 'None' || user.activePlan === '';
+  }, [authState.userData]);
 
   const refreshUserData = useCallback(async () => {
     if (!authState.token) return;
@@ -118,8 +126,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       logout,
       refreshUserData,
+      needsPlanSelection,
     }),
-    [authState, login, logout, refreshUserData]
+    [authState, login, logout, refreshUserData, needsPlanSelection]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

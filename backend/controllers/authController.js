@@ -5,8 +5,10 @@ const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 
 const User = require('../models/User');
+const Plan = require('../models/Plan');
 const Transaction = require('../models/Transaction');
 const UserInvestment = require('../models/UserInvestment');
+const { syncUserPlanState } = require('../utils/planState');
 
 const emailUser = process.env.EMAIL_USER;
 const emailPassword = process.env.APP_PASSWORD || process.env.EMAIL_PASSWORD;
@@ -143,6 +145,12 @@ const registerUser = async (req, res) => {
         email: user.email,
         role: user.role,
         currentBalance: user.currentBalance,
+        activePlan: user.activePlan,
+        pendingPlanId: user.pendingPlanId,
+        pendingInvestmentAmount: user.pendingInvestmentAmount,
+        phone: user.phone,
+        isVerified: user.isVerified,
+        dp: user.dp,
       },
     });
   } catch (error) {
@@ -171,17 +179,25 @@ const loginUser = async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    const token = signToken(user);
+    const syncedUser = await syncUserPlanState(user._id, user);
+
+    const token = signToken(syncedUser || user);
 
     return res.status(200).json({
       message: 'Login successful',
       token,
       user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        currentBalance: user.currentBalance,
+        id: (syncedUser || user)._id,
+        name: (syncedUser || user).name,
+        email: (syncedUser || user).email,
+        role: (syncedUser || user).role,
+        currentBalance: (syncedUser || user).currentBalance,
+        activePlan: (syncedUser || user).activePlan,
+        pendingPlanId: (syncedUser || user).pendingPlanId,
+        pendingInvestmentAmount: (syncedUser || user).pendingInvestmentAmount,
+        phone: (syncedUser || user).phone,
+        isVerified: (syncedUser || user).isVerified,
+        dp: (syncedUser || user).dp,
       },
     });
   } catch (error) {
@@ -191,12 +207,52 @@ const loginUser = async (req, res) => {
 
 const getUserProfile = async (req, res) => {
   try {
+    const user = await syncUserPlanState(req.user.id, req.user);
+
     return res.status(200).json({
       message: 'Profile fetched successfully',
-      user: req.user,
+      user: user || req.user,
     });
   } catch (error) {
     return res.status(500).json({ message: error.message || 'Unable to fetch profile' });
+  }
+};
+
+const updateUserProfile = async (req, res) => {
+  try {
+    const { name, phone, dp } = req.body;
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (name !== undefined) {
+      const nextName = typeof name === 'string' ? name.trim() : '';
+      if (!nextName) {
+        return res.status(400).json({ message: 'Name cannot be empty' });
+      }
+      user.name = nextName;
+    }
+
+    if (phone !== undefined) {
+      user.phone = typeof phone === 'string' ? phone.trim() : phone;
+    }
+
+    if (dp !== undefined) {
+      user.dp = typeof dp === 'string' && dp.trim() ? dp.trim() : user.dp;
+    }
+
+    await user.save();
+
+    const syncedUser = await syncUserPlanState(user._id, user);
+
+    return res.status(200).json({
+      message: 'Profile updated successfully',
+      user: syncedUser || user,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message || 'Profile update failed' });
   }
 };
 
@@ -360,7 +416,7 @@ const getUserDashboardStats = async (req, res) => {
               totalDepositsApproved: [
                 {
                   $match: {
-                    type: 'Deposit',
+                    type: { $in: ['plan', 'deposit', 'Deposit'] },
                     status: { $in: ['approved', 'Approved'] },
                     transactionId: { $not: /^ROI-DAILY-/ },
                   },
@@ -375,7 +431,7 @@ const getUserDashboardStats = async (req, res) => {
               totalWithdrawalsProcessed: [
                 {
                   $match: {
-                    type: 'Withdrawal',
+                    type: { $in: ['withdrawal', 'Withdrawal'] },
                     status: { $in: ['approved', 'Approved', 'withdrawn', 'Withdrawn'] },
                   },
                 },
@@ -389,7 +445,7 @@ const getUserDashboardStats = async (req, res) => {
               totalROIEarnings: [
                 {
                   $match: {
-                    type: 'Deposit',
+                    type: { $in: ['deposit', 'Deposit'] },
                     transactionId: /^ROI-DAILY-/,
                   },
                 },
@@ -426,10 +482,62 @@ const getUserInvestments = async (req, res) => {
     try {
       const userId = req.user.id;
 
-      const investments = await UserInvestment.find({ user: userId })
+      let investments = await UserInvestment.find({ user: userId })
         .populate('plan', 'name dailyReturnRate minInvestment maxInvestment description')
         .populate('category', 'name')
         .sort({ createdAt: -1 });
+
+      const hasActiveInvestment = investments.some((inv) => inv.status === 'active');
+
+      if (!hasActiveInvestment) {
+        const approvedPlanDeposit = await Transaction.findOne({
+          user: userId,
+          type: { $in: ['plan', 'deposit', 'Deposit'] },
+          status: { $in: ['approved', 'Approved'] },
+          transactionId: { $not: /^ROI-DAILY-/ },
+          $or: [
+            { planId: { $ne: null } },
+            { planName: { $exists: true, $nin: ['', null] } },
+          ],
+        }).sort({ updatedAt: -1, createdAt: -1 });
+
+        if (approvedPlanDeposit) {
+          const plan = approvedPlanDeposit.planId
+            ? await Plan.findById(approvedPlanDeposit.planId).populate('category', 'name')
+            : await Plan.findOne({ name: approvedPlanDeposit.planName }).populate('category', 'name');
+
+          if (plan) {
+            await UserInvestment.findOneAndUpdate(
+              { user: userId, plan: plan._id },
+              {
+                user: userId,
+                plan: plan._id,
+                category: plan.category._id,
+                investmentAmount: approvedPlanDeposit.investmentAmount || approvedPlanDeposit.amount,
+                dailyReturnRate: plan.dailyReturnRate,
+                status: 'active',
+              },
+              { upsert: true, new: true, setDefaultsOnInsert: true }
+            );
+
+            await User.findByIdAndUpdate(userId, {
+              activePlan: plan.name,
+              activeCategory: plan.category._id,
+              pendingPlanId: null,
+              pendingInvestmentAmount: 0,
+            });
+
+            approvedPlanDeposit.planId = plan._id;
+            approvedPlanDeposit.planName = plan.name;
+            await approvedPlanDeposit.save();
+
+            investments = await UserInvestment.find({ user: userId })
+              .populate('plan', 'name dailyReturnRate minInvestment maxInvestment description')
+              .populate('category', 'name')
+              .sort({ createdAt: -1 });
+          }
+        }
+      }
 
       const totalInvestment = investments
         .filter(inv => inv.status === 'active')
@@ -450,6 +558,7 @@ module.exports = {
   registerUser,
   loginUser,
   getUserProfile,
+  updateUserProfile,
   updatePassword,
   forgotPassword,
   verifyOtp,

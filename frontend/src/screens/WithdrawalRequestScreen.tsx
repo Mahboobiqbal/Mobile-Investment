@@ -31,6 +31,9 @@ export default function WithdrawalRequestScreen() {
 
   const [amount, setAmount] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [eligible, setEligible] = useState(true);
+  const [daysLeft, setDaysLeft] = useState(0);
+  const [eligibilityLoading, setEligibilityLoading] = useState(true);
 
   const [successModal, setSuccessModal] = useState({ visible: false });
   const [errorModal, setErrorModal] = useState({ visible: false, title: '', message: '' });
@@ -40,10 +43,31 @@ export default function WithdrawalRequestScreen() {
   useFocusEffect(
     useCallback(() => {
       refreshUserData();
+      const checkEligibility = async () => {
+        try {
+          setEligibilityLoading(true);
+          const res = await walletApi.checkWithdrawalEligibility();
+          setEligible(res.data.eligible);
+          setDaysLeft(res.data.daysLeft);
+        } catch {
+          setEligible(false);
+          setDaysLeft(30);
+        } finally {
+          setEligibilityLoading(false);
+        }
+      };
+      checkEligibility();
     }, [refreshUserData])
   );
 
   const validateForm = useCallback(() => {
+    if (!eligible) {
+      Alert.alert('Withdrawal Locked', daysLeft > 0
+        ? `Withdrawals are available 30 days after your first approved deposit. Please wait ${daysLeft} more day(s).`
+        : 'No approved deposits found. A deposit is required before withdrawal.');
+      return false;
+    }
+
     if (!amount.trim()) {
       Alert.alert('Missing Amount', 'Please enter an amount to withdraw.');
       return false;
@@ -71,7 +95,7 @@ export default function WithdrawalRequestScreen() {
     }
 
     return true;
-  }, [amount, availableBalance]);
+  }, [amount, availableBalance, eligible, daysLeft]);
 
   const handleSubmitWithdrawal = useCallback(async () => {
     if (!validateForm()) {
@@ -151,6 +175,32 @@ export default function WithdrawalRequestScreen() {
             </View>
           ) : null}
 
+          {/* 30-Day Lock Info */}
+          {eligible && (
+            <View style={styles.readyBox}>
+              <Text style={styles.readyIcon}>✅</Text>
+              <View>
+                <Text style={styles.readyTitle}>Withdrawals Available</Text>
+                <Text style={styles.readyText}>
+                  Your account meets the 30-day maturity requirement. You can withdraw your funds.
+                </Text>
+              </View>
+            </View>
+          )}
+          {!eligible && !eligibilityLoading && (
+            <View style={styles.lockBox}>
+              <Text style={styles.lockIcon}>🔒</Text>
+              <View>
+                <Text style={styles.lockTitle}>30-Day Withdrawal Lock</Text>
+                <Text style={styles.lockText}>
+                  {daysLeft > 0
+                    ? `Withdrawals are available 30 days after your first approved deposit. Please wait ${daysLeft} more day(s).`
+                    : 'No approved deposits found. A deposit is required before withdrawal.'}
+                </Text>
+              </View>
+            </View>
+          )}
+
           {/* Amount Field */}
           <View style={styles.formGroup}>
             <Text style={styles.label}>Withdrawal Amount (Rs.)</Text>
@@ -216,10 +266,10 @@ export default function WithdrawalRequestScreen() {
           <Pressable
             style={[
               styles.submitButton,
-              (isSubmitting || !amount.trim() || withdrawalWouldDropBelowMinimum || availableBalance <= 500) && styles.submitButtonDisabled,
+              (isSubmitting || !amount.trim() || withdrawalWouldDropBelowMinimum || availableBalance <= 500 || !eligible) && styles.submitButtonDisabled,
             ]}
             onPress={handleSubmitWithdrawal}
-            disabled={isSubmitting || !amount.trim() || withdrawalWouldDropBelowMinimum || availableBalance <= 500}
+            disabled={isSubmitting || !amount.trim() || withdrawalWouldDropBelowMinimum || availableBalance <= 500 || !eligible}
           >
             {isSubmitting ? (
               <ActivityIndicator color="#FFFFFF" />
@@ -410,6 +460,52 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#92400E',
     lineHeight: 16,
+  },
+  readyBox: {
+    backgroundColor: '#F0FDF4',
+    borderRadius: 10,
+    padding: 12,
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16,
+  },
+  readyIcon: {
+    fontSize: 18,
+  },
+  readyTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#166534',
+    marginBottom: 2,
+  },
+  readyText: {
+    fontSize: 11,
+    color: '#15803D',
+    fontWeight: '500',
+    lineHeight: 15,
+  },
+  lockBox: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 10,
+    padding: 12,
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16,
+  },
+  lockIcon: {
+    fontSize: 18,
+  },
+  lockTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#92400E',
+    marginBottom: 2,
+  },
+  lockText: {
+    fontSize: 11,
+    color: '#B45309',
+    fontWeight: '500',
+    lineHeight: 15,
   },
   phoneBox: {
     backgroundColor: '#F0F9FF',

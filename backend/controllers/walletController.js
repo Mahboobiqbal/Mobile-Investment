@@ -6,6 +6,7 @@ const UserInvestment = require('../models/UserInvestment');
 const { createAdminNotification } = require('./notificationsController');
 
 const normalizeTransactionType = (value) => String(value || '').toLowerCase();
+const MIN_DEPOSIT_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 const submitDeposit = async (req, res) => {
   try {
@@ -102,6 +103,23 @@ const requestWithdrawal = async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user || user.currentBalance < amount) {
       return res.status(400).json({ message: 'Insufficient balance to request withdrawal' });
+    }
+
+    const firstDeposit = await Transaction.findOne({
+      user: req.user.id,
+      type: { $in: ['plan', 'deposit', 'Deposit'] },
+      status: { $in: ['approved', 'Approved'] },
+      transactionId: { $not: /^ROI-DAILY-/ },
+    }).sort({ createdAt: 1 });
+
+    if (!firstDeposit) {
+      return res.status(400).json({ message: 'No approved deposits found. Withdrawal requires at least one approved deposit.' });
+    }
+
+    const depositAge = Date.now() - new Date(firstDeposit.createdAt).getTime();
+    if (depositAge < MIN_DEPOSIT_AGE_MS) {
+      const daysLeft = Math.ceil((MIN_DEPOSIT_AGE_MS - depositAge) / (24 * 60 * 60 * 1000));
+      return res.status(400).json({ message: `Withdrawals are available 30 days after your first deposit. Please wait ${daysLeft} more day(s).` });
     }
 
     const transaction = await Transaction.create({
@@ -278,6 +296,36 @@ const getCategoryWithPlans = async (req, res) => {
   }
 };
 
+const checkWithdrawalEligibility = async (req, res) => {
+  try {
+    const firstDeposit = await Transaction.findOne({
+      user: req.user.id,
+      type: { $in: ['plan', 'deposit', 'Deposit'] },
+      status: { $in: ['approved', 'Approved'] },
+      transactionId: { $not: /^ROI-DAILY-/ },
+    }).sort({ createdAt: 1 });
+
+    if (!firstDeposit) {
+      return res.status(200).json({
+        eligible: false,
+        daysLeft: 30,
+        firstDepositDate: null,
+      });
+    }
+
+    const depositAge = Date.now() - new Date(firstDeposit.createdAt).getTime();
+    const daysLeft = Math.max(0, Math.ceil((MIN_DEPOSIT_AGE_MS - depositAge) / (24 * 60 * 60 * 1000)));
+
+    return res.status(200).json({
+      eligible: daysLeft <= 0,
+      daysLeft,
+      firstDepositDate: firstDeposit.createdAt,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message || 'Failed to check withdrawal eligibility' });
+  }
+};
+
 module.exports = {
   submitDeposit,
   requestWithdrawal,
@@ -287,4 +335,5 @@ module.exports = {
   getActivePlans,
   getActiveCategories,
   getCategoryWithPlans,
+  checkWithdrawalEligibility,
 };

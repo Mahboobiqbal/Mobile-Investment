@@ -119,27 +119,15 @@ const reviewTransaction = async (req, res) => {
         user.pendingPlanId = null;
         user.pendingInvestmentAmount = 0;
 
-        await UserInvestment.findOneAndUpdate(
-          { user: user._id, plan: plan._id },
-          {
-            user: user._id,
-            plan: plan._id,
-            category: plan.category._id,
-            investmentAmount: transaction.investmentAmount || transaction.amount,
-            dailyReturnRate: plan.dailyReturnRate,
-            status: 'active',
-          },
-          { upsert: true, new: true, setDefaultsOnInsert: true }
-        );
-
-        // Ensure activePlan is correctly resolved even if planId wasn't attached to the deposit at approval time.
-        // This uses existing active investment, otherwise falls back to latest approved deposit.
         await user.save();
+        await transaction.save();
+
         await syncUserPlanState(user._id, user);
       } else if (isWalletDepositType(transaction.type)) {
         transaction.status = 'approved';
         user.currentBalance += transaction.amount;
         await user.save();
+        await transaction.save();
       }
     } else if (action === 'withdraw') {
       if (!isWithdrawalType(transaction.type)) {
@@ -171,6 +159,7 @@ const reviewTransaction = async (req, res) => {
       userBalance: user.currentBalance 
     });
   } catch (error) {
+    console.error('reviewTransaction failed:', error.message);
     return res.status(500).json({ message: error.message || 'Failed to review transaction' });
   }
 };

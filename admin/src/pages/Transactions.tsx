@@ -188,13 +188,10 @@ export default function Transactions() {
     if (!window.confirm(`Are you sure you want to ${action} this transaction?`)) return;
     setActionLoading(txId);
     try {
-      await api.post('/admin/review-transaction', { transactionId: txId, action });
-      // Refresh current tab
+      const res = await api.post('/admin/review-transaction', { transactionId: txId, action });
+      const msg = res.data?.message || `Transaction ${action}d successfully`;
+      alert(msg);
       fetchTransactions(pagination.page);
-      // NOTE: Users page activation indicator is driven by user.activePlan from the backend.
-      // If Users page is still stale after returning from Transactions, it will be updated on its next fetch.
-
-
     } catch (err: any) {
       alert(err.response?.data?.message || 'Action failed');
     } finally {

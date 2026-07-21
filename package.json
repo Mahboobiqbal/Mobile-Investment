@@ -1,4 +1,18 @@
 {
+  "name": "mobile-investment",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Smart Halal Investment - Backend API",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "cd backend && node server.js",
+    "build": "cd backend && npm install",
+    "postinstall": "cd backend && npm install",
+    "dev": "cd backend && nodemon server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "expo-image-picker": "^57.0.2"
   }

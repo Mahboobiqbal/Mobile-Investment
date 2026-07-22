@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -10,7 +10,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { RouteProp, useRoute } from '@react-navigation/native';
+import { RouteProp, useFocusEffect, useRoute } from '@react-navigation/native';
 import { AxiosError } from 'axios';
 
 import ErrorModal from '../components/ErrorModal';
@@ -36,17 +36,24 @@ interface ApiError {
 
 export default function ActivePlanHistoryScreen() {
   const route = useRoute<ActivePlanHistoryRoute>();
-  const { selectedPlanId, selectedPlanName, investmentAmount = 0, dailyReturnRate = 0 } = route.params;
+  const { selectedPlanName } = route.params;
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [currentBalance, setCurrentBalance] = useState(0);
+  const [dailyRate, setDailyRate] = useState(0.005);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [errorModal, setErrorModal] = useState({ visible: false, title: '', message: '' });
 
-  const fetchTransactions = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     try {
-      const response = await api.get<{ transactions: Transaction[] }>('/wallet/transactions');
-      setTransactions(response.data.transactions || []);
+      const [txRes, statsRes] = await Promise.all([
+        api.get<{ transactions: Transaction[] }>('/wallet/transactions'),
+        api.get<{ currentBalance: number; dailyRate: number }>('/auth/dashboard-stats'),
+      ]);
+      setTransactions(txRes.data.transactions || []);
+      setCurrentBalance(statsRes.data.currentBalance || 0);
+      setDailyRate(statsRes.data.dailyRate || 0.005);
     } catch (err) {
       const axiosError = err as AxiosError<ApiError>;
       setErrorModal({
@@ -60,33 +67,28 @@ export default function ActivePlanHistoryScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchTransactions();
-  }, [fetchTransactions]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [fetchData])
+  );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchTransactions();
-  }, [fetchTransactions]);
+    fetchData();
+  }, [fetchData]);
 
   const roiHistory = useMemo(() => {
     return transactions
       .filter((transaction) => {
         const isRoi = transaction.type === 'roi' || transaction.transactionId?.startsWith('ROI-DAILY-');
-        if (!isRoi) return false;
-
-        const transactionPlanId =
-          typeof transaction.planId === 'string' ? transaction.planId : transaction.planId?._id;
-        const hasPlanMarker = Boolean(transactionPlanId || transaction.planName);
-
-        if (!hasPlanMarker) return true;
-        return transactionPlanId === selectedPlanId || transaction.planName === selectedPlanName;
+        return isRoi;
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [selectedPlanId, selectedPlanName, transactions]);
+  }, [transactions]);
 
   const totalEarned = roiHistory.reduce((sum, transaction) => sum + transaction.amount, 0);
-  const projectedDailyCommission = investmentAmount * dailyReturnRate;
+  const projectedDailyCommission = currentBalance * dailyRate;
 
   const formatCurrency = (amount: number) =>
     `Rs. ${amount.toLocaleString('en-PK', {
@@ -123,7 +125,7 @@ export default function ActivePlanHistoryScreen() {
         <View style={styles.summaryGrid}>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>Investment</Text>
-            <Text style={styles.summaryValue}>{formatCurrency(investmentAmount)}</Text>
+            <Text style={styles.summaryValue}>{formatCurrency(currentBalance)}</Text>
           </View>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>Daily Commission</Text>

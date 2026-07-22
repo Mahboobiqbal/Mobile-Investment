@@ -6,7 +6,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -24,6 +23,8 @@ import ErrorModal from '../components/ErrorModal';
 interface ApiErrorResponse {
   message?: string;
 }
+
+const QUICK_AMOUNTS = [25, 50, 75, 100];
 
 export default function WithdrawalRequestScreen() {
   const navigation = useNavigation();
@@ -135,90 +136,111 @@ export default function WithdrawalRequestScreen() {
   const remainingBalance = Math.max(0, availableBalance - numAmount);
   const withdrawalWouldDropBelowMinimum = numAmount > 0 && remainingBalance < 500;
 
+  const handleQuickAmount = (percent: number) => {
+    const calculated = Math.floor((availableBalance - 500) * (percent / 100));
+    const finalAmount = percent === 100 ? Math.max(0, availableBalance - 500) : calculated;
+    setAmount(String(Math.max(0, finalAmount)));
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* Header */}
-          {/* <View style={styles.header}>
-            <Pressable onPress={() => navigation.goBack()} hitSlop={10}>
-              <Text style={styles.backButton}>← Back</Text>
-            </Pressable>
-            <Text style={styles.title}>Request Withdrawal</Text>
-            <View style={{ width: 30 }} />
-          </View> */}
+        <View style={styles.header}>
+          <Pressable onPress={() => navigation.goBack()} hitSlop={10} style={styles.headerBack}>
+            <Text style={styles.headerBackText}>←</Text>
+          </Pressable>
+          <Text style={styles.headerTitle}>Withdraw Funds</Text>
+          <View style={styles.headerSpacer} />
+        </View>
 
-          {/* Balance Info Card */}
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.balanceCard}>
-            <View>
-              <Text style={styles.balanceLabel}>Available Balance</Text>
-              <Text style={styles.balanceAmount}>{formatCurrency(availableBalance)}</Text>
-            </View>
-            <View style={styles.balanceIcon}>
-              <Text style={styles.balanceIconText}>💰</Text>
-            </View>
+            <Text style={styles.balanceLabel}>Available Balance</Text>
+            <Text style={styles.balanceAmount}>{formatCurrency(availableBalance)}</Text>
           </View>
 
-          {availableBalance <= 500 ? (
-            <View style={styles.warningBox}>
-              <Text style={styles.warningIcon}>⚠️</Text>
-              <Text style={styles.warningText}>
-                Withdrawals are disabled until your balance is above Rs. 500.
-              </Text>
+          {eligibilityLoading ? (
+            <View style={styles.statusLoading}>
+              <ActivityIndicator size="small" color="#0EA5E9" />
             </View>
-          ) : withdrawalWouldDropBelowMinimum ? (
-            <View style={styles.warningBox}>
-              <Text style={styles.warningIcon}>⚠️</Text>
-              <Text style={styles.warningText}>
-                This withdrawal would reduce your balance below Rs. 500.
-              </Text>
-            </View>
-          ) : null}
-
-          {/* 30-Day Lock Info */}
-          {eligible && (
-            <View style={styles.readyBox}>
-              <Text style={styles.readyIcon}>✅</Text>
-              <View>
-                <Text style={styles.readyTitle}>Withdrawals Available</Text>
-                <Text style={styles.readyText}>
-                  Your account meets the 30-day maturity requirement. You can withdraw your funds.
+          ) : eligible ? (
+            <View style={styles.statusCardSuccess}>
+              <Text style={styles.statusIcon}>✓</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.statusTitle}>Withdrawals Available</Text>
+                <Text style={styles.statusText}>
+                  Your account meets the 30-day maturity requirement.
                 </Text>
               </View>
             </View>
-          )}
-          {!eligible && !eligibilityLoading && (
-            <View style={styles.lockBox}>
-              <Text style={styles.lockIcon}>🔒</Text>
-              <View>
-                <Text style={styles.lockTitle}>30-Day Withdrawal Lock</Text>
-                <Text style={styles.lockText}>
+          ) : (
+            <View style={styles.statusCardWarning}>
+              <Text style={styles.statusIcon}>!</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.statusTitle}>30-Day Withdrawal Lock</Text>
+                <Text style={styles.statusText}>
                   {daysLeft > 0
-                    ? `Withdrawals are available 30 days after your first approved deposit. Please wait ${daysLeft} more day(s).`
-                    : 'No approved deposits found. A deposit is required before withdrawal.'}
+                    ? `Please wait ${daysLeft} more day(s) after your first deposit.`
+                    : 'A deposit is required before withdrawal.'}
                 </Text>
               </View>
             </View>
           )}
 
-          {/* Amount Field */}
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Withdrawal Amount (Rs.)</Text>
+          {availableBalance <= 500 && (
+            <View style={styles.alertWarning}>
+              <Text style={styles.alertWarningText}>
+                Withdrawals are disabled until your balance exceeds Rs. 500.
+              </Text>
+            </View>
+          )}
+
+          {withdrawalWouldDropBelowMinimum && !(availableBalance <= 500) && (
+            <View style={styles.alertWarning}>
+              <Text style={styles.alertWarningText}>
+                This withdrawal would reduce your balance below the Rs. 500 minimum.
+              </Text>
+            </View>
+          )}
+
+          <View style={styles.formSection}>
+            <Text style={styles.formSectionTitle}>Withdrawal Amount</Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter amount to withdraw"
-              placeholderTextColor="#94A3B8"
+              placeholder="0.00"
+              placeholderTextColor="#CBD5E1"
               keyboardType="decimal-pad"
               value={amount}
               onChangeText={setAmount}
               editable={!isSubmitting}
             />
-            <Text style={styles.fieldHelper}>
-              Maximum: {formatCurrency(availableBalance)}
+            <Text style={styles.inputHint}>
+              Max: {formatCurrency(availableBalance)}
             </Text>
+
+            {availableBalance > 500 && (
+              <>
+                <Text style={styles.quickLabel}>Quick Select</Text>
+                <View style={styles.quickRow}>
+                  {QUICK_AMOUNTS.map((pct) => {
+                    const active = numAmount > 0 && Math.abs(numAmount - Math.floor((availableBalance - 500) * (pct / 100))) < 10;
+                    return (
+                      <Pressable
+                        key={pct}
+                        style={[styles.quickButton, active && styles.quickButtonActive]}
+                        onPress={() => handleQuickAmount(pct)}
+                      >
+                        <Text style={[styles.quickButtonText, active && styles.quickButtonTextActive]}>
+                          {pct}%
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </>
+            )}
           </View>
 
-          {/* Summary Card */}
           <View style={styles.summaryCard}>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Current Balance</Text>
@@ -227,42 +249,39 @@ export default function WithdrawalRequestScreen() {
             <View style={styles.summaryDivider} />
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Withdrawal Amount</Text>
-              <Text style={styles.summaryValue}>{numAmount > 0 ? formatCurrency(numAmount) : '—'}</Text>
+              <Text style={[styles.summaryValue, numAmount > 0 && { color: '#DC2626' }]}>
+                {numAmount > 0 ? `-${formatCurrency(numAmount)}` : '—'}
+              </Text>
             </View>
             <View style={styles.summaryDivider} />
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Balance After Withdrawal</Text>
-              <Text style={[styles.summaryValue, remainingBalance === 0 && styles.zeroBalance]}>
+              <Text style={[styles.summaryValueBold, remainingBalance <= 500 && { color: '#DC2626' }]}>
                 {formatCurrency(remainingBalance)}
               </Text>
             </View>
           </View>
 
-          {/* Processing Info */}
-          <View style={styles.infoBox}>
-            <Text style={styles.infoIcon}>⏱️</Text>
-            <View>
-              <Text style={styles.infoTitle}>Processing Time</Text>
-              <Text style={styles.infoText}>
-                Your withdrawal will be processed within 1-5 business days after admin approval.
-              </Text>
+          <View style={styles.detailCard}>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailIcon}>📱</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.detailLabel}>Mobile Wallet</Text>
+                <Text style={styles.detailValue}>{userData?.phone || 'No phone registered'}</Text>
+              </View>
             </View>
-          </View>
-
-          {/* Mobile Wallet Info */}
-          <View style={styles.phoneBox}>
-            <Text style={styles.phoneIcon}>📱</Text>
-            <View>
-              <Text style={styles.phoneTitle}>Mobile Wallet</Text>
-              <Text style={styles.phoneNumber}>
-                {userData?.phone || 'No phone number registered'}
-              </Text>
+            <View style={styles.detailDivider} />
+            <View style={styles.detailRow}>
+              <Text style={styles.detailIcon}>⏱️</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.detailLabel}>Processing Time</Text>
+                <Text style={styles.detailValue}>1-5 business days after admin approval</Text>
+              </View>
             </View>
           </View>
         </ScrollView>
 
-        {/* Submit Button */}
-        <View style={styles.footerButton}>
+        <View style={styles.footer}>
           <Pressable
             style={[
               styles.submitButton,
@@ -280,7 +299,6 @@ export default function WithdrawalRequestScreen() {
         </View>
       </KeyboardAvoidingView>
 
-      {/* Success Modal */}
       <SuccessModal
         visible={successModal.visible}
         title="Withdrawal Requested!"
@@ -289,7 +307,6 @@ export default function WithdrawalRequestScreen() {
         onClose={() => navigation.goBack()}
       />
 
-      {/* Error Modal */}
       <ErrorModal
         visible={errorModal.visible}
         title={errorModal.title}
@@ -303,107 +320,239 @@ export default function WithdrawalRequestScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F1F5F9',
   },
   flex: {
     flex: 1,
   },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-    paddingBottom: 100,
-  },
+
+  // Header
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
   },
-  backButton: {
-    fontSize: 14,
+  headerBack: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerBackText: {
+    fontSize: 16,
+    color: '#0F172A',
     fontWeight: '600',
-    color: '#0EA5E9',
   },
-  title: {
-    fontSize: 22,
+  headerTitle: {
+    fontSize: 17,
     fontWeight: '700',
     color: '#0F172A',
   },
+  headerSpacer: {
+    width: 36,
+  },
+
+  // Scroll
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 32,
+  },
+
+  // Balance card
   balanceCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    backgroundColor: '#0F172A',
+    borderRadius: 20,
+    padding: 24,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: 24,
+    marginBottom: 16,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 6,
   },
   balanceLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#64748B',
-    marginBottom: 4,
+    color: '#94A3B8',
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    marginBottom: 8,
   },
   balanceAmount: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: '800',
-    color: '#00A86B',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
   },
-  balanceIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#F0FDF4',
-    justifyContent: 'center',
+
+  // Status cards
+  statusLoading: {
     alignItems: 'center',
-  },
-  balanceIconText: {
-    fontSize: 24,
-  },
-  formGroup: {
     marginBottom: 16,
   },
-  label: {
+  statusCardSuccess: {
+    backgroundColor: '#F0FDF4',
+    borderRadius: 14,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  statusCardWarning: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 14,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  statusIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    textAlign: 'center',
+    lineHeight: 32,
+    fontSize: 16,
+    fontWeight: '800',
+    overflow: 'hidden',
+  },
+  statusTitle: {
     fontSize: 13,
     fontWeight: '700',
     color: '#0F172A',
-    marginBottom: 6,
+    marginBottom: 2,
   },
-  fieldHelper: {
-    fontSize: 11,
-    color: '#94A3B8',
-    marginTop: 6,
+  statusText: {
+    fontSize: 12,
     fontWeight: '500',
+    color: '#475569',
+    lineHeight: 16,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: '#0F172A',
-    backgroundColor: '#FFFFFF',
-  },
-  summaryCard: {
-    backgroundColor: '#FFFFFF',
+
+  // Alert warning
+  alertWarning: {
+    backgroundColor: '#FEF3C7',
     borderRadius: 12,
     padding: 14,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#F59E0B',
+  },
+  alertWarningText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#92400E',
+    lineHeight: 18,
+  },
+
+  // Form section
+  formSection: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  formSectionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 12,
+  },
+  input: {
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#0F172A',
+    backgroundColor: '#F8FAFC',
+    textAlign: 'center',
+  },
+  inputHint: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#94A3B8',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+
+  // Quick select
+  quickLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748B',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  quickRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  quickButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    marginBottom: 20,
+  },
+  quickButtonActive: {
+    backgroundColor: '#0EA5E9',
+    borderColor: '#0EA5E9',
+  },
+  quickButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  quickButtonTextActive: {
+    color: '#FFFFFF',
+  },
+
+  // Summary card
+  summaryCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
   },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
   summaryLabel: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '500',
     color: '#64748B',
   },
   summaryValue: {
@@ -411,144 +560,85 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#0F172A',
   },
-  zeroBalance: {
-    color: '#EF4444',
+  summaryValueBold: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F172A',
   },
   summaryDivider: {
     height: 1,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: '#F1F5F9',
     marginVertical: 8,
   },
-  infoBox: {
-    backgroundColor: '#FEF3C7',
-    borderRadius: 10,
-    padding: 12,
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 12,
+
+  // Detail card
+  detailCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
   },
-  infoIcon: {
-    fontSize: 18,
-  },
-  infoTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#92400E',
-    marginBottom: 2,
-  },
-  infoText: {
-    fontSize: 11,
-    color: '#B45309',
-    fontWeight: '500',
-    lineHeight: 15,
-  },
-  warningBox: {
-    backgroundColor: '#FEF3C7',
-    borderRadius: 10,
-    padding: 12,
+  detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 12,
+    gap: 12,
+    paddingVertical: 4,
   },
-  warningIcon: {
-    fontSize: 18,
+  detailIcon: {
+    fontSize: 20,
+    width: 36,
+    textAlign: 'center',
   },
-  warningText: {
-    flex: 1,
+  detailLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#92400E',
-    lineHeight: 16,
+    color: '#64748B',
+    marginBottom: 1,
   },
-  readyBox: {
-    backgroundColor: '#F0FDF4',
-    borderRadius: 10,
-    padding: 12,
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 16,
-  },
-  readyIcon: {
-    fontSize: 18,
-  },
-  readyTitle: {
-    fontSize: 12,
+  detailValue: {
+    fontSize: 14,
     fontWeight: '700',
-    color: '#166534',
-    marginBottom: 2,
+    color: '#0F172A',
   },
-  readyText: {
-    fontSize: 11,
-    color: '#15803D',
-    fontWeight: '500',
-    lineHeight: 15,
+  detailDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    marginVertical: 12,
   },
-  lockBox: {
-    backgroundColor: '#FEF3C7',
-    borderRadius: 10,
-    padding: 12,
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 16,
-  },
-  lockIcon: {
-    fontSize: 18,
-  },
-  lockTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#92400E',
-    marginBottom: 2,
-  },
-  lockText: {
-    fontSize: 11,
-    color: '#B45309',
-    fontWeight: '500',
-    lineHeight: 15,
-  },
-  phoneBox: {
-    backgroundColor: '#F0F9FF',
-    borderRadius: 10,
-    padding: 12,
-    flexDirection: 'row',
-    gap: 10,
-  },
-  phoneIcon: {
-    fontSize: 18,
-  },
-  phoneTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#0369A1',
-    marginBottom: 2,
-  },
-  phoneNumber: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#0EA5E9',
-  },
-  footerButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+
+  // Footer
+  footer: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
   },
   submitButton: {
-    backgroundColor: '#00A86B',
-    paddingVertical: 14,
-    borderRadius: 10,
+    backgroundColor: '#059669',
+    paddingVertical: 16,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   submitButtonDisabled: {
-    backgroundColor: '#CBD5E1',
-    opacity: 0.6,
+    backgroundColor: '#94A3B8',
+    shadowOpacity: 0,
+    elevation: 0,
   },
   submitButtonText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
+    letterSpacing: 0.3,
   },
 });

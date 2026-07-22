@@ -167,12 +167,12 @@ export default function AppNavigator() {
       <Stack.Screen
         name="DepositRequest"
         component={DepositRequestScreen}
-        options={{ headerShown: true, title: 'Deposit', headerBackTitle: 'Back' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="WithdrawalRequest"
         component={WithdrawalRequestScreen}
-        options={{ headerShown: true, title: 'Withdraw', headerBackTitle: 'Back' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="Settings"

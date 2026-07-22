@@ -4563,3 +4563,4 @@
 {"_e":"metro:bundling:started","_t":1784760894491,"id":"f","platform":"android","environment":null,"entry":"index.js"}
 {"_e":"metro:bundling:progress","_t":1784760894491,"id":"f","progress":0,"total":1,"current":0}
 {"_e":"metro:bundling:done","_t":1784760894577,"id":"f","total":1,"ms":85.6983}
+{"_e":"metro:client_log","_t":1784761127338,"level":"log","data":["API baseURL:","http://192.168.1.13:5000/api"]}

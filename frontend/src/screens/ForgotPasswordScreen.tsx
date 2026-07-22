@@ -6,7 +6,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -14,6 +13,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -142,7 +142,7 @@ export default function ForgotPasswordScreen() {
         : 'Choose a new password for your account.';
 
   return (
-    <SafeAreaView style={[styles.safeArea, { paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 0 }]}>
+    <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <View style={styles.card}>

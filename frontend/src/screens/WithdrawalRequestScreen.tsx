@@ -5,7 +5,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -13,6 +12,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { AxiosError } from 'axios';
 
@@ -136,7 +136,7 @@ export default function WithdrawalRequestScreen() {
   const withdrawalWouldDropBelowMinimum = numAmount > 0 && remainingBalance < 500;
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 0 }]}>
+    <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Header */}

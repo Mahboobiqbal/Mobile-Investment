@@ -4,7 +4,6 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   Pressable,
   StyleSheet,
@@ -14,6 +13,7 @@ import {
   Dimensions,
   StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { walletApi, type InvestmentPlan } from '../services/api/walletApi';
 
@@ -105,7 +105,7 @@ export default function TermsConditionScreen() {
 
   if (planLoading) {
     return (
-      <SafeAreaView style={[styles.container, { paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 0 }]}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator color="#00A86B" size="large" />
           <Text style={styles.loadingText}>Loading plan details...</Text>
@@ -115,7 +115,7 @@ export default function TermsConditionScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 0 }]}>
+    <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardAvoidingView}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.topSection}>

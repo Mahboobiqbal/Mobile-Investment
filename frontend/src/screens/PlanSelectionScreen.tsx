@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, SafeAreaView, ScrollView, StatusBar, Platform, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StatusBar, Platform, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import InfoModal from '../components/InfoModal';
@@ -90,7 +91,7 @@ export default function PlanSelectionScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 0 }]}>
+    <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>

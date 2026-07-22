@@ -4,7 +4,6 @@ import {
   Modal,
   Pressable,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,6 +13,7 @@ import {
   StatusBar,
   useWindowDimensions,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AxiosError } from 'axios';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -109,6 +109,7 @@ export default function DashboardScreen() {
   const { logout, refreshUserData } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { height: screenHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   
   // Detects shorter screen forms dynamically
   const isSmallScreen = screenHeight < 780;
@@ -353,7 +354,7 @@ export default function DashboardScreen() {
 
       {/* Sidemenu Drawer Overlay */}
       <Modal visible={menuVisible} transparent animationType="fade" onRequestClose={() => setMenuVisible(false)}>
-        <Pressable style={styles.menuOverlay} onPress={() => setMenuVisible(false)}>
+        <Pressable style={[styles.menuOverlay, { paddingTop: insets.top + 12 }]} onPress={() => setMenuVisible(false)}>
           <View style={styles.menuCard}>
             <Pressable style={styles.menuItem} onPress={handleOpenSettings}>
               <Text style={styles.menuIcon}>⚙</Text>
@@ -979,7 +980,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(15, 23, 42, 0.2)',
     alignItems: 'flex-start',
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) + 12 : 56,
     paddingLeft: 14,
   },
   menuCard: {

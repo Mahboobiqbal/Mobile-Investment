@@ -5,7 +5,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
@@ -13,6 +12,7 @@ import {
   View,
   ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { AxiosError } from 'axios';
 
@@ -141,7 +141,7 @@ export default function DepositRequestScreen() {
   const monthlyReturn = dailyReturn * 30;
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 0 }]}>
+    <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
         <ScrollView contentContainerStyle={styles.mainContent} showsVerticalScrollIndicator={false}>
 

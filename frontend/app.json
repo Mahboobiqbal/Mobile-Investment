@@ -2,8 +2,10 @@
   "expo": {
     "name": "SmartInvest",
     "slug": "frontend",
+    "orientation": "portrait",
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-screen-orientation"
     ],
     "icon": "./assets/icon.png",
     "splash": {
@@ -17,6 +19,9 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       }
+    },
+    "ios": {
+      "supportsTablet": false
     },
     "extra": {
       "eas": {

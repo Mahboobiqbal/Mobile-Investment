@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  SafeAreaView,
   View,
   Text,
   ScrollView,
@@ -12,6 +11,7 @@ import {
   Platform,
   StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
@@ -165,7 +165,7 @@ export default function AnalysisScreen() {
   const stats = getTransactionStats(filteredTransactions);
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 0 }]}>
+    <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()}>

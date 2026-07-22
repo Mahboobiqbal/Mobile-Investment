@@ -1,5 +1,6 @@
 import { AxiosError } from 'axios';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
 
 import api from '../services/api';
@@ -65,7 +66,7 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 0 }]}> 
+    <SafeAreaView style={styles.safeArea}> 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
         <View style={styles.card}>
           <Text style={styles.title}>Create Account</Text>

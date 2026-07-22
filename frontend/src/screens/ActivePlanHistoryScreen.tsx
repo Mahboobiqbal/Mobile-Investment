@@ -4,12 +4,12 @@ import {
   FlatList,
   Platform,
   RefreshControl,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useFocusEffect, useRoute } from '@react-navigation/native';
 import { AxiosError } from 'axios';
 
@@ -115,7 +115,7 @@ export default function ActivePlanHistoryScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight ?? 24 : 0 }]}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.summary}>
         <Text style={styles.eyebrow}>Active Plan</Text>
         <Text style={styles.planName} numberOfLines={2}>

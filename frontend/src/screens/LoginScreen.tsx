@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AxiosError } from 'axios';
-import { Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -78,7 +79,7 @@ export default function LoginScreen() {
   }, [route.params]);
 
   return (
-    <SafeAreaView style={[styles.safeArea, { paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 0 }]}>
+    <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
         <View style={styles.card}>
           <Text style={styles.title}>Welcome Back</Text>

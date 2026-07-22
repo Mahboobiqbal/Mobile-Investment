@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '../context/AuthContext';
 import { authApi } from '../services/api/authApi';
 
 export default function ProfileScreen() {
   const { userData, refreshUserData } = useAuth();
+  const insets = useSafeAreaInsets();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isPickingPhoto, setIsPickingPhoto] = useState(false);
@@ -83,7 +85,7 @@ export default function ProfileScreen() {
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
         style={styles.container}
-        contentContainerStyle={[styles.content, { paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) + 16 : 48 }]}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.profileCard}>

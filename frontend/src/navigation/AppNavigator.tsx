@@ -1,6 +1,7 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { ActivityIndicator, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '../context/AuthContext';
 import LoginScreen from '../screens/LoginScreen';

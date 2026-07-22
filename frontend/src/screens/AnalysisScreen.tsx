@@ -25,13 +25,14 @@ interface Transaction {
   status: string;
   createdAt: string;
   description?: string;
+  transactionId?: string;
 }
 
 interface ApiError {
   message: string;
 }
 
-type FilterType = 'all' | 'week' | 'month' | 'year';
+type FilterType = 'daily' | 'weekly' | 'monthly' | 'all';
 
 export default function AnalysisScreen() {
   const navigation = useNavigation();
@@ -39,7 +40,8 @@ export default function AnalysisScreen() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [filter, setFilter] = useState<FilterType>('month');
+  const [filter, setFilter] = useState<FilterType>('monthly');
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [errorModal, setErrorModal] = useState({ visible: false, title: '', message: '' });
 
   const fetchTransactions = useCallback(async () => {
@@ -69,24 +71,47 @@ export default function AnalysisScreen() {
     fetchTransactions();
   }, [fetchTransactions]);
 
+  const toDateStr = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
   const getFilteredTransactions = () => {
     const now = new Date();
     return transactions.filter((tx) => {
       const txDate = new Date(tx.createdAt);
       const daysDiff = (now.getTime() - txDate.getTime()) / (1000 * 60 * 60 * 24);
 
-      if (filter === 'week') return daysDiff <= 7;
-      if (filter === 'month') return daysDiff <= 30;
-      if (filter === 'year') return daysDiff <= 365;
+      if (filter === 'daily') return toDateStr(txDate) === toDateStr(selectedDate);
+      if (filter === 'weekly') return daysDiff <= 7;
+      if (filter === 'monthly') return daysDiff <= 30;
       return true;
     });
   };
 
+  const changeDate = (delta: number) => {
+    const next = new Date(selectedDate);
+    next.setDate(next.getDate() + delta);
+    setSelectedDate(next);
+  };
+
+  const isROITx = (tx: Transaction) =>
+    tx.transactionId && tx.transactionId.startsWith('ROI-DAILY-');
+
   const getTransactionStats = (filteredTxs: Transaction[]) => {
+    const approvedDeposits = filteredTxs
+      .filter((tx) => ['plan', 'deposit', 'Deposit'].includes(tx.type))
+      .filter((tx) => ['approved', 'Approved'].includes(tx.status))
+      .filter((tx) => !isROITx(tx));
+
+    const processedWithdrawals = filteredTxs
+      .filter((tx) => ['withdrawal', 'Withdrawal'].includes(tx.type))
+      .filter((tx) => ['approved', 'Approved', 'withdrawn', 'Withdrawn'].includes(tx.status));
+
+    const roiTransactions = filteredTxs.filter((tx) => isROITx(tx));
+
     return {
-      deposits: filteredTxs.filter((tx) => ['plan', 'deposit', 'Deposit'].includes(tx.type)).reduce((sum, tx) => sum + tx.amount, 0),
-      withdrawals: filteredTxs.filter((tx) => ['withdrawal', 'Withdrawal'].includes(tx.type)).reduce((sum, tx) => sum + tx.amount, 0),
-      roi: filteredTxs.filter((tx) => tx.type === 'roi').reduce((sum, tx) => sum + tx.amount, 0),
+      deposits: approvedDeposits.reduce((sum, tx) => sum + tx.amount, 0),
+      withdrawals: processedWithdrawals.reduce((sum, tx) => sum + tx.amount, 0),
+      roi: roiTransactions.reduce((sum, tx) => sum + tx.amount, 0),
       count: filteredTxs.length,
     };
   };
@@ -183,14 +208,14 @@ export default function AnalysisScreen() {
         <View style={styles.filterSection}>
           <Text style={styles.filterLabel}>Filter by Period</Text>
           <View style={styles.filterButtons}>
-            {['week', 'month', 'year', 'all'].map((filterOption) => (
+            {(['daily', 'weekly', 'monthly', 'all'] as FilterType[]).map((filterOption) => (
               <Pressable
                 key={filterOption}
                 style={[
                   styles.filterButton,
                   filter === filterOption && styles.filterButtonActive,
                 ]}
-                onPress={() => setFilter(filterOption as FilterType)}
+                onPress={() => setFilter(filterOption)}
               >
                 <Text
                   style={[
@@ -203,6 +228,31 @@ export default function AnalysisScreen() {
               </Pressable>
             ))}
           </View>
+
+          {filter === 'daily' && (
+            <View style={styles.datePickerRow}>
+              <Pressable onPress={() => changeDate(-1)} style={styles.dateArrow}>
+                <Text style={styles.dateArrowText}>{'<'}</Text>
+              </Pressable>
+
+              <Text style={styles.dateText}>
+                {selectedDate.toLocaleDateString('en-PK', {
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })}
+              </Text>
+
+              <Pressable onPress={() => changeDate(1)} style={styles.dateArrow}>
+                <Text style={styles.dateArrowText}>{'>'}</Text>
+              </Pressable>
+
+              <Pressable onPress={() => setSelectedDate(new Date())} style={styles.todayButton}>
+                <Text style={styles.todayButtonText}>Today</Text>
+              </Pressable>
+            </View>
+          )}
         </View>
 
         {/* Statistics Cards */}
@@ -367,6 +417,44 @@ const styles = StyleSheet.create({
   },
   filterButtonTextActive: {
     color: '#FFFFFF',
+  },
+  datePickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+    gap: 8,
+  },
+  dateArrow: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#1E293B',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dateArrowText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  dateText: {
+    color: '#0F172A',
+    fontSize: 14,
+    fontWeight: '600',
+    minWidth: 160,
+    textAlign: 'center',
+  },
+  todayButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#0EA5E9',
+  },
+  todayButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
   },
   statsContainer: {
     flexDirection: 'row',

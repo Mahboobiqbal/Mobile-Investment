@@ -4559,3 +4559,7 @@
 {"_e":"metro:bundling:progress","_t":1784760575285,"id":"a","progress":0,"total":1,"current":0}
 {"_e":"metro:bundling:done","_t":1784760575491,"id":"a","total":1,"ms":3650.0919}
 {"_e":"metro:client_log","_t":1784760650239,"level":"error","data":["The action 'RESET' with payload {\"index\":1,\"routes\":[{\"name\":\"Dashboard\"},{\"name\":\"Settings\"}]} was not handled by any navigator.\n\nThis is a development-only warning and won't be shown in production."]}
+{"_e":"metro:client_log","_t":1784760862297,"level":"log","data":["API baseURL:","http://192.168.1.13:5000/api"]}
+{"_e":"metro:bundling:started","_t":1784760894491,"id":"f","platform":"android","environment":null,"entry":"index.js"}
+{"_e":"metro:bundling:progress","_t":1784760894491,"id":"f","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1784760894577,"id":"f","total":1,"ms":85.6983}

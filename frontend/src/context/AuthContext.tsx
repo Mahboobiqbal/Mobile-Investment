@@ -86,8 +86,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let isMounted = true;
 
     const bootstrap = async () => {
+      let storedToken: string | null = null;
+
       try {
-        const storedToken = await SecureStore.getItemAsync(TOKEN_KEY);
+        storedToken = await SecureStore.getItemAsync(TOKEN_KEY);
 
         if (!storedToken) {
           if (isMounted) {
@@ -103,12 +105,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (isMounted) {
           await applySession(storedToken, response.data.user);
         }
-      } catch (error) {
-        await SecureStore.deleteItemAsync(TOKEN_KEY);
-        setAuthTokenProvider(() => null);
+      } catch (error: any) {
+        if (error?.response?.status === 401) {
+          await SecureStore.deleteItemAsync(TOKEN_KEY);
+          setAuthTokenProvider(() => null);
+        }
 
         if (isMounted) {
-          setAuthState({ token: null, loading: false, userData: null });
+          setAuthState({ token: storedToken, loading: false, userData: null });
         }
       }
     };

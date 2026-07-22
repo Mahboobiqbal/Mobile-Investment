@@ -4366,3 +4366,49 @@
 {"_e":"env:load","_t":1784634073703,"mode":"development","files":["../..\\..\\.env"],"env":{"EXPO_PUBLIC_API_URL":"https://mobile-investment-1.onrender.com/api"}}
 {"_e":"devserver:start","_t":1784634074259,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../..\\..\\app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
 {"_e":"metro:config","_t":1784634074984,"serverRoot":"../..\\..","projectRoot":"../..\\..","exporting":false,"flags":{"autolinkingModuleResolution":false,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"metro:instantiate","_t":1784634081674,"atlas":false,"workers":6,"host":"::","port":8081}
+{"_e":"metro:bundling:started","_t":1784634097025,"id":"3","platform":"android","environment":null,"entry":"index.js"}
+{"_e":"metro:bundling:progress","_t":1784634097025,"id":"3","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1784634097034,"id":"3","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1784634097156,"id":"3","progress":0.010000000000000002,"total":1,"current":1}
+{"_e":"metro:bundling:progress","_t":1784634097259,"id":"3","progress":0.09,"total":10,"current":3}
+{"_e":"metro:bundling:progress","_t":1784634097364,"id":"3","progress":0.09,"total":15,"current":3}
+{"_e":"metro:bundling:progress","_t":1784634097394,"id":"3","progress":0.09,"total":15,"current":4}
+{"_e":"metro:bundling:progress","_t":1784634097503,"id":"3","progress":0.09,"total":92,"current":12}
+{"_e":"metro:bundling:progress","_t":1784634097602,"id":"3","progress":0.09,"total":231,"current":62}
+{"_e":"metro:bundling:progress","_t":1784634097703,"id":"3","progress":0.11563919640558432,"total":347,"current":118}
+{"_e":"metro:bundling:progress","_t":1784634097803,"id":"3","progress":0.20475625,"total":400,"current":181}
+{"_e":"metro:bundling:progress","_t":1784634097904,"id":"3","progress":0.22404444444444443,"total":450,"current":213}
+{"_e":"metro:bundling:progress","_t":1784634098004,"id":"3","progress":0.3249443594906811,"total":514,"current":293}
+{"_e":"metro:bundling:progress","_t":1784634098142,"id":"3","progress":0.35613943808532783,"total":558,"current":333}
+{"_e":"metro:bundling:progress","_t":1784634098242,"id":"3","progress":0.36761459586538786,"total":602,"current":365}
+{"_e":"metro:bundling:progress","_t":1784634098342,"id":"3","progress":0.40352930777885804,"total":647,"current":411}
+{"_e":"metro:bundling:progress","_t":1784634098442,"id":"3","progress":0.46560553633217994,"total":680,"current":464}
+{"_e":"metro:bundling:progress","_t":1784634098542,"id":"3","progress":0.5614135685780299,"total":690,"current":517}
+{"_e":"metro:bundling:progress","_t":1784634098643,"id":"3","progress":0.6133226244620128,"total":724,"current":567}
+{"_e":"metro:bundling:progress","_t":1784634098742,"id":"3","progress":0.7452364352507386,"total":746,"current":644}
+{"_e":"metro:bundling:progress","_t":1784634098842,"id":"3","progress":0.7452364352507386,"total":851,"current":730}
+{"_e":"metro:bundling:progress","_t":1784634098966,"id":"3","progress":0.8007647303174531,"total":894,"current":800}
+{"_e":"metro:bundling:progress","_t":1784634099066,"id":"3","progress":0.8179874012687797,"total":994,"current":899}
+{"_e":"metro:bundling:progress","_t":1784634099166,"id":"3","progress":0.8811876409938076,"total":1028,"current":965}
+{"_e":"metro:bundling:progress","_t":1784634099266,"id":"3","progress":0.9324777110890974,"total":1048,"current":1012}
+{"_e":"metro:bundling:progress","_t":1784634099370,"id":"3","progress":0.999,"total":1070,"current":1070}
+{"_e":"metro:bundling:done","_t":1784634099461,"id":"3","total":1070,"ms":2435.7687}
+{"_e":"metro:client_log","_t":1784634102266,"level":"warn","data":["SafeAreaView has been deprecated and will be removed in a future release. Please use 'react-native-safe-area-context' instead. See https://github.com/AppAndFlow/react-native-safe-area-context"]}
+{"_e":"metro:client_log","_t":1784634675479,"level":"log","data":["API baseURL:","https://mobile-investment-1.onrender.com/api"]}
+{"_e":"metro:client_log","_t":1784634702426,"level":"warn","data":["[expo-image-picker] `ImagePicker.MediaTypeOptions` have been deprecated. Use `ImagePicker.MediaType` or an array of `ImagePicker.MediaType` instead."]}
+{"_e":"metro:client_log","_t":1784636480554,"level":"error","data":["[ReferenceError: Property 'weeklyProfit' doesn't exist]"]}
+{"_e":"metro:server_log","_t":1784640945696,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","host.exp.exponent","sdk_gphone16k_x86_64 - 17 - API 37","60"]}
+{"_e":"metro:server_log","_t":1784640945697,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","host.exp.exponent","sdk_gphone16k_x86_64 - 17 - API 37","60"]}
+{"_e":"metro:server_log","_t":1784648272730,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","host.exp.exponent","sdk_gphone16k_x86_64 - 17 - API 37","60"]}
+{"_e":"root:init","_t":1784753631085,"format":"v0-jsonl","version":"56.1.19"}
+{"_e":"env:mode","_t":1784753631086,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1784753631093,"mode":"development","files":["../..\\..\\.env"],"env":{"EXPO_PUBLIC_API_URL":"https://mobile-investment-1.onrender.com/api"}}
+{"_e":"devserver:start","_t":1784753632407,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../..\\..\\app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1784753633717,"serverRoot":"../..\\..","projectRoot":"../..\\..","exporting":false,"flags":{"autolinkingModuleResolution":false,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"metro:instantiate","_t":1784753642396,"atlas":false,"workers":6,"host":"::","port":8081}
+{"_e":"root:init","_t":1784753734546,"format":"v0-jsonl","version":"56.1.19"}
+{"_e":"env:mode","_t":1784753734548,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1784753734559,"mode":"development","files":["../..\\..\\.env"],"env":{"EXPO_PUBLIC_API_URL":"https://mobile-investment-1.onrender.com/api"}}
+{"_e":"devserver:start","_t":1784753736230,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../..\\..\\app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1784753737654,"serverRoot":"../..\\..","projectRoot":"../..\\..","exporting":false,"flags":{"autolinkingModuleResolution":false,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}

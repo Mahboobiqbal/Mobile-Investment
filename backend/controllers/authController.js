@@ -8,6 +8,7 @@ const User = require('../models/User');
 const Plan = require('../models/Plan');
 const Transaction = require('../models/Transaction');
 const UserInvestment = require('../models/UserInvestment');
+const DailyProfitRate = require('../models/DailyProfitRate');
 const { syncUserPlanState } = require('../utils/planState');
 
 const emailUser = process.env.EMAIL_USER;
@@ -404,7 +405,7 @@ const getUserDashboardStats = async (req, res) => {
     try {
       const userId = req.user.id;
 
-      const [stats, investments] = await Promise.all([
+      const [stats, investments, user, dailyConfig] = await Promise.all([
         Transaction.aggregate([
           {
             $match: {
@@ -460,10 +461,13 @@ const getUserDashboardStats = async (req, res) => {
           },
         ]),
         UserInvestment.find({ user: userId, status: 'active' }).select('investmentAmount'),
+        User.findById(userId).select('currentBalance'),
+        DailyProfitRate.findOne({ date: new Date().toISOString().split('T')[0] }),
       ]);
 
       const summary = stats[0] || {};
       const totalInvestment = investments.reduce((sum, inv) => sum + inv.investmentAmount, 0);
+      const dailyRate = dailyConfig ? dailyConfig.rate : 0.005;
 
       return res.status(200).json({
         message: 'Dashboard stats fetched successfully',
@@ -471,6 +475,8 @@ const getUserDashboardStats = async (req, res) => {
         totalWithdrawalsApproved: summary.totalWithdrawalsProcessed?.[0]?.total || 0,
         totalROIEarnings: summary.totalROIEarnings?.[0]?.total || 0,
         totalInvestment,
+        currentBalance: user?.currentBalance || 0,
+        dailyRate,
       });
     } catch (error) {
       console.error('Dashboard stats calculation failed:', error.message);

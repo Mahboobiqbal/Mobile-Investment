@@ -86,45 +86,35 @@ export default function ProfileScreen() {
         contentContainerStyle={[styles.content, { paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) + 16 : 48 }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.heroCard}>
-          <View style={styles.headerRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.header}>Profile</Text>
-              <Text style={styles.sub}>Edit your account details and choose a profile picture.</Text>
-            </View>
-            <Pressable onPress={() => setIsEditing((value) => !value)} style={({ pressed }) => [styles.editPill, pressed && styles.pressed]}>
-              <Text style={styles.editPillText}>{isEditing ? 'Cancel' : 'Edit'}</Text>
-            </Pressable>
-          </View>
-
-          <View style={styles.profileCard}>
-            <Pressable onPress={openImagePicker} style={styles.avatarWrap}>
-              {dp ? (
-                <Image source={{ uri: dp }} style={styles.avatar} />
-              ) : (
-                <View style={styles.avatarPlaceholder}>
-                  <Text style={styles.avatarText}>{initials}</Text>
-                </View>
-              )}
-              <View style={styles.avatarBadge}>
-                {isPickingPhoto ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.avatarBadgeText}>✎</Text>}
+        <View style={styles.profileCard}>
+          <Pressable onPress={openImagePicker} style={styles.avatarWrap}>
+            {dp ? (
+              <Image source={{ uri: dp }} style={styles.avatar} />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarText}>{initials}</Text>
               </View>
-            </Pressable>
-
-            <Text style={styles.name}>{userData?.name || 'User'}</Text>
-            <Text style={styles.email}>{userData?.email || 'No email available'}</Text>
-
-            <View style={styles.chipRow}>
-              <StatusChip label={userData?.role || 'user'} tone="neutral" />
-              <StatusChip label={userData?.isVerified ? 'Verified' : 'Unverified'} tone={userData?.isVerified ? 'success' : 'warning'} />
-              <StatusChip label={userData?.activePlan && userData.activePlan !== 'None' ? userData.activePlan : 'No active plan'} tone={userData?.activePlan && userData.activePlan !== 'None' ? 'success' : 'neutral'} />
+            )}
+            <View style={styles.avatarBadge}>
+              {isPickingPhoto ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.avatarBadgeText}>📷</Text>}
             </View>
+          </Pressable>
+
+          <Text style={styles.name}>{userData?.name || 'User'}</Text>
+          <Text style={styles.email}>{userData?.email || 'No email available'}</Text>
+
+          <View style={styles.chipRow}>
+            <StatusChip label={userData?.role || 'user'} tone="neutral" />
+            <StatusChip label={userData?.isVerified ? 'Verified' : 'Unverified'} tone={userData?.isVerified ? 'success' : 'warning'} />
+            <StatusChip label={userData?.activePlan && userData.activePlan !== 'None' ? userData.activePlan : 'No active plan'} tone={userData?.activePlan && userData.activePlan !== 'None' ? 'success' : 'neutral'} />
           </View>
+
+          <Pressable onPress={() => setIsEditing((value) => !value)} style={({ pressed }) => [styles.editButton, pressed && styles.pressed]}>
+            <Text style={styles.editButtonText}>{isEditing ? 'Cancel' : 'Edit Profile'}</Text>
+          </Pressable>
         </View>
 
         <View style={styles.infoCard}>
-          <Text style={styles.sectionTitle}>Account Details</Text>
-
           <EditableField
             label="Full Name"
             value={name}
@@ -144,15 +134,6 @@ export default function ProfileScreen() {
 
           <ReadonlyRow label="Email" value={userData?.email || 'No email available'} />
           <ReadonlyRow label="Balance" value={`Rs. ${Number(userData?.currentBalance || 0).toLocaleString()}`} />
-
-          <View style={styles.divider} />
-
-          <Text style={styles.sectionTitle}>Profile Picture</Text>
-          <Text style={styles.helperText}>Choose a square image for the best result. The photo is saved to your profile when you tap Save Changes.</Text>
-
-          <Pressable onPress={openImagePicker} style={({ pressed }) => [styles.photoButton, pressed && styles.pressed]}>
-            <Text style={styles.photoButtonText}>{isPickingPhoto ? 'Opening gallery...' : 'Select Profile Picture'}</Text>
-          </Pressable>
 
           {isEditing && (
             <Pressable onPress={handleSave} style={({ pressed }) => [styles.saveButton, pressed && styles.pressed]} disabled={isSaving}>
@@ -228,43 +209,20 @@ const chipToneTextStyles = StyleSheet.create({
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F1F5F9' },
   content: { paddingHorizontal: 16, paddingBottom: 28 },
-  heroCard: {
-    gap: 16,
-    marginBottom: 14,
-    borderRadius: 28,
-    padding: 18,
-    backgroundColor: '#0F172A',
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 4,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  header: { fontSize: 28, fontWeight: '900', color: '#FFFFFF' },
-  sub: { marginTop: 4, color: '#CBD5E1', fontSize: 13, lineHeight: 18 },
-  editPill: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-  },
-  editPillText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
   profileCard: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 24,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 28,
+    padding: 24,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 3,
   },
-  avatarWrap: { marginBottom: 12 },
-  avatar: { width: 96, height: 96, borderRadius: 48 },
+  avatarWrap: { marginBottom: 14 },
+  avatar: { width: 96, height: 96, borderRadius: 48, borderWidth: 3, borderColor: '#E2E8F0' },
   avatarPlaceholder: {
     width: 96,
     height: 96,
@@ -272,6 +230,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#DBEAFE',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: '#E2E8F0',
   },
   avatarText: { fontSize: 30, fontWeight: '900', color: '#1D4ED8' },
   avatarBadge: {
@@ -281,30 +241,37 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#10B981',
+    backgroundColor: '#0F172A',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#0F172A',
+    borderColor: '#FFFFFF',
   },
-  avatarBadgeText: { color: '#fff', fontSize: 14, fontWeight: '900' },
-  name: { fontSize: 22, fontWeight: '900', color: '#FFFFFF' },
-  email: { marginTop: 4, fontSize: 13, color: '#CBD5E1' },
+  avatarBadgeText: { fontSize: 12 },
+  name: { fontSize: 22, fontWeight: '900', color: '#0F172A' },
+  email: { marginTop: 4, fontSize: 13, color: '#64748B' },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginTop: 14 },
   chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999 },
   chipText: { fontSize: 11, fontWeight: '800', textTransform: 'capitalize' },
+  editButton: {
+    marginTop: 18,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: '#0F172A',
+  },
+  editButtonText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
   infoCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 16,
+    borderRadius: 28,
+    padding: 20,
     shadowColor: '#000',
     shadowOpacity: 0.06,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 10 },
     elevation: 3,
   },
-  sectionTitle: { fontSize: 15, fontWeight: '900', color: '#0F172A', marginBottom: 12 },
-  fieldBlock: { marginBottom: 12 },
+  fieldBlock: { marginBottom: 16 },
   fieldLabel: { fontSize: 12, fontWeight: '800', color: '#334155', marginBottom: 8 },
   input: {
     borderWidth: 1,
@@ -318,30 +285,19 @@ const styles = StyleSheet.create({
   },
   inputReadonly: { color: '#475569' },
   rowBlock: {
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: '#F1F5F9',
     gap: 4,
   },
   rowLabel: { fontSize: 12, fontWeight: '800', color: '#64748B' },
   rowValue: { fontSize: 14, fontWeight: '700', color: '#0F172A' },
-  divider: { height: 1, backgroundColor: '#E2E8F0', marginVertical: 14 },
-  helperText: { fontSize: 12, color: '#64748B', lineHeight: 18, marginBottom: 12 },
-  photoButton: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#0EA5E9',
-    backgroundColor: '#E0F2FE',
-    alignItems: 'center',
-    paddingVertical: 12,
-    marginBottom: 12,
-  },
-  photoButtonText: { color: '#0369A1', fontSize: 13, fontWeight: '900' },
   saveButton: {
+    marginTop: 8,
     borderRadius: 16,
     backgroundColor: '#0F766E',
     alignItems: 'center',
-    paddingVertical: 13,
+    paddingVertical: 14,
   },
   saveButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '900' },
   pressed: { opacity: 0.88, transform: [{ scale: 0.99 }] },

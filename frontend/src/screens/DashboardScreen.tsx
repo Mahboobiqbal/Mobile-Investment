@@ -47,6 +47,8 @@ interface DashboardStatsResponse {
   totalWithdrawalsApproved: number;
   totalROIEarnings: number;
   totalInvestment: number;
+  currentBalance: number;
+  dailyRate: number;
 }
 
 interface InvestmentPlan {
@@ -256,6 +258,9 @@ export default function DashboardScreen() {
     totalDepositsApproved: 0,
     totalWithdrawalsApproved: 0,
     totalROIEarnings: 0,
+    totalInvestment: 0,
+    currentBalance: 0,
+    dailyRate: 0.005,
   };
 
   const formatCurrency = (amount: number) => {
@@ -532,25 +537,17 @@ export default function DashboardScreen() {
             <Text style={[styles.sectionTitle, { marginBottom: isSmallScreen ? 4 : 8 }]}>My Plans Summary</Text>
             <View style={styles.tableMainWrapperCard}>
               <View style={styles.tableHeaderBackgroundRow}>
-                <Text style={[styles.thElement, { flex: 1.5 }]}>PLAN</Text>
                 <Text style={[styles.thElement, { flex: 2, textAlign: 'center' }]}>INVESTMENT</Text>
-                <Text style={[styles.thElement, { flex: 2, textAlign: 'center' }]}>WEEKLY PROFIT</Text>
+                <Text style={[styles.thElement, { flex: 2, textAlign: 'center' }]}>DAILY PROFIT</Text>
                 <Text style={[styles.thElement, { flex: 2, textAlign: 'right' }]}>TOTAL PROFIT</Text>
               </View>
 
-{investments.filter(inv => inv.status === 'active').length > 0 ? (
-                investments.filter(inv => inv.status === 'active').map((row) => {
-                  const weeklyProfit = row.investmentAmount * row.dailyReturnRate * 7;
-                  const totalProfit = stats.totalROIEarnings || 0;
-                  return (
-                    <View key={row._id} style={[styles.tableDataRow, { paddingVertical: isSmallScreen ? 5 : 8 }]}>
-                      <Text style={[styles.tdElement, { flex: 1.5, fontWeight: '700', color: '#334155' }]}>{row.plan?.name || 'Unknown Plan'}</Text>
-                      <Text style={[styles.tdElement, { flex: 2, textAlign: 'center', color: '#047857', fontWeight: '600' }]}>{formatCurrency(row.investmentAmount)}</Text>
-                      <Text style={[styles.tdElement, { flex: 2, textAlign: 'center', color: '#059669', fontWeight: '600' }]}>{formatCurrency(weeklyProfit)}</Text>
-                      <Text style={[styles.tdElement, { flex: 2, textAlign: 'right', color: '#047857', fontWeight: '700' }]}>{formatCurrency(totalProfit)}</Text>
-                    </View>
-                  );
-                })
+{investments.filter(inv => inv.status === 'active').length > 0 || (stats.totalDepositsApproved || 0) > 0 ? (
+                <View style={[styles.tableDataRow, { paddingVertical: isSmallScreen ? 5 : 8 }]}>
+                  <Text style={[styles.tdElement, { flex: 2, textAlign: 'center', color: '#047857', fontWeight: '600' }]}>{formatCurrency(stats.totalDepositsApproved || 0)}</Text>
+                  <Text style={[styles.tdElement, { flex: 2, textAlign: 'center', color: '#059669', fontWeight: '600' }]}>{formatCurrency((stats.currentBalance || 0) * (stats.dailyRate || 0.005))}</Text>
+                  <Text style={[styles.tdElement, { flex: 2, textAlign: 'right', color: '#047857', fontWeight: '700' }]}>{formatCurrency(stats.totalROIEarnings || 0)}</Text>
+                </View>
               ) : (
                 <View style={[styles.tableDataRow, { paddingVertical: 12 }]}>
                   <Text style={[styles.tdElement, { flex: 8, textAlign: 'center', color: '#64748B', fontStyle: 'italic' }]}>No active investments</Text>

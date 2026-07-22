@@ -9,6 +9,7 @@ import Plans from './Plans';
 import Categories from './Categories';
 import Home from './Home';
 import Posts from './Posts';
+import DailyProfitRatePage from './DailyProfitRate';
 
 export default function Dashboard() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -27,6 +28,7 @@ export default function Dashboard() {
             <Route path="/categories" element={<Categories />} />
             <Route path="/plans" element={<Plans />} />
             <Route path="/posts" element={<Posts />} />
+            <Route path="/daily-profit-rate" element={<DailyProfitRatePage />} />
           </Routes>
         </main>
       </div>

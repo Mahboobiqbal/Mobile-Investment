@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AxiosError } from 'axios';
-import { Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -71,7 +71,6 @@ export default function LoginScreen() {
     }
   };
 
-  // Prefill credentials if navigated from Register
   const route = useRoute<LoginRoute>();
   useEffect(() => {
     if (route.params?.email) setEmail(route.params.email);
@@ -79,14 +78,22 @@ export default function LoginScreen() {
   }, [route.params]);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
-        <View style={styles.card}>
-          <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>Sign in to continue to your wallet dashboard.</Text>
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
+        <View style={styles.hero}>
+          <View style={styles.brandBadge}>
+            <Text style={styles.brandIcon}>📈</Text>
+          </View>
+          <Text style={styles.brandName}>SmartInvest</Text>
+          <Text style={styles.brandTagline}>Your trusted investment platform</Text>
+        </View>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Email</Text>
+        <View style={styles.formCard}>
+          <Text style={styles.formTitle}>Welcome Back</Text>
+          <Text style={styles.formSubtitle}>Sign in to access your dashboard</Text>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Email</Text>
             <TextInput
               autoCapitalize="none"
               autoCorrect={false}
@@ -99,8 +106,8 @@ export default function LoginScreen() {
             />
           </View>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Password</Text>
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Password</Text>
             <TextInput
               onChangeText={setPassword}
               placeholder="Enter your password"
@@ -113,112 +120,174 @@ export default function LoginScreen() {
 
           <Pressable
             onPress={() => navigation.navigate('ForgotPassword', { email: email.trim().toLowerCase() })}
-            style={styles.forgotPasswordRow}
+            hitSlop={8}
+            style={styles.forgotRow}
           >
-            <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+            <Text style={styles.forgotText}>Forgot password?</Text>
           </Pressable>
 
-          <Pressable disabled={isLoading} onPress={handleLogin} style={[styles.button, isLoading && styles.buttonDisabled]}>
-            {isLoading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.buttonText}>Login</Text>}
+          <Pressable
+            disabled={isLoading}
+            onPress={handleLogin}
+            style={[styles.primaryButton, isLoading && styles.primaryButtonDisabled]}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.primaryButtonText}>Sign In</Text>
+            )}
           </Pressable>
 
-          <Pressable style={styles.signUpRow} onPress={() => navigation.navigate('Register' as never)}>
-            <Text style={styles.signUpText}>Don't have an account? <Text style={styles.signUpLink}>Sign up</Text></Text>
+          <Pressable
+            onPress={() => navigation.navigate('Register' as never)}
+            hitSlop={8}
+            style={styles.switchRow}
+          >
+            <Text style={styles.switchText}>
+              Don't have an account?{' '}
+              <Text style={styles.switchLink}>Create one</Text>
+            </Text>
           </Pressable>
         </View>
       </KeyboardAvoidingView>
-
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
     backgroundColor: '#F1F5F9',
   },
-  container: {
+  flex: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
+  },
+
+  // Hero
+  hero: {
+    alignItems: 'center',
+    paddingTop: 40,
+    paddingBottom: 32,
     paddingHorizontal: 20,
   },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 4,
+  brandBadge: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: '#0F172A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
   },
-  title: {
-    fontSize: 26,
-    fontWeight: '700',
+  brandIcon: {
+    fontSize: 28,
+  },
+  brandName: {
+    fontSize: 28,
+    fontWeight: '800',
     color: '#0F172A',
-    marginBottom: 8,
+    letterSpacing: -0.5,
   },
-  subtitle: {
+  brandTagline: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#64748B',
+    marginTop: 4,
+  },
+
+  // Form card
+  formCard: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 24,
+    paddingTop: 28,
+    paddingBottom: 40,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  formTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 6,
+  },
+  formSubtitle: {
     fontSize: 14,
-    color: '#475569',
-    marginBottom: 20,
+    fontWeight: '500',
+    color: '#64748B',
+    marginBottom: 24,
   },
-  formGroup: {
-    marginBottom: 14,
+
+  // Input
+  inputGroup: {
+    marginBottom: 16,
   },
-  label: {
-    fontSize: 14,
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: '600',
     color: '#334155',
     marginBottom: 6,
-    fontWeight: '600',
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     fontSize: 15,
+    fontWeight: '500',
     color: '#0F172A',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
   },
-  button: {
+
+  // Forgot
+  forgotRow: {
+    alignItems: 'flex-end',
+    marginTop: -6,
+    marginBottom: 4,
+  },
+  forgotText: {
+    color: '#0EA5E9',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  // Button
+  primaryButton: {
     marginTop: 12,
-    borderRadius: 10,
-    backgroundColor: '#0EA5E9',
-    paddingVertical: 13,
+    borderRadius: 14,
+    backgroundColor: '#0F172A',
+    paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonDisabled: {
-    opacity: 0.65,
+  primaryButtonDisabled: {
+    opacity: 0.5,
   },
-  buttonText: {
+  primaryButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
+    letterSpacing: 0.3,
   },
-  signUpRow: {
-    marginTop: 12,
+
+  // Switch
+  switchRow: {
+    marginTop: 18,
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  signUpText: {
+  switchText: {
     color: '#64748B',
     fontSize: 13,
+    fontWeight: '500',
   },
-  signUpLink: {
+  switchLink: {
     color: '#0EA5E9',
-    fontWeight: '700',
-  },
-  forgotPasswordRow: {
-    alignItems: 'flex-end',
-    marginTop: -4,
-    marginBottom: 2,
-  },
-  forgotPasswordText: {
-    color: '#0EA5E9',
-    fontSize: 13,
     fontWeight: '700',
   },
 });

@@ -7,7 +7,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -142,27 +141,48 @@ export default function ForgotPasswordScreen() {
         : 'Choose a new password for your account.';
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          <View style={styles.card}>
-            <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-              <Text style={styles.backButtonText}>Back to Login</Text>
-            </Pressable>
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
+        <View style={styles.hero}>
+          <Pressable onPress={() => navigation.goBack()} hitSlop={10} style={styles.backButton}>
+            <Text style={styles.backButtonText}>←</Text>
+          </Pressable>
+          <View style={styles.brandBadge}>
+            <Text style={styles.brandIcon}>🔐</Text>
+          </View>
+          <Text style={styles.brandName}>Reset Password</Text>
+          <Text style={styles.brandTagline}>{subtitle}</Text>
+        </View>
 
-            <Text style={styles.title}>Reset Password</Text>
-            <Text style={styles.subtitle}>{subtitle}</Text>
-
+        <ScrollView
+          style={styles.formWrapper}
+          contentContainerStyle={styles.formContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.formCard}>
             <View style={styles.stepRow}>
-              {(['email', 'otp', 'password'] as Step[]).map((item, index) => (
-                <View key={item} style={[styles.stepDot, step === item && styles.stepDotActive]}>
-                  <Text style={[styles.stepText, step === item && styles.stepTextActive]}>{index + 1}</Text>
-                </View>
-              ))}
+              {(['email', 'otp', 'password'] as Step[]).map((item, index) => {
+                const isActive = step === item;
+                const isDone = ['email', 'otp', 'password'].indexOf(step) > index;
+                const stepLabels = ['Email', 'Verify', 'Reset'];
+                return (
+                  <View key={item} style={styles.stepItem}>
+                    <View style={[styles.stepDot, (isActive || isDone) && styles.stepDotActive, isDone && styles.stepDotDone]}>
+                      <Text style={[styles.stepNumber, (isActive || isDone) && styles.stepNumberActive]}>
+                        {isDone ? '✓' : index + 1}
+                      </Text>
+                    </View>
+                    <Text style={[styles.stepLabel, (isActive || isDone) && styles.stepLabelActive]}>
+                      {stepLabels[index]}
+                    </Text>
+                  </View>
+                );
+              })}
             </View>
 
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Email</Text>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Email</Text>
               <TextInput
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -177,8 +197,8 @@ export default function ForgotPasswordScreen() {
             </View>
 
             {step !== 'email' && (
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>OTP</Text>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>OTP</Text>
                 <TextInput
                   keyboardType="number-pad"
                   maxLength={6}
@@ -194,8 +214,8 @@ export default function ForgotPasswordScreen() {
 
             {step === 'password' && (
               <>
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>New Password</Text>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>New Password</Text>
                   <TextInput
                     onChangeText={setNewPassword}
                     placeholder="Create a new password"
@@ -206,8 +226,8 @@ export default function ForgotPasswordScreen() {
                   />
                 </View>
 
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>Confirm Password</Text>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Confirm Password</Text>
                   <TextInput
                     onChangeText={setConfirmPassword}
                     placeholder="Confirm your new password"
@@ -220,13 +240,26 @@ export default function ForgotPasswordScreen() {
               </>
             )}
 
-            <Pressable disabled={isLoading} onPress={primaryAction} style={[styles.button, isLoading && styles.buttonDisabled]}>
-              {isLoading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.buttonText}>{buttonText}</Text>}
+            <Pressable
+              disabled={isLoading}
+              onPress={primaryAction}
+              style={[styles.primaryButton, isLoading && styles.primaryButtonDisabled]}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.primaryButtonText}>{buttonText}</Text>
+              )}
             </Pressable>
 
             {step === 'otp' && (
-              <Pressable disabled={isLoading} onPress={handleRequestOtp} style={styles.secondaryButton}>
-                <Text style={styles.secondaryButtonText}>Resend OTP</Text>
+              <Pressable
+                disabled={isLoading}
+                onPress={handleRequestOtp}
+                hitSlop={8}
+                style={styles.secondaryRow}
+              >
+                <Text style={styles.secondaryText}>Resend OTP</Text>
               </Pressable>
             )}
           </View>
@@ -237,118 +270,189 @@ export default function ForgotPasswordScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
     backgroundColor: '#F1F5F9',
   },
-  container: {
+  flex: {
     flex: 1,
+    justifyContent: 'flex-end',
   },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
+
+  // Hero
+  hero: {
+    alignItems: 'center',
+    paddingTop: 20,
+    paddingBottom: 24,
     paddingHorizontal: 20,
-    paddingVertical: 24,
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 4,
+    position: 'relative',
   },
   backButton: {
-    alignSelf: 'flex-start',
-    marginBottom: 16,
-  },
-  backButtonText: {
-    color: '#0EA5E9',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#475569',
-    lineHeight: 20,
-    marginBottom: 18,
-  },
-  stepRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 20,
-  },
-  stepDot: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#E2E8F0',
+    zIndex: 1,
   },
-  stepDotActive: {
-    backgroundColor: '#0EA5E9',
-  },
-  stepText: {
-    color: '#64748B',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  stepTextActive: {
-    color: '#FFFFFF',
-  },
-  formGroup: {
-    marginBottom: 14,
-  },
-  label: {
-    fontSize: 14,
-    color: '#334155',
-    marginBottom: 6,
+  backButtonText: {
+    fontSize: 16,
+    color: '#0F172A',
     fontWeight: '600',
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
+  brandBadge: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: '#0F172A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  brandIcon: {
+    fontSize: 28,
+  },
+  brandName: {
+    fontSize: 24,
+    fontWeight: '800',
     color: '#0F172A',
+    letterSpacing: -0.5,
+    marginBottom: 6,
+  },
+  brandTagline: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#64748B',
+    textAlign: 'center',
+    paddingHorizontal: 20,
+    lineHeight: 18,
+  },
+
+  // Form wrapper
+  formWrapper: {
+    maxHeight: '65%',
+  },
+  formContent: {
+    flexGrow: 1,
+  },
+
+  // Form card
+  formCard: {
     backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 24,
+    paddingTop: 28,
+    paddingBottom: 40,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+
+  // Steps
+  stepRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 24,
+    marginBottom: 28,
+  },
+  stepItem: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  stepDot: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+  },
+  stepDotActive: {
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
+  },
+  stepDotDone: {
+    backgroundColor: '#059669',
+    borderColor: '#059669',
+  },
+  stepNumber: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#94A3B8',
+  },
+  stepNumberActive: {
+    color: '#FFFFFF',
+  },
+  stepLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#94A3B8',
+  },
+  stepLabelActive: {
+    color: '#0F172A',
+    fontWeight: '700',
+  },
+
+  // Input
+  inputGroup: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#334155',
+    marginBottom: 6,
+  },
+  input: {
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#0F172A',
+    backgroundColor: '#F8FAFC',
   },
   inputDisabled: {
     backgroundColor: '#F8FAFC',
-    color: '#64748B',
+    color: '#94A3B8',
   },
-  button: {
+
+  // Button
+  primaryButton: {
     marginTop: 8,
-    borderRadius: 10,
-    backgroundColor: '#0EA5E9',
-    paddingVertical: 13,
+    borderRadius: 14,
+    backgroundColor: '#0F172A',
+    paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonDisabled: {
-    opacity: 0.65,
+  primaryButtonDisabled: {
+    opacity: 0.5,
   },
-  buttonText: {
+  primaryButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
+    letterSpacing: 0.3,
   },
-  secondaryButton: {
-    marginTop: 12,
+
+  // Secondary
+  secondaryRow: {
+    marginTop: 16,
     alignItems: 'center',
   },
-  secondaryButtonText: {
+  secondaryText: {
     color: '#0EA5E9',
     fontSize: 13,
     fontWeight: '700',

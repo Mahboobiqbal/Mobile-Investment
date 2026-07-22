@@ -1,5 +1,5 @@
 import { AxiosError } from 'axios';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
 
@@ -51,7 +51,6 @@ export default function RegisterScreen() {
         phone: phone.trim(),
       });
 
-      // After successful registration, navigate user to Login and prefill credentials
       setSuccessModal({ visible: true, title: 'Account Created!', message: 'Account created. Redirecting to login...' });
       setTimeout(() => {
         setSuccessModal({ visible: false, title: '', message: '' });
@@ -66,65 +65,99 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}> 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
-        <View style={styles.card}>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Register to start investing and managing your wallet.</Text>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Full Name</Text>
-            <TextInput
-              onChangeText={setName}
-              placeholder="Your full name"
-              placeholderTextColor="#94A3B8"
-              style={styles.input}
-              value={name}
-            />
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
+        <View style={styles.hero}>
+          <View style={styles.brandBadge}>
+            <Text style={styles.brandIcon}>📈</Text>
           </View>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="email-address"
-              onChangeText={setEmail}
-              placeholder="you@example.com"
-              placeholderTextColor="#94A3B8"
-              style={styles.input}
-              value={email}
-            />
-          </View>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              onChangeText={setPassword}
-              placeholder="Create a secure password"
-              placeholderTextColor="#94A3B8"
-              secureTextEntry
-              style={styles.input}
-              value={password}
-            />
-          </View>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Phone Number</Text>
-            <TextInput
-              keyboardType="phone-pad"
-              onChangeText={setPhone}
-              placeholder="03XXXXXXXXX"
-              placeholderTextColor="#94A3B8"
-              style={styles.input}
-              value={phone}
-            />
-          </View>
-
-          <Pressable disabled={isLoading} onPress={handleRegister} style={[styles.button, isLoading && styles.buttonDisabled]}>
-            {isLoading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.buttonText}>Register</Text>}
-          </Pressable>
+          <Text style={styles.brandName}>SmartInvest</Text>
+          <Text style={styles.brandTagline}>Start your investment journey</Text>
         </View>
+
+        <ScrollView
+          style={styles.formWrapper}
+          contentContainerStyle={styles.formContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.formCard}>
+            <Text style={styles.formTitle}>Create Account</Text>
+            <Text style={styles.formSubtitle}>Fill in your details to get started</Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Full Name</Text>
+              <TextInput
+                onChangeText={setName}
+                placeholder="Your full name"
+                placeholderTextColor="#94A3B8"
+                style={styles.input}
+                value={name}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Email</Text>
+              <TextInput
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="email-address"
+                onChangeText={setEmail}
+                placeholder="you@example.com"
+                placeholderTextColor="#94A3B8"
+                style={styles.input}
+                value={email}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Password</Text>
+              <TextInput
+                onChangeText={setPassword}
+                placeholder="Create a secure password"
+                placeholderTextColor="#94A3B8"
+                secureTextEntry
+                style={styles.input}
+                value={password}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Phone Number</Text>
+              <TextInput
+                keyboardType="phone-pad"
+                onChangeText={setPhone}
+                placeholder="03XXXXXXXXX"
+                placeholderTextColor="#94A3B8"
+                style={styles.input}
+                value={phone}
+              />
+            </View>
+
+            <Pressable
+              disabled={isLoading}
+              onPress={handleRegister}
+              style={[styles.primaryButton, isLoading && styles.primaryButtonDisabled]}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.primaryButtonText}>Create Account</Text>
+              )}
+            </Pressable>
+
+            <Pressable
+              onPress={() => navigation.goBack()}
+              hitSlop={8}
+              style={styles.switchRow}
+            >
+              <Text style={styles.switchText}>
+                Already have an account?{' '}
+                <Text style={styles.switchLink}>Sign in</Text>
+              </Text>
+            </Pressable>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
 
       <SuccessModal
@@ -146,69 +179,135 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
     backgroundColor: '#F1F5F9',
   },
-  container: {
+  flex: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
+  },
+
+  // Hero
+  hero: {
+    alignItems: 'center',
+    paddingTop: 32,
+    paddingBottom: 24,
     paddingHorizontal: 20,
   },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 4,
+  brandBadge: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: '#0F172A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
   },
-  title: {
-    fontSize: 26,
-    fontWeight: '700',
+  brandIcon: {
+    fontSize: 28,
+  },
+  brandName: {
+    fontSize: 28,
+    fontWeight: '800',
     color: '#0F172A',
-    marginBottom: 8,
+    letterSpacing: -0.5,
   },
-  subtitle: {
+  brandTagline: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#64748B',
+    marginTop: 4,
+  },
+
+  // Form wrapper for scroll
+  formWrapper: {
+    maxHeight: '70%',
+  },
+  formContent: {
+    flexGrow: 1,
+  },
+
+  // Form card
+  formCard: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 24,
+    paddingTop: 28,
+    paddingBottom: 40,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  formTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 6,
+  },
+  formSubtitle: {
     fontSize: 14,
-    color: '#475569',
-    marginBottom: 20,
+    fontWeight: '500',
+    color: '#64748B',
+    marginBottom: 24,
   },
-  formGroup: {
-    marginBottom: 14,
+
+  // Input
+  inputGroup: {
+    marginBottom: 16,
   },
-  label: {
-    fontSize: 14,
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: '600',
     color: '#334155',
     marginBottom: 6,
-    fontWeight: '600',
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     fontSize: 15,
+    fontWeight: '500',
     color: '#0F172A',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
   },
-  button: {
+
+  // Button
+  primaryButton: {
     marginTop: 8,
-    borderRadius: 10,
-    backgroundColor: '#0EA5E9',
-    paddingVertical: 13,
+    borderRadius: 14,
+    backgroundColor: '#0F172A',
+    paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonDisabled: {
-    opacity: 0.65,
+  primaryButtonDisabled: {
+    opacity: 0.5,
   },
-  buttonText: {
+  primaryButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+
+  // Switch
+  switchRow: {
+    marginTop: 18,
+    alignItems: 'center',
+  },
+  switchText: {
+    color: '#64748B',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  switchLink: {
+    color: '#0EA5E9',
     fontWeight: '700',
   },
 });

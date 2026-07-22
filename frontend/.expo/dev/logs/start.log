@@ -4538,3 +4538,24 @@
 {"_e":"metro:bundling:progress","_t":1784758732404,"id":"3","progress":0.999,"total":1070,"current":1070}
 {"_e":"metro:bundling:done","_t":1784758732508,"id":"3","total":1070,"ms":2069.6476}
 {"_e":"metro:client_log","_t":1784758736120,"level":"warn","data":["SafeAreaView has been deprecated and will be removed in a future release. Please use 'react-native-safe-area-context' instead. See https://github.com/AppAndFlow/react-native-safe-area-context"]}
+{"_e":"metro:client_log","_t":1784759607461,"level":"error","data":["[ReferenceError: Property 'SafeAreaView' doesn't exist]"]}
+{"_e":"metro:bundling:started","_t":1784760571841,"id":"a","platform":"android","environment":null,"entry":"index.js"}
+{"_e":"metro:bundling:progress","_t":1784760571841,"id":"a","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1784760571843,"id":"a","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1784760571988,"id":"a","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1784760572184,"id":"a","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1784760572284,"id":"a","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1784760572384,"id":"a","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1784760572484,"id":"a","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1784760572611,"id":"a","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1784760572711,"id":"a","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1784760572859,"id":"a","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1784760573006,"id":"a","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1784760573117,"id":"a","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1784760573231,"id":"a","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1784760573274,"id":"a","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1784760573670,"id":"a","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1784760575182,"id":"a","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1784760575285,"id":"a","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1784760575491,"id":"a","total":1,"ms":3650.0919}
+{"_e":"metro:client_log","_t":1784760650239,"level":"error","data":["The action 'RESET' with payload {\"index\":1,\"routes\":[{\"name\":\"Dashboard\"},{\"name\":\"Settings\"}]} was not handled by any navigator.\n\nThis is a development-only warning and won't be shown in production."]}

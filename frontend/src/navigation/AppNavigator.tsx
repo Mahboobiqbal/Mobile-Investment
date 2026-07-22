@@ -121,7 +121,7 @@ function BottomTabs() {
 }
 
 export default function AppNavigator() {
-  const { loading } = useAuth();
+  const { token, loading, userData } = useAuth();
 
   if (loading) {
     return <LoadingScreen />;
@@ -129,7 +129,7 @@ export default function AppNavigator() {
 
   return (
     <Stack.Navigator
-      initialRouteName="Login"
+      initialRouteName={token && userData ? 'MainTabs' : 'Login'}
       screenOptions={{
         headerShown: false,
         animation: 'slide_from_right',

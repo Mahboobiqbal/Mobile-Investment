@@ -8,8 +8,6 @@ import {
   ActivityIndicator,
   FlatList,
   RefreshControl,
-  Platform,
-  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -133,10 +131,8 @@ export default function AnalysisScreen() {
       case 'plan':
         return 'Plan Purchase';
       case 'deposit':
-      case 'Deposit':
         return 'Deposit';
       case 'withdrawal':
-      case 'Withdrawal':
         return 'Withdrawal';
       case 'roi':
         return 'ROI Earnings';
@@ -169,7 +165,7 @@ export default function AnalysisScreen() {
       case 'withdrawal':
         return '↑';
       case 'roi':
-        return '📈';
+        return '↻';
       default:
         return '•';
     }
@@ -191,10 +187,9 @@ export default function AnalysisScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
+        <Pressable onPress={() => navigation.goBack()} hitSlop={10} style={styles.headerBack}>
+          <Text style={styles.headerBackText}>←</Text>
         </Pressable>
         <Text style={styles.headerTitle}>Transaction Analysis</Text>
         <View style={styles.headerSpacer} />
@@ -203,10 +198,13 @@ export default function AnalysisScreen() {
       <ScrollView
         style={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0EA5E9']} />}
+        showsVerticalScrollIndicator={false}
       >
-        {/* Filter Buttons */}
-        <View style={styles.filterSection}>
-          <Text style={styles.filterLabel}>Filter by Period</Text>
+        <View style={styles.filterCard}>
+          <View style={styles.filterHeader}>
+            <Text style={styles.filterLabel}>Filter by Period</Text>
+            <Text style={styles.filterCount}>{filteredTransactions.length} transactions</Text>
+          </View>
           <View style={styles.filterButtons}>
             {(['daily', 'weekly', 'monthly', 'all'] as FilterType[]).map((filterOption) => (
               <Pressable
@@ -223,7 +221,7 @@ export default function AnalysisScreen() {
                     filter === filterOption && styles.filterButtonTextActive,
                   ]}
                 >
-                  {filterOption.charAt(0).toUpperCase() + filterOption.slice(1)}
+                  {filterOption === 'all' ? 'All Time' : filterOption.charAt(0).toUpperCase() + filterOption.slice(1)}
                 </Text>
               </Pressable>
             ))}
@@ -255,80 +253,88 @@ export default function AnalysisScreen() {
           )}
         </View>
 
-        {/* Statistics Cards */}
-        <View style={styles.statsContainer}>
-          <View style={[styles.statCard, styles.depositStat]}>
-            <Text style={styles.statIcon}>💳</Text>
+        <View style={styles.statsGrid}>
+          <View style={[styles.statCard, { borderLeftColor: '#0EA5E9' }]}>
+            <View style={[styles.statIconWrap, { backgroundColor: '#E0F2FE' }]}>
+              <Text style={styles.statIcon}>↓</Text>
+            </View>
             <Text style={styles.statLabel}>Total Deposits</Text>
-            <Text style={styles.statValue}>{formatCurrency(stats.deposits)}</Text>
+            <Text style={[styles.statValue, { color: '#0284C7' }]}>{formatCurrency(stats.deposits)}</Text>
           </View>
 
-          <View style={[styles.statCard, styles.roiStat]}>
-            <Text style={styles.statIcon}>📈</Text>
+          <View style={[styles.statCard, { borderLeftColor: '#10B981' }]}>
+            <View style={[styles.statIconWrap, { backgroundColor: '#DCFCE7' }]}>
+              <Text style={styles.statIcon}>↻</Text>
+            </View>
             <Text style={styles.statLabel}>ROI Earned</Text>
-            <Text style={styles.statValue}>{formatCurrency(stats.roi)}</Text>
+            <Text style={[styles.statValue, { color: '#059669' }]}>{formatCurrency(stats.roi)}</Text>
           </View>
 
-          <View style={[styles.statCard, styles.withdrawalStat]}>
-            <Text style={styles.statIcon}>🏦</Text>
+          <View style={[styles.statCard, { borderLeftColor: '#EF4444' }]}>
+            <View style={[styles.statIconWrap, { backgroundColor: '#FEE2E2' }]}>
+              <Text style={styles.statIcon}>↑</Text>
+            </View>
             <Text style={styles.statLabel}>Total Withdrawn</Text>
-            <Text style={styles.statValue}>{formatCurrency(stats.withdrawals)}</Text>
+            <Text style={[styles.statValue, { color: '#DC2626' }]}>{formatCurrency(stats.withdrawals)}</Text>
           </View>
 
-          <View style={[styles.statCard, styles.countStat]}>
-            <Text style={styles.statIcon}>#</Text>
+          <View style={[styles.statCard, { borderLeftColor: '#8B5CF6' }]}>
+            <View style={[styles.statIconWrap, { backgroundColor: '#F3E8FF' }]}>
+              <Text style={styles.statIcon}>#</Text>
+            </View>
             <Text style={styles.statLabel}>Transactions</Text>
-            <Text style={styles.statValue}>{stats.count}</Text>
+            <Text style={[styles.statValue, { color: '#7C3AED' }]}>{stats.count}</Text>
           </View>
         </View>
 
-        {/* Transactions List */}
-        <View style={styles.transactionsSection}>
-          <Text style={styles.sectionTitle}>Transaction History</Text>
+        <View style={styles.txSection}>
+          <Text style={styles.txSectionTitle}>Transaction History</Text>
 
           {filteredTransactions.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No transactions found</Text>
-              <Text style={styles.emptyStateSubtext}>Try selecting a different time period</Text>
+              <Text style={styles.emptyIcon}>📭</Text>
+              <Text style={styles.emptyTitle}>No transactions found</Text>
+              <Text style={styles.emptySubtext}>Try selecting a different time period</Text>
             </View>
           ) : (
-<FlatList
-               scrollEnabled={false}
-               data={filteredTransactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())}
-               keyExtractor={(item) => item._id}
-               renderItem={({ item }) => (
-                 <View style={styles.transactionItem}>
-                   <View style={[styles.transactionIcon, { backgroundColor: getTransactionTypeColor(item.type) + '20' }]}>
-                     <Text style={[styles.transactionIconText, { color: getTransactionTypeColor(item.type) }]}>
-                       {getTransactionTypeIcon(item.type)}
-                     </Text>
-                   </View>
+            <FlatList
+              scrollEnabled={false}
+              data={filteredTransactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())}
+              keyExtractor={(item) => item._id}
+              renderItem={({ item }) => (
+                <View style={styles.txItem}>
+                  <View style={[styles.txIcon, { backgroundColor: getTransactionTypeColor(item.type) + '18' }]}>
+                    <Text style={[styles.txIconText, { color: getTransactionTypeColor(item.type) }]}>
+                      {getTransactionTypeIcon(item.type)}
+                    </Text>
+                  </View>
 
-                   <View style={styles.transactionDetails}>
-                     <Text style={styles.transactionType}>{getTransactionTypeLabel(item.type)}</Text>
-                     <Text style={styles.transactionDate}>{formatDate(item.createdAt)}</Text>
-                   </View>
-
-                   <View style={styles.transactionAmountContainer}>
-                     <Text style={[styles.transactionAmount, { color: getTransactionTypeColor(item.type) }]}>
-                       {['withdrawal', 'Withdrawal'].includes(item.type) ? '-' : '+'}
-                       {formatCurrency(item.amount)}
-                     </Text>
-<Text style={[styles.transactionStatus, { color: (item.status || '').toLowerCase() === 'approved' ? '#10B981' : '#F59E0B' }]}>
-                        {(item.status || '').charAt(0).toUpperCase() + (item.status || '').slice(1)}
-                     </Text>
-                   </View>
-                 </View>
-               )}
-             />
+                  <View style={styles.txInfo}>
+                    <View style={styles.txInfoTop}>
+                      <Text style={styles.txType}>{getTransactionTypeLabel(item.type)}</Text>
+                      <Text style={[styles.txAmount, { color: ['withdrawal', 'Withdrawal'].includes(item.type) ? '#DC2626' : '#0F172A' }]}>
+                        {['withdrawal', 'Withdrawal'].includes(item.type) ? '-' : '+'}
+                        {formatCurrency(item.amount)}
+                      </Text>
+                    </View>
+                    <View style={styles.txInfoBottom}>
+                      <Text style={styles.txDate}>{formatDate(item.createdAt)}</Text>
+                      <View style={[styles.txStatusBadge, { backgroundColor: (item.status || '').toLowerCase() === 'approved' || (item.status || '').toLowerCase() === 'withdrawn' ? '#DCFCE7' : '#FEF3C7' }]}>
+                        <Text style={[styles.txStatusText, { color: (item.status || '').toLowerCase() === 'approved' || (item.status || '').toLowerCase() === 'withdrawn' ? '#059669' : '#D97706' }]}>
+                          {(item.status || '').charAt(0).toUpperCase() + (item.status || '').slice(1)}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              )}
+            />
           )}
         </View>
 
-        {/* Footer Spacing */}
         <View style={styles.footer} />
       </ScrollView>
 
-      {/* Error Modal */}
       <ErrorModal
         visible={errorModal.visible}
         title={errorModal.title}
@@ -342,34 +348,7 @@ export default function AnalysisScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  header: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  backButton: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#0EA5E9',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  headerSpacer: {
-    width: 50,
-  },
-  scrollContent: {
-    flex: 1,
-    paddingHorizontal: 16,
+    backgroundColor: '#F1F5F9',
   },
   loadingContainer: {
     flex: 1,
@@ -382,33 +361,91 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
-  filterSection: {
-    marginVertical: 20,
+
+  // Header
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  headerBack: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerBackText: {
+    fontSize: 16,
+    color: '#0F172A',
+    fontWeight: '600',
+  },
+  headerTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  headerSpacer: {
+    width: 36,
+  },
+
+  // Scroll
+  scrollContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+
+  // Filter card
+  filterCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  filterHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   filterLabel: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#0F172A',
-    marginBottom: 12,
+  },
+  filterCount: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#94A3B8',
   },
   filterButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     gap: 8,
   },
   filterButton: {
     flex: 1,
     paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: '#F1F5F9',
-    borderWidth: 1.5,
+    borderRadius: 10,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
     borderColor: '#E2E8F0',
     alignItems: 'center',
   },
   filterButtonActive: {
-    backgroundColor: '#0EA5E9',
-    borderColor: '#0EA5E9',
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
   },
   filterButtonText: {
     fontSize: 12,
@@ -418,31 +455,38 @@ const styles = StyleSheet.create({
   filterButtonTextActive: {
     color: '#FFFFFF',
   },
+
+  // Date picker
   datePickerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 12,
-    gap: 8,
+    marginTop: 14,
+    gap: 10,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
   },
   dateArrow: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#1E293B',
+    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   dateArrowText: {
-    color: '#FFFFFF',
+    color: '#0F172A',
     fontSize: 16,
     fontWeight: '700',
   },
   dateText: {
     color: '#0F172A',
     fontSize: 14,
-    fontWeight: '600',
-    minWidth: 160,
+    fontWeight: '700',
+    minWidth: 165,
     textAlign: 'center',
   },
   todayButton: {
@@ -456,136 +500,160 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
-  statsContainer: {
+
+  // Stats grid
+  statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
     gap: 12,
-    marginVertical: 20,
+    marginBottom: 8,
   },
   statCard: {
     width: '48%',
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 16,
+    borderLeftWidth: 3,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.04,
     shadowRadius: 8,
     elevation: 2,
   },
-  depositStat: {
-    backgroundColor: '#DBEAFE',
-  },
-  roiStat: {
-    backgroundColor: '#DCFCE7',
-  },
-  withdrawalStat: {
-    backgroundColor: '#FEE2E2',
-  },
-  countStat: {
-    backgroundColor: '#F3E8FF',
+  statIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
   },
   statIcon: {
-    fontSize: 24,
-    marginBottom: 6,
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
   },
   statLabel: {
     fontSize: 11,
     fontWeight: '600',
     color: '#64748B',
-    marginBottom: 4,
     textTransform: 'uppercase',
-    letterSpacing: 0.2,
+    letterSpacing: 0.5,
+    marginBottom: 4,
   },
   statValue: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#0F172A',
-    textAlign: 'center',
+    fontWeight: '800',
   },
-  transactionsSection: {
-    marginVertical: 20,
+
+  // Transaction section
+  txSection: {
+    marginTop: 8,
+    marginBottom: 20,
   },
-  sectionTitle: {
+  txSectionTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: '#0F172A',
-    marginBottom: 12,
+    marginBottom: 14,
   },
-  transactionItem: {
+
+  // Transaction item
+  txItem: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    marginVertical: 8,
-    marginBottom: 8,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  transactionIcon: {
+  txIcon: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
+    borderRadius: 14,
     alignItems: 'center',
-    marginRight: 12,
+    justifyContent: 'center',
+    marginRight: 14,
   },
-  transactionIconText: {
+  txIconText: {
     fontSize: 18,
     fontWeight: '700',
   },
-  transactionDetails: {
+  txInfo: {
     flex: 1,
   },
-  transactionType: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#0F172A',
-    marginBottom: 2,
+  txInfoTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
   },
-  transactionDate: {
+  txType: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  txAmount: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  txInfoBottom: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  txDate: {
     fontSize: 12,
     fontWeight: '500',
     color: '#94A3B8',
   },
-  transactionAmountContainer: {
-    alignItems: 'flex-end',
+  txStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
-  transactionAmount: {
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 2,
-  },
-  transactionStatus: {
+  txStatusText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
     textTransform: 'capitalize',
   },
+
+  // Empty state
   emptyState: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    paddingVertical: 40,
-    paddingHorizontal: 20,
+    borderRadius: 16,
+    paddingVertical: 48,
+    paddingHorizontal: 24,
     alignItems: 'center',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  emptyStateText: {
+  emptyIcon: {
+    fontSize: 40,
+    marginBottom: 12,
+  },
+  emptyTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: '#0F172A',
     marginBottom: 4,
   },
-  emptyStateSubtext: {
+  emptySubtext: {
     fontSize: 13,
+    fontWeight: '500',
     color: '#94A3B8',
     textAlign: 'center',
   },
+
+  // Footer
   footer: {
     height: 40,
   },

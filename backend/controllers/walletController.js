@@ -3,9 +3,11 @@ const User = require('../models/User');
 const Plan = require('../models/Plan');
 const InvestmentCategory = require('../models/InvestmentCategory');
 const UserInvestment = require('../models/UserInvestment');
+const DailyProfitRate = require('../models/DailyProfitRate');
 const { createAdminNotification } = require('./notificationsController');
 
 const normalizeTransactionType = (value) => String(value || '').toLowerCase();
+const MIN_DEPOSIT_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 const submitDeposit = async (req, res) => {
   try {
@@ -104,6 +106,23 @@ const requestWithdrawal = async (req, res) => {
       return res.status(400).json({ message: 'Insufficient balance to request withdrawal' });
     }
 
+    const firstDeposit = await Transaction.findOne({
+      user: req.user.id,
+      type: { $in: ['plan', 'deposit', 'Deposit'] },
+      status: { $in: ['approved', 'Approved'] },
+      transactionId: { $not: /^ROI-DAILY-/ },
+    }).sort({ createdAt: 1 });
+
+    if (!firstDeposit) {
+      return res.status(400).json({ message: 'No approved deposits found. Withdrawal requires at least one approved deposit.' });
+    }
+
+    const depositAge = Date.now() - new Date(firstDeposit.createdAt).getTime();
+    if (depositAge < MIN_DEPOSIT_AGE_MS) {
+      const daysLeft = Math.ceil((MIN_DEPOSIT_AGE_MS - depositAge) / (24 * 60 * 60 * 1000));
+      return res.status(400).json({ message: `Withdrawals are available 30 days after your first deposit. Please wait ${daysLeft} more day(s).` });
+    }
+
     const transaction = await Transaction.create({
       user: req.user.id,
       amount,
@@ -164,6 +183,75 @@ const getTransactions = async (req, res) => {
   }
 };
 
+const runDailyProfitDistribution = async () => {
+  const today = new Date().toISOString().split('T')[0];
+  const dailyConfig = await DailyProfitRate.findOne({ date: today });
+  const dailyRate = dailyConfig ? dailyConfig.rate : 0.005;
+
+  const users = await User.find({
+    currentBalance: { $gt: 0 },
+  });
+
+  if (users.length === 0) {
+    return { message: 'No users with positive balance found for profit distribution', usersCount: 0 };
+  }
+
+  const results = [];
+
+  for (const user of users) {
+    try {
+      // Skip if user already received today's ROI
+      const alreadyReceived = await Transaction.findOne({
+        transactionId: `ROI-DAILY-${today}-${user._id}`,
+      });
+      if (alreadyReceived) {
+        results.push({
+          userId: user._id,
+          userEmail: user.email,
+          skipped: true,
+          message: 'Already received today\'s ROI',
+        });
+        continue;
+      }
+
+      const profit = Math.round(user.currentBalance * dailyRate * 100) / 100;
+      user.currentBalance += profit;
+      await user.save();
+
+      const transaction = await Transaction.create({
+        user: user._id,
+        amount: profit,
+        type: 'deposit',
+        transactionId: `ROI-DAILY-${today}-${user._id}`,
+        status: 'approved',
+      });
+
+      results.push({
+        userId: user._id,
+        userEmail: user.email,
+        dailyRate,
+        profit,
+        newBalance: user.currentBalance,
+        transactionId: transaction._id,
+      });
+    } catch (userError) {
+      console.error(`Failed to distribute profit for user ${user._id}:`, userError.message);
+      results.push({
+        userId: user._id,
+        userEmail: user.email,
+        error: userError.message,
+      });
+    }
+  }
+
+  return {
+    message: `Daily ROI (${(dailyRate * 100).toFixed(2)}%) distributed to ${results.filter(r => !r.skipped && !r.error).length} users`,
+    dailyRateUsed: dailyRate,
+    date: today,
+    results,
+  };
+};
+
 const distributeDailyProfit = async (req, res) => {
   try {
     const apiKey = req.headers['x-admin-key'];
@@ -171,71 +259,8 @@ const distributeDailyProfit = async (req, res) => {
       return res.status(403).json({ message: 'Forbidden. Admin API key required.' });
     }
 
-    const activePlans = await Plan.find({ isActive: true });
-    const profitRates = {};
-    for (const plan of activePlans) {
-      profitRates[plan.name] = plan.dailyReturnRate;
-    }
-
-    // Find all users with an active plan (not 'None' and not null)
-    const users = await User.find({
-      $and: [
-        { activePlan: { $ne: 'None' } },
-        { activePlan: { $ne: null } },
-      ],
-    });
-
-    if (users.length === 0) {
-      return res.status(200).json({ message: 'No users with active plans found for profit distribution' });
-    }
-
-    const dateString = new Date().toISOString().split('T')[0];
-    const results = [];
-
-    for (const user of users) {
-      try {
-        const rate = profitRates[user.activePlan];
-        if (!rate) {
-          console.warn(`Unknown or inactive plan: ${user.activePlan} for user ${user._id}`);
-          continue;
-        }
-
-        const profit = Math.round(user.currentBalance * rate * 100) / 100;
-        user.currentBalance += profit;
-        await user.save();
-
-        // Create a transaction record for this profit
-        const transaction = await Transaction.create({
-          user: user._id,
-          amount: profit,
-          type: 'deposit',
-          transactionId: `ROI-DAILY-${dateString}-${user._id}`,
-          status: 'approved',
-        });
-
-        results.push({
-          userId: user._id,
-          userEmail: user.email,
-          plan: user.activePlan,
-          profit,
-          newBalance: user.currentBalance,
-          transactionId: transaction._id,
-        });
-      } catch (userError) {
-        console.error(`Failed to distribute profit for user ${user._id}:`, userError.message);
-        results.push({
-          userId: user._id,
-          userEmail: user.email,
-          error: userError.message,
-        });
-      }
-    }
-
-    return res.status(200).json({
-      message: `Daily ROI distributed successfully to ${users.length} users`,
-      distributedTo: results.length,
-      results,
-    });
+    const result = await runDailyProfitDistribution();
+    return res.status(200).json(result);
   } catch (error) {
     console.error('Daily profit distribution failed:', error.message);
     return res.status(500).json({ message: error.message || 'Daily profit distribution failed' });
@@ -278,13 +303,45 @@ const getCategoryWithPlans = async (req, res) => {
   }
 };
 
+const checkWithdrawalEligibility = async (req, res) => {
+  try {
+    const firstDeposit = await Transaction.findOne({
+      user: req.user.id,
+      type: { $in: ['plan', 'deposit', 'Deposit'] },
+      status: { $in: ['approved', 'Approved'] },
+      transactionId: { $not: /^ROI-DAILY-/ },
+    }).sort({ createdAt: 1 });
+
+    if (!firstDeposit) {
+      return res.status(200).json({
+        eligible: false,
+        daysLeft: 30,
+        firstDepositDate: null,
+      });
+    }
+
+    const depositAge = Date.now() - new Date(firstDeposit.createdAt).getTime();
+    const daysLeft = Math.max(0, Math.ceil((MIN_DEPOSIT_AGE_MS - depositAge) / (24 * 60 * 60 * 1000)));
+
+    return res.status(200).json({
+      eligible: daysLeft <= 0,
+      daysLeft,
+      firstDepositDate: firstDeposit.createdAt,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message || 'Failed to check withdrawal eligibility' });
+  }
+};
+
 module.exports = {
   submitDeposit,
   requestWithdrawal,
   selectPlan,
   getTransactions,
   distributeDailyProfit,
+  runDailyProfitDistribution,
   getActivePlans,
   getActiveCategories,
   getCategoryWithPlans,
+  checkWithdrawalEligibility,
 };

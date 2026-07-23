@@ -1,6 +1,8 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { ActivityIndicator, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
 import { useAuth } from '../context/AuthContext';
 import LoginScreen from '../screens/LoginScreen';
@@ -61,7 +63,7 @@ function BottomTabs() {
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: true,
-        tabBarActiveTintColor: '#FFFFFF',
+        tabBarActiveTintColor: '#008751',
         tabBarInactiveTintColor: '#94A3B8',
         tabBarStyle: styles.tabBar,
         tabBarLabelStyle: styles.tabLabel,
@@ -74,7 +76,7 @@ function BottomTabs() {
           tabBarLabel: 'Dashboard',
           tabBarIcon: ({ focused }) => (
             <View style={[styles.tabIconWrap, focused && styles.tabIconWrapActive]}>
-              <Text style={[styles.tabIcon, focused && styles.tabIconActive]}>🏠</Text>
+              <Ionicons name={focused ? 'home' : 'home-outline'} size={22} color={focused ? '#FFFFFF' : '#64748B'} />
             </View>
           ),
         }}
@@ -86,7 +88,7 @@ function BottomTabs() {
           tabBarLabel: 'Investments',
           tabBarIcon: ({ focused }) => (
             <View style={[styles.tabIconWrap, focused && styles.tabIconWrapActive]}>
-              <Text style={[styles.tabIcon, focused && styles.tabIconActive]}>📊</Text>
+              <Ionicons name={focused ? 'stats-chart' : 'stats-chart-outline'} size={22} color={focused ? '#FFFFFF' : '#64748B'} />
             </View>
           ),
         }}
@@ -98,7 +100,7 @@ function BottomTabs() {
           tabBarLabel: 'Wallet',
           tabBarIcon: ({ focused }) => (
             <View style={[styles.tabIconWrap, focused && styles.tabIconWrapActive]}>
-              <Text style={[styles.tabIcon, focused && styles.tabIconActive]}>👛</Text>
+              <Ionicons name={focused ? 'wallet' : 'wallet-outline'} size={22} color={focused ? '#FFFFFF' : '#64748B'} />
             </View>
           ),
         }}
@@ -110,7 +112,7 @@ function BottomTabs() {
           tabBarLabel: 'Profile',
           tabBarIcon: ({ focused }) => (
             <View style={[styles.tabIconWrap, focused && styles.tabIconWrapActive]}>
-              <Text style={[styles.tabIcon, focused && styles.tabIconActive]}>☺</Text>
+              <Ionicons name={focused ? 'person' : 'person-outline'} size={22} color={focused ? '#FFFFFF' : '#64748B'} />
             </View>
           ),
         }}
@@ -120,7 +122,7 @@ function BottomTabs() {
 }
 
 export default function AppNavigator() {
-  const { loading } = useAuth();
+  const { token, loading, userData } = useAuth();
 
   if (loading) {
     return <LoadingScreen />;
@@ -128,7 +130,7 @@ export default function AppNavigator() {
 
   return (
     <Stack.Navigator
-      initialRouteName="Login"
+      initialRouteName={token && userData ? 'MainTabs' : 'Login'}
       screenOptions={{
         headerShown: false,
         animation: 'slide_from_right',
@@ -166,12 +168,12 @@ export default function AppNavigator() {
       <Stack.Screen
         name="DepositRequest"
         component={DepositRequestScreen}
-        options={{ headerShown: true, title: 'Deposit', headerBackTitle: 'Back' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="WithdrawalRequest"
         component={WithdrawalRequestScreen}
-        options={{ headerShown: true, title: 'Withdraw', headerBackTitle: 'Back' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="Settings"
@@ -196,19 +198,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   tabBar: {
-    height: 78,
-    paddingHorizontal: 10,
-    paddingTop: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    height: 82,
+    paddingHorizontal: 12,
+    paddingTop: 6,
+    paddingBottom: 4,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
+    borderTopColor: '#F1F5F9',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
     elevation: 8,
   },
   tabIconWrap: {
@@ -216,22 +216,11 @@ const styles = StyleSheet.create({
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 18,
-    marginBottom: 4,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: 10,
+    marginBottom: 2,
   },
   tabIconWrapActive: {
     backgroundColor: '#008751',
-    transform: [{ scale: 1.04 }],
-  },
-  tabIcon: {
-    fontSize: 18,
-    color: '#A8B3C7',
-    fontWeight: '800',
-  },
-  tabIconActive: {
-    color: '#FFFFFF',
-    fontSize: 19,
   },
   tabLabel: {
     fontSize: 10,

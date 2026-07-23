@@ -11,6 +11,7 @@ const authRoutes = require('./routes/authRoutes');
 const walletRoutes = require('./routes/walletRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const notificationsRoutes = require('./routes/notificationsRoutes');
+const startScheduler = require('./scheduler');
 
 const swaggerSpec = require('./swagger');
 
@@ -63,6 +64,8 @@ const startServer = async () => {
 		app.listen(port, () => {
 			console.log(`Server running on port ${port}`);
 		});
+
+		startScheduler();
 	} catch (error) {
 		console.error('Server startup failed:', error.message);
 		process.exit(1);

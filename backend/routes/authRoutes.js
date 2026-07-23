@@ -1,6 +1,6 @@
 const express = require('express');
 
-const { forgotPassword, getUserDashboardStats, getUserInvestments, getUserProfile, loginUser, registerUser, resetPassword, updatePassword, updateUserProfile, verifyOtp } = require('../controllers/authController');
+const { forgotPassword, getUserDashboardStats, getUserDailyROIHistory, getUserInvestments, getUserProfile, loginUser, registerUser, resetPassword, updatePassword, updateUserProfile, verifyOtp } = require('../controllers/authController');
 const authMiddleware = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -193,5 +193,6 @@ router.get('/dashboard-stats', authMiddleware, getUserDashboardStats);
  *         description: User investments and total investment amount
  */
 router.get('/investments', authMiddleware, getUserInvestments);
+router.get('/daily-roi-history', authMiddleware, getUserDailyROIHistory);
 
 module.exports = router;

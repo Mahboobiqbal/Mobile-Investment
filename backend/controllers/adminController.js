@@ -3,6 +3,7 @@ const User = require('../models/User');
 const Plan = require('../models/Plan');
 const InvestmentCategory = require('../models/InvestmentCategory');
 const UserInvestment = require('../models/UserInvestment');
+const DailyProfitRate = require('../models/DailyProfitRate');
 const { syncUserPlanState } = require('../utils/planState');
 
 const normalizeTransactionType = (value) => String(value || '').toLowerCase();
@@ -520,6 +521,43 @@ const deletePlan = async (req, res) => {
   }
 };
 
+const getDailyProfitRate = async (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const config = await DailyProfitRate.findOne({ date: today });
+    return res.status(200).json({
+      date: today,
+      rate: config ? config.rate : 0.005,
+      isDefault: !config,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message || 'Failed to fetch daily profit rate' });
+  }
+};
+
+const setDailyProfitRate = async (req, res) => {
+  try {
+    const { rate } = req.body;
+    if (rate === undefined || typeof rate !== 'number' || rate < 0 || rate > 100) {
+      return res.status(400).json({ message: 'A valid rate (0-100) is required' });
+    }
+    const today = new Date().toISOString().split('T')[0];
+    const decimalRate = rate / 100;
+    const config = await DailyProfitRate.findOneAndUpdate(
+      { date: today },
+      { date: today, rate: decimalRate },
+      { upsert: true, new: true }
+    );
+    return res.status(200).json({
+      message: `Daily profit rate set to ${rate}% for ${today}`,
+      date: config.date,
+      rate: config.rate,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message || 'Failed to set daily profit rate' });
+  }
+};
+
 module.exports = {
   getPendingTransactions,
   getAllTransactions,
@@ -536,4 +574,6 @@ module.exports = {
   updatePlan,
   deletePlan,
   getDashboardAnalytics,
+  getDailyProfitRate,
+  setDailyProfitRate,
 };

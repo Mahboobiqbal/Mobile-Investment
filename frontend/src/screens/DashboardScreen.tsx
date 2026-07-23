@@ -4,7 +4,6 @@ import {
   Modal,
   Pressable,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,6 +13,7 @@ import {
   StatusBar,
   useWindowDimensions,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AxiosError } from 'axios';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -47,6 +47,8 @@ interface DashboardStatsResponse {
   totalWithdrawalsApproved: number;
   totalROIEarnings: number;
   totalInvestment: number;
+  currentBalance: number;
+  dailyRate: number;
 }
 
 interface InvestmentPlan {
@@ -81,6 +83,24 @@ interface InvestmentsResponse {
   totalInvestment: number;
 }
 
+interface DailyROIDay {
+  date: string;
+  profit: number;
+  rate: number;
+  balanceAfter: number;
+}
+
+interface DailyROIWeek {
+  weekNumber: number;
+  label: string;
+  days: DailyROIDay[];
+}
+
+interface DailyROIHistoryResponse {
+  month: string;
+  weeks: DailyROIWeek[];
+}
+
 interface ApiError {
   message: string;
 }
@@ -89,6 +109,7 @@ export default function DashboardScreen() {
   const { logout, refreshUserData } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { height: screenHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   
   // Detects shorter screen forms dynamically
   const isSmallScreen = screenHeight < 780;
@@ -99,6 +120,8 @@ export default function DashboardScreen() {
   });
   const [investments, setInvestments] = useState<UserInvestment[]>([]);
   const [systems, setSystems] = useState<InvestmentSystem[]>([]);
+  const [roiHistory, setRoiHistory] = useState<DailyROIWeek[]>([]);
+  const [expandedWeeks, setExpandedWeeks] = useState<Record<number, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -124,11 +147,12 @@ export default function DashboardScreen() {
   const fetchDashboardData = useCallback(async () => {
     try {
       setError(null);
-      const [profileRes, statsRes, systemsRes, investmentsRes] = await Promise.all([
+      const [profileRes, statsRes, systemsRes, investmentsRes, roiHistoryRes] = await Promise.all([
         api.get<UserProfileResponse>('/auth/profile'),
         api.get<DashboardStatsResponse>('/auth/dashboard-stats'),
         api.get<{ systems: InvestmentSystem[] }>('/wallet/systems'),
         api.get<InvestmentsResponse>('/auth/investments'),
+        api.get<DailyROIHistoryResponse>('/auth/daily-roi-history').catch(() => null),
       ]);
 
       setDashboardData({
@@ -137,6 +161,7 @@ export default function DashboardScreen() {
       });
       setSystems(systemsRes.data.systems || []);
       setInvestments(investmentsRes.data.investments || []);
+      setRoiHistory(roiHistoryRes?.data?.weeks || []);
       await refreshUserData();
     } catch (err) {
       const axiosError = err as AxiosError<ApiError>;
@@ -256,10 +281,14 @@ export default function DashboardScreen() {
     totalDepositsApproved: 0,
     totalWithdrawalsApproved: 0,
     totalROIEarnings: 0,
+    totalInvestment: 0,
+    currentBalance: 0,
+    dailyRate: 0.005,
   };
 
   const formatCurrency = (amount: number) => {
-    return `Rs. ${amount.toLocaleString('en-PK', {
+    const val = amount || 0;
+    return `Rs. ${val.toLocaleString('en-PK', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;
@@ -325,7 +354,7 @@ export default function DashboardScreen() {
 
       {/* Sidemenu Drawer Overlay */}
       <Modal visible={menuVisible} transparent animationType="fade" onRequestClose={() => setMenuVisible(false)}>
-        <Pressable style={styles.menuOverlay} onPress={() => setMenuVisible(false)}>
+        <Pressable style={[styles.menuOverlay, { paddingTop: insets.top + 12 }]} onPress={() => setMenuVisible(false)}>
           <View style={styles.menuCard}>
             <Pressable style={styles.menuItem} onPress={handleOpenSettings}>
               <Text style={styles.menuIcon}>⚙</Text>
@@ -362,19 +391,13 @@ export default function DashboardScreen() {
               <View style={[styles.analyticsHCard, { borderBottomColor: '#8B5CF6' }]}>
                 <Text style={styles.analyticsHIcon}>📊</Text>
                 <Text style={styles.analyticsHLabel}>TOTAL INVESTMENT</Text>
-                <Text style={[styles.analyticsHValue, { color: '#6D28D9' }]}>{formatCurrency(stats.totalDepositsApproved)}</Text>
+                <Text style={[styles.analyticsHValue, { color: '#6D28D9' }]}>{formatCurrency(stats.currentBalance)}</Text>
               </View>
 
               <View style={[styles.analyticsHCard, { borderBottomColor: '#008F5A' }]}>
                 <Text style={styles.analyticsHIcon}>📈</Text>
                 <Text style={styles.analyticsHLabel}>TOTAL ROI PROFIT</Text>
                 <Text style={[styles.analyticsHValue, { color: '#008F5A' }]}>{formatCurrency(stats.totalROIEarnings)}</Text>
-              </View>
-
-              <View style={[styles.analyticsHCard, { borderBottomColor: '#3B82F6' }]}>
-                <Text style={styles.analyticsHIcon}>💳</Text>
-                <Text style={styles.analyticsHLabel}>TOTAL DEPOSITED</Text>
-                <Text style={[styles.analyticsHValue, { color: '#0284C7' }]}>{formatCurrency(stats.totalDepositsApproved)}</Text>
               </View>
 
               <View style={[styles.analyticsHCard, { borderBottomColor: '#F59E0B' }]}>
@@ -493,8 +516,6 @@ export default function DashboardScreen() {
                       navigation.navigate('ActivePlanHistory', {
                         selectedPlanId: activeRow.id,
                         selectedPlanName: activeRow.name,
-                        investmentAmount: activeRow.investmentAmount,
-                        dailyReturnRate: activeRow.dailyReturnRate,
                       })
                     }
                     style={({ pressed }) => [
@@ -532,25 +553,51 @@ export default function DashboardScreen() {
             <Text style={[styles.sectionTitle, { marginBottom: isSmallScreen ? 4 : 8 }]}>My Plans Summary</Text>
             <View style={styles.tableMainWrapperCard}>
               <View style={styles.tableHeaderBackgroundRow}>
-                <Text style={[styles.thElement, { flex: 1.5 }]}>PLAN</Text>
-                <Text style={[styles.thElement, { flex: 2, textAlign: 'center' }]}>INVESTMENT</Text>
-                <Text style={[styles.thElement, { flex: 2, textAlign: 'center' }]}>WEEKLY PROFIT</Text>
-                <Text style={[styles.thElement, { flex: 2, textAlign: 'right' }]}>TOTAL PROFIT</Text>
+                <Text style={[styles.thElement, { flex: 1.5, textAlign: 'center' }]}>DATE</Text>
+                <Text style={[styles.thElement, { flex: 2, textAlign: 'center' }]}>AMOUNT</Text>
+                <Text style={[styles.thElement, { flex: 2, textAlign: 'center' }]}>PROFIT</Text>
+                <Text style={[styles.thElement, { flex: 1.5, textAlign: 'center' }]}>RATE</Text>
+                <Text style={[styles.thElement, { flex: 2, textAlign: 'right' }]}>BALANCE</Text>
               </View>
 
-{investments.filter(inv => inv.status === 'active').length > 0 ? (
-                investments.filter(inv => inv.status === 'active').map((row) => {
-                  const weeklyProfit = row.investmentAmount * row.dailyReturnRate * 7;
-                  const totalProfit = stats.totalROIEarnings || 0;
+{roiHistory.length > 0 ? (
+                roiHistory.map((week) => {
+                  const isOpen = expandedWeeks[week.weekNumber] || false;
                   return (
-                    <View key={row._id} style={[styles.tableDataRow, { paddingVertical: isSmallScreen ? 5 : 8 }]}>
-                      <Text style={[styles.tdElement, { flex: 1.5, fontWeight: '700', color: '#334155' }]}>{row.plan?.name || 'Unknown Plan'}</Text>
-                      <Text style={[styles.tdElement, { flex: 2, textAlign: 'center', color: '#047857', fontWeight: '600' }]}>{formatCurrency(row.investmentAmount)}</Text>
-                      <Text style={[styles.tdElement, { flex: 2, textAlign: 'center', color: '#059669', fontWeight: '600' }]}>{formatCurrency(weeklyProfit)}</Text>
-                      <Text style={[styles.tdElement, { flex: 2, textAlign: 'right', color: '#047857', fontWeight: '700' }]}>{formatCurrency(totalProfit)}</Text>
+                    <View key={week.weekNumber}>
+                      <Pressable
+                        onPress={() => setExpandedWeeks(prev => ({ ...prev, [week.weekNumber]: !prev[week.weekNumber] }))}
+                        style={[styles.tableDataRow, { paddingVertical: isSmallScreen ? 5 : 8 }]}
+                      >
+                        <Text style={[styles.tdElement, { flex: 8, fontWeight: '700', color: '#334155' }]}>
+                          {isOpen ? '▼' : '▶'}  {week.label}
+                        </Text>
+                      </Pressable>
+
+                      {isOpen && week.days.map((day) => {
+                        const dayOfWeek = new Date(day.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' });
+                        const amount = day.balanceAfter - day.profit;
+                        return (
+                          <View key={day.date} style={[styles.tableDataRow, { paddingVertical: isSmallScreen ? 4 : 6, backgroundColor: '#F8FAFC' }]}>
+                            <Text style={[styles.tdElement, { flex: 1.5, textAlign: 'center', fontSize: 10, color: '#64748B' }]}>{dayOfWeek} {day.date.slice(8)}</Text>
+                            <Text style={[styles.tdElement, { flex: 2, textAlign: 'center', color: '#0F172A', fontWeight: '600', fontSize: 11 }]}>{formatCurrency(amount)}</Text>
+                            <Text style={[styles.tdElement, { flex: 2, textAlign: 'center', color: '#059669', fontWeight: '600', fontSize: 11 }]}>{formatCurrency(day.profit)}</Text>
+                            <Text style={[styles.tdElement, { flex: 1.5, textAlign: 'center', color: '#2563EB', fontWeight: '600', fontSize: 11 }]}>{(day.rate * 100).toFixed(1)}%</Text>
+                            <Text style={[styles.tdElement, { flex: 2, textAlign: 'right', color: '#0F172A', fontWeight: '700', fontSize: 11 }]}>{formatCurrency(day.balanceAfter)}</Text>
+                          </View>
+                        );
+                      })}
                     </View>
                   );
                 })
+              ) : investments.filter(inv => inv.status === 'active').length > 0 || (stats.totalDepositsApproved || 0) > 0 ? (
+                <View style={[styles.tableDataRow, { paddingVertical: isSmallScreen ? 5 : 8 }]}>
+                  <Text style={[styles.tdElement, { flex: 1.5, textAlign: 'center', fontSize: 10, color: '#64748B' }]}>Today</Text>
+                  <Text style={[styles.tdElement, { flex: 2, textAlign: 'center', color: '#0F172A', fontWeight: '600', fontSize: 11 }]}>{formatCurrency(stats.totalDepositsApproved || 0)}</Text>
+                  <Text style={[styles.tdElement, { flex: 2, textAlign: 'center', color: '#059669', fontWeight: '600', fontSize: 11 }]}>{formatCurrency(0)}</Text>
+                  <Text style={[styles.tdElement, { flex: 1.5, textAlign: 'center', color: '#2563EB', fontWeight: '600', fontSize: 11 }]}>{(stats.dailyRate * 100).toFixed(1)}%</Text>
+                  <Text style={[styles.tdElement, { flex: 2, textAlign: 'right', color: '#0F172A', fontWeight: '700', fontSize: 11 }]}>{formatCurrency(stats.currentBalance || 0)}</Text>
+                </View>
               ) : (
                 <View style={[styles.tableDataRow, { paddingVertical: 12 }]}>
                   <Text style={[styles.tdElement, { flex: 8, textAlign: 'center', color: '#64748B', fontStyle: 'italic' }]}>No active investments</Text>
@@ -933,7 +980,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(15, 23, 42, 0.2)',
     alignItems: 'flex-start',
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) + 12 : 56,
     paddingLeft: 14,
   },
   menuCard: {

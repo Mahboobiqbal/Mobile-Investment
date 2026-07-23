@@ -69,6 +69,9 @@ export const walletApi = {
   getMutualFundRequests: () =>
     api.get<{ requests: MutualFundRequest[] }>('/wallet/mutual-funds/requests'),
 
+  checkWithdrawalEligibility: () =>
+    api.get<{ eligible: boolean; daysLeft: number; firstDepositDate: string | null }>('/wallet/withdrawal-eligibility'),
+
   // Admin
   triggerDailyRoi: () =>
     api.post<{ message: string }>('/wallet/trigger-daily-roi'),

@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, Pressable, TextInput, RefreshControl, Image } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import api from '../services/api';
 
 type CommunityPost = {
@@ -39,6 +40,12 @@ const SAMPLE_POSTS: CommunityPost[] = [
   },
 ];
 
+const CATEGORY_CONFIG: Record<string, { label: string; border: string; bg: string; text: string; icon: string }> = {
+  update: { label: 'Update', border: '#0EA5E9', bg: '#F0F9FF', text: '#0369A1', icon: '📊' },
+  announcement: { label: 'Announcement', border: '#8B5CF6', bg: '#FAF5FF', text: '#6D28D9', icon: '📢' },
+  education: { label: 'Education', border: '#10B981', bg: '#F0FDF4', text: '#047857', icon: '📖' },
+};
+
 export default function CommunityScreen() {
   const [query, setQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -46,13 +53,6 @@ export default function CommunityScreen() {
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => { fetchPosts(); }, []);
-  useEffect(() => {
-    try {
-      // show which baseURL axios is using (helps debug emulator vs local backend)
-      // eslint-disable-next-line no-console
-      console.log('API baseURL:', (api as any).defaults?.baseURL);
-    } catch (e) {}
-  }, []);
 
   const fetchPosts = async () => {
     try {
@@ -69,8 +69,6 @@ export default function CommunityScreen() {
       setPostsData(remote.length ? remote : SAMPLE_POSTS);
       setFetchError(null);
     } catch (err: any) {
-      // keep sample posts on error, but expose the message to help debugging
-      // eslint-disable-next-line no-console
       console.warn('Failed to fetch community posts', err);
       setFetchError(err?.message || 'Failed to fetch posts');
     }
@@ -92,105 +90,301 @@ export default function CommunityScreen() {
     setRefreshing(false);
   };
 
-  const renderItem = ({ item }: { item: CommunityPost }) => (
-    <View style={styles.chatRow}>
-      <View style={styles.avatarWrap}>
-        {item.authorAvatar ? (
-          <Image source={{ uri: item.authorAvatar }} style={styles.avatar} />
-        ) : (
-          <View style={styles.avatarPlaceholder}><Text style={styles.avatarInitial}>{(item.author||'A').charAt(0)}</Text></View>
-        )}
-      </View>
+  const renderItem = ({ item }: { item: CommunityPost }) => {
+    const cat = CATEGORY_CONFIG[item.category] || CATEGORY_CONFIG.update;
+    return (
+      <View style={[styles.postCard, { borderLeftColor: cat.border }]}>
+        <View style={styles.postHeader}>
+          <View style={[styles.categoryPill, { backgroundColor: cat.bg }]}>
+            <Text style={styles.categoryIcon}>{cat.icon}</Text>
+            <Text style={[styles.categoryLabel, { color: cat.text }]}>{cat.label}</Text>
+          </View>
+          <Text style={styles.postTime}>{item.createdAt}</Text>
+        </View>
 
-      <View style={styles.chatBubbleWrap}>
-        <View style={styles.chatHeader}>
-          <Text style={styles.chatAuthor}>{item.author}</Text>
-          <Text style={styles.chatTime}>{item.createdAt}</Text>
-        </View>
-        <View style={styles.chatBubble}>
-          <Text style={styles.chatTitle}>{item.title}</Text>
-          <Text style={styles.chatBody}>{item.body}</Text>
+        <Text style={styles.postTitle}>{item.title}</Text>
+        <Text style={styles.postBody}>{item.body}</Text>
+
+        <View style={styles.postDivider} />
+
+        <View style={styles.postFooter}>
+          <View style={styles.authorRow}>
+            {item.authorAvatar ? (
+              <Image source={{ uri: item.authorAvatar }} style={styles.authorAvatar} />
+            ) : (
+              <View style={[styles.authorAvatarPlaceholder, { backgroundColor: cat.bg }]}>
+                <Text style={[styles.authorAvatarInitial, { color: cat.text }]}>
+                  {(item.author || 'A').charAt(0)}
+                </Text>
+              </View>
+            )}
+            <Text style={styles.authorName}>{item.author}</Text>
+          </View>
         </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Community</Text>
-      <Text style={styles.subtitle}>Read-only updates shared by the SmartInvest admin team.</Text>
-      {fetchError ? (
-        <View style={{ marginTop: 8, marginBottom: 8 }}>
-          <Text style={{ color: '#b91c1c', fontSize: 12 }}>Unable to load posts: {fetchError}</Text>
-          <Text style={{ color: '#475569', fontSize: 12 }}>Check API URL and network (see console log for baseURL).</Text>
-        </View>
-      ) : null}
-
-      <TextInput
-        placeholder="Search updates"
-        placeholderTextColor="#94a3b8"
-        value={query}
-        onChangeText={setQuery}
-        style={styles.searchInput}
-      />
-
+    <SafeAreaView style={styles.container} edges={['top']}>
       <FlatList
-        inverted
-        contentContainerStyle={{ paddingTop: 10, paddingBottom: 140 }}
+        contentContainerStyle={styles.listContent}
         data={posts}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#0EA5E9']}
+            tintColor="#0EA5E9"
+          />
+        }
+        ListHeaderComponent={() => (
+          <View>
+            <View style={styles.heroSection}>
+              <Text style={styles.heroTitle}>Updates</Text>
+              <Text style={styles.heroSubtitle}>
+                Stay informed with the latest news, announcements, and educational content from our team.
+              </Text>
+            </View>
+
+            <View style={styles.searchContainer}>
+              <View style={styles.searchBar}>
+                <Text style={styles.searchIcon}>🔍</Text>
+                <TextInput
+                  placeholder="Search posts..."
+                  placeholderTextColor="#94A3B8"
+                  value={query}
+                  onChangeText={setQuery}
+                  style={styles.searchInput}
+                />
+                {query.length > 0 && (
+                  <Pressable onPress={() => setQuery('')} hitSlop={8}>
+                    <Text style={styles.searchClear}>✕</Text>
+                  </Pressable>
+                )}
+              </View>
+            </View>
+
+            {fetchError ? (
+              <View style={styles.errorBanner}>
+                <Text style={styles.errorBannerTitle}>Connection Issue</Text>
+                <Text style={styles.errorBannerText}>
+                  Unable to fetch latest posts. Showing cached content.
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        )}
         ListEmptyComponent={() => (
-          <View style={styles.emptyBox}>
-            <Text style={styles.emptyTitle}>No posts found</Text>
-            <Text style={styles.emptyText}>Try a different search or wait for new admin updates.</Text>
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyIcon}>📭</Text>
+            <Text style={styles.emptyTitle}>No results</Text>
+            <Text style={styles.emptySubtext}>
+              No posts match your search. Try a different keyword.
+            </Text>
           </View>
         )}
       />
-
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, paddingTop: 48, backgroundColor: '#f8fafc' },
-  header: { fontSize: 22, fontWeight: '800', color: '#0f172a' },
-  subtitle: { marginTop: 6, marginBottom: 12, color: '#64748b', fontSize: 13 },
-  searchInput: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 14,
-    color: '#0f172a',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+  container: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
   },
-  chatRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 14 },
-  avatarWrap: { width: 44, marginRight: 10 },
-  avatar: { width: 44, height: 44, borderRadius: 22 },
-  avatarPlaceholder: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#c7d2fe', alignItems: 'center', justifyContent: 'center' },
-  avatarInitial: { color: '#312e81', fontWeight: '800' },
-  chatBubbleWrap: { flex: 1 },
-  chatHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-  chatAuthor: { fontSize: 13, fontWeight: '800', color: '#0f172a' },
-  chatTime: { fontSize: 11, color: '#94a3b8' },
-  chatBubble: { backgroundColor: '#ffffff', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#e6eef2' },
-  chatTitle: { fontSize: 15, fontWeight: '800', color: '#0f172a' },
-  chatBody: { marginTop: 6, color: '#475569', fontSize: 14, lineHeight: 20 },
-  postTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  badgeWrap: { backgroundColor: '#ecfeff', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 },
-  badgeText: { fontSize: 11, fontWeight: '800', color: '#0f766e' },
-  timeText: { fontSize: 12, color: '#94a3b8', fontWeight: '600' },
-  postTitle: { fontSize: 17, fontWeight: '800', color: '#0f172a' },
-  postBody: { fontSize: 14, lineHeight: 21, color: '#475569', marginTop: 8 },
-  footerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 },
-  authorText: { fontSize: 12, color: '#64748b', fontWeight: '600', flex: 1, paddingRight: 8 },
-  readButton: { backgroundColor: '#00A86B', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999 },
-  readButtonText: { color: '#fff', fontSize: 12, fontWeight: '800' },
-  emptyBox: { padding: 24, alignItems: 'center' },
-  emptyTitle: { fontSize: 16, fontWeight: '800', color: '#0f172a' },
-  emptyText: { marginTop: 6, textAlign: 'center', color: '#64748b' },
-  footerNote: { position: 'absolute', left: 16, right: 16, bottom: 18, backgroundColor: '#0f172a', paddingVertical: 12, borderRadius: 999, alignItems: 'center' },
-  footerNoteText: { color: '#e6eef2', fontSize: 13, fontWeight: '600' },
+  listContent: {
+    paddingBottom: 100,
+  },
+
+  // Hero header
+  heroSection: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 20,
+    backgroundColor: '#0F172A',
+  },
+  heroTitle: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
+  },
+  heroSubtitle: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#94A3B8',
+    marginTop: 6,
+    lineHeight: 19,
+  },
+
+  // Search
+  searchContainer: {
+    paddingHorizontal: 20,
+    marginTop: -14,
+    marginBottom: 16,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  searchIcon: {
+    fontSize: 14,
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#0F172A',
+    paddingVertical: 0,
+  },
+  searchClear: {
+    fontSize: 14,
+    color: '#94A3B8',
+    fontWeight: '600',
+  },
+
+  // Error
+  errorBanner: {
+    marginHorizontal: 20,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+  },
+  errorBannerTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#92400E',
+    marginBottom: 2,
+  },
+  errorBannerText: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#B45309',
+  },
+
+  // Post card
+  postCard: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 20,
+    marginBottom: 12,
+    borderRadius: 12,
+    padding: 16,
+    borderLeftWidth: 3,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  postHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  categoryPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  categoryIcon: {
+    fontSize: 11,
+  },
+  categoryLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  postTime: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#94A3B8',
+  },
+  postTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 6,
+    lineHeight: 20,
+  },
+  postBody: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#475569',
+    lineHeight: 19,
+  },
+  postDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    marginVertical: 12,
+  },
+  postFooter: {},
+  authorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  authorAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+  },
+  authorAvatarPlaceholder: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  authorAvatarInitial: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  authorName: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+
+  // Empty state
+  emptyState: {
+    paddingVertical: 60,
+    alignItems: 'center',
+  },
+  emptyIcon: {
+    fontSize: 44,
+    marginBottom: 12,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 4,
+  },
+  emptySubtext: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#94A3B8',
+    textAlign: 'center',
+    paddingHorizontal: 40,
+  },
 });

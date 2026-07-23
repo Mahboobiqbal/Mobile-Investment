@@ -1,5 +1,5 @@
 const express = require('express');
-const { submitDeposit, requestWithdrawal, selectPlan, getTransactions, distributeDailyProfit, getActivePlans, getActiveCategories, getCategoryWithPlans } = require('../controllers/walletController');
+const { submitDeposit, requestWithdrawal, selectPlan, getTransactions, distributeDailyProfit, getActivePlans, getActiveCategories, getCategoryWithPlans, checkWithdrawalEligibility } = require('../controllers/walletController');
 const { requestMutualFundRedemption, getUserMutualFundRequests } = require('../controllers/mutualFundController');
 const authMiddleware = require('../middleware/authMiddleware');
 
@@ -106,6 +106,19 @@ router.post('/deposit', submitDeposit);
  *         description: Withdrawal requested, pending admin processing
  */
 router.post('/withdraw', requestWithdrawal);
+
+/**
+ * @openapi
+ * /wallet/withdrawal-eligibility:
+ *   get:
+ *     tags: [Wallet - Auth]
+ *     summary: Check if the user is eligible to withdraw (30-day lock since first deposit)
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Eligibility status with days remaining
+ */
+router.get('/withdrawal-eligibility', checkWithdrawalEligibility);
 
 /**
  * @openapi

@@ -8,6 +8,7 @@ const User = require('../models/User');
 const Plan = require('../models/Plan');
 const Transaction = require('../models/Transaction');
 const UserInvestment = require('../models/UserInvestment');
+const DailyProfitRate = require('../models/DailyProfitRate');
 const { syncUserPlanState } = require('../utils/planState');
 
 const emailUser = process.env.EMAIL_USER;
@@ -404,7 +405,7 @@ const getUserDashboardStats = async (req, res) => {
     try {
       const userId = req.user.id;
 
-      const [stats, investments] = await Promise.all([
+      const [stats, investments, user, dailyConfig] = await Promise.all([
         Transaction.aggregate([
           {
             $match: {
@@ -460,10 +461,13 @@ const getUserDashboardStats = async (req, res) => {
           },
         ]),
         UserInvestment.find({ user: userId, status: 'active' }).select('investmentAmount'),
+        User.findById(userId).select('currentBalance'),
+        DailyProfitRate.findOne({ date: new Date().toISOString().split('T')[0] }),
       ]);
 
       const summary = stats[0] || {};
       const totalInvestment = investments.reduce((sum, inv) => sum + inv.investmentAmount, 0);
+      const dailyRate = dailyConfig ? dailyConfig.rate : 0.005;
 
       return res.status(200).json({
         message: 'Dashboard stats fetched successfully',
@@ -471,6 +475,8 @@ const getUserDashboardStats = async (req, res) => {
         totalWithdrawalsApproved: summary.totalWithdrawalsProcessed?.[0]?.total || 0,
         totalROIEarnings: summary.totalROIEarnings?.[0]?.total || 0,
         totalInvestment,
+        currentBalance: user?.currentBalance || 0,
+        dailyRate,
       });
     } catch (error) {
       console.error('Dashboard stats calculation failed:', error.message);
@@ -554,6 +560,79 @@ const getUserInvestments = async (req, res) => {
     }
   };
 
+const getUserDailyROIHistory = async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const monthPrefix = `ROI-DAILY-${year}-${month}`;
+
+      const roiTransactions = await Transaction.find({
+        user: new mongoose.Types.ObjectId(userId),
+        transactionId: { $regex: `^${monthPrefix}` },
+        status: { $in: ['approved', 'Approved'] },
+      }).sort({ createdAt: 1 }).lean();
+
+      const totalProfitThisMonth = roiTransactions.reduce((sum, t) => sum + t.amount, 0);
+      const user = await User.findById(userId).select('currentBalance').lean();
+      let runningBalance = (user?.currentBalance || 0) - totalProfitThisMonth;
+
+      const dateStrings = roiTransactions.map(tx =>
+        tx.transactionId.replace('ROI-DAILY-', '').split('-').slice(0, 3).join('-')
+      );
+      const dailyRates = await DailyProfitRate.find({ date: { $in: dateStrings } }).lean();
+      const rateMap = {};
+      for (const dr of dailyRates) {
+        rateMap[dr.date] = dr.rate;
+      }
+
+      const weeks = [];
+
+      for (const tx of roiTransactions) {
+        runningBalance += tx.amount;
+        const dateStr = tx.transactionId.replace('ROI-DAILY-', '').split('-').slice(0, 3).join('-');
+        const dayOfMonth = new Date(dateStr).getDate();
+        const weekNumber = Math.ceil(dayOfMonth / 7);
+
+        let week = weeks.find(w => w.weekNumber === weekNumber);
+        if (!week) {
+          week = { weekNumber, days: [] };
+          weeks.push(week);
+        }
+
+        week.days.push({
+          date: dateStr,
+          profit: tx.amount,
+          rate: rateMap[dateStr] || 0.005,
+          balanceAfter: Math.round(runningBalance * 100) / 100,
+        });
+      }
+
+      const weekLabels = {
+        1: 'Week 1 (Days 1-7)',
+        2: 'Week 2 (Days 8-14)',
+        3: 'Week 3 (Days 15-21)',
+        4: 'Week 4 (Days 22-31)',
+      };
+
+      const enrichedWeeks = weeks.map(w => ({
+        weekNumber: w.weekNumber,
+        label: weekLabels[w.weekNumber] || `Week ${w.weekNumber}`,
+        days: w.days,
+      }));
+
+      return res.status(200).json({
+        message: 'Daily ROI history fetched successfully',
+        month: `${year}-${month}`,
+        weeks: enrichedWeeks,
+      });
+    } catch (error) {
+      console.error('Failed to fetch daily ROI history:', error.message);
+      return res.status(500).json({ message: error.message || 'Unable to fetch daily ROI history' });
+    }
+  };
+
 module.exports = {
   registerUser,
   loginUser,
@@ -565,4 +644,5 @@ module.exports = {
   resetPassword,
   getUserDashboardStats,
   getUserInvestments,
+  getUserDailyROIHistory,
 };

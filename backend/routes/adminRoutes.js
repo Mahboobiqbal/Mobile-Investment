@@ -15,6 +15,8 @@ const {
   updatePlan,
   deletePlan,
   getDashboardAnalytics,
+  getDailyProfitRate,
+  setDailyProfitRate,
 } = require('../controllers/adminController');
 const {
   getAllMutualFundRequests,
@@ -359,6 +361,45 @@ router.delete('/plans/:planId', deletePlan);
  *         description: Forbidden - valid admin API key required
  */
 router.get('/analytics', getDashboardAnalytics);
+
+/**
+ * @openapi
+ * /admin/daily-profit-rate:
+ *   get:
+ *     tags: [Admin - Daily Profit]
+ *     summary: Get today's daily profit rate (default 0.5%)
+ *     security: [{ adminApiKey: [] }]
+ *     responses:
+ *       200:
+ *         description: Today's profit rate
+ *       403:
+ *         description: Forbidden - valid admin API key required
+ */
+router.get('/daily-profit-rate', getDailyProfitRate);
+
+/**
+ * @openapi
+ * /admin/daily-profit-rate:
+ *   post:
+ *     tags: [Admin - Daily Profit]
+ *     summary: Set today's daily profit rate (resets to 0.5% next day)
+ *     security: [{ adminApiKey: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [rate]
+ *             properties:
+ *               rate: { type: number, description: "Percentage value (e.g. 1.5 for 1.5%)" }
+ *     responses:
+ *       200:
+ *         description: Daily profit rate updated
+ *       403:
+ *         description: Forbidden - valid admin API key required
+ */
+router.post('/daily-profit-rate', setDailyProfitRate);
 
 /**
  * @openapi

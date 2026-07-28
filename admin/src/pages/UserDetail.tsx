@@ -4,7 +4,7 @@ import api from '../api/axios';
 import {
   ArrowLeft, Mail, Phone, Wallet, TrendingUp, TrendingDown,
   Clock, CheckCircle, Ban, ArrowDownCircle, ArrowUpCircle,
-  Calendar, Hash, Target, Activity, PieChart, Sparkles,
+  Calendar, Hash, Target, Activity, PieChart,
 } from 'lucide-react';
 
 interface Transaction {
@@ -16,6 +16,7 @@ interface UserData {
   _id: string; name: string; email: string; phone: string;
   currentBalance: number; activePlan: string; role: string;
   isVerified: boolean; createdAt: string;
+  dp?: string;
 }
 
 interface Stats {
@@ -30,24 +31,62 @@ const statusConfig: Record<string, { bg: string; text: string; icon: React.Eleme
   rejected: { bg: 'bg-rose-50', text: 'text-rose-700', icon: Ban, label: 'Rejected' },
 };
 
-const AVATAR_GRADIENTS = [
-  'from-indigo-500 to-purple-600', 'from-emerald-500 to-teal-600',
-  'from-orange-500 to-rose-600', 'from-sky-500 to-blue-600',
-  'from-pink-500 to-fuchsia-600', 'from-amber-500 to-yellow-600',
-  'from-violet-500 to-indigo-600', 'from-lime-500 to-green-600',
+const AVATAR_COLORS = [
+  'bg-emerald-600', 'bg-blue-600', 'bg-violet-600',
+  'bg-amber-600', 'bg-rose-600', 'bg-cyan-600',
+  'bg-indigo-600', 'bg-teal-600',
 ];
 
-function getAvatarGradient(name: string) {
+function getAvatarColor(name: string) {
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  return AVATAR_GRADIENTS[Math.abs(hash) % AVATAR_GRADIENTS.length];
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+const GRAVATAR_DEFAULT = 'https://www.gravatar.com/avatar/?d=mp';
+
+function hasProfilePicture(dp?: string) {
+  return dp && dp !== GRAVATAR_DEFAULT && dp.trim() !== '';
+}
+
+function UserAvatar({ name, dp, size = 'md' }: { name: string; dp?: string; size?: 'sm' | 'md' | 'lg' }) {
+  const [imgError, setImgError] = React.useState(false);
+  const sizeClasses = {
+    sm: 'h-8 w-8 text-xs',
+    md: 'h-10 w-10 text-sm',
+    lg: 'h-20 w-20 text-2xl',
+  };
+  const imgSizeClasses = {
+    sm: 'h-8 w-8',
+    md: 'h-10 w-10',
+    lg: 'h-20 w-20',
+  };
+
+  if (hasProfilePicture(dp) && !imgError) {
+    return (
+      <div className={`${imgSizeClasses[size]} shrink-0 rounded-full overflow-hidden`}>         
+        <img 
+          src={dp} 
+          alt={name} 
+          className="h-full w-full object-cover"
+          onError={() => setImgError(true)}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className={`flex ${sizeClasses[size]} shrink-0 items-center justify-center rounded-full font-bold text-white ${getAvatarColor(name)}`}>
+      {name.charAt(0).toUpperCase()}
+    </div>
+  );
 }
 
 function TxBadge({ status }: { status: string }) {
   const c = statusConfig[status] || statusConfig.pending;
   const Icon = c.icon;
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${c.bg} ${c.text}`}>
+    <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium ${c.bg} ${c.text}`}>
       <Icon className="h-3 w-3" /> {c.label}
     </span>
   );
@@ -57,15 +96,14 @@ function StatCard({ icon: Icon, label, value, color }: {
   icon: React.ElementType; label: string; value: string | number; color: string;
 }) {
   return (
-    <div className="glass-card p-3.5 sm:p-4 group relative overflow-hidden">
-      <div className={`absolute -right-6 -top-6 h-16 w-16 rounded-full bg-gradient-to-br ${color} opacity-10 transition-all duration-500 group-hover:scale-150`} />
-      <div className="relative flex items-center gap-2.5 sm:gap-3">
-        <div className={`flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${color} shadow-lg`}>
-          <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+    <div className="card-hover p-4">
+      <div className="flex items-center gap-3">
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${color} text-white`}>
+          <Icon className="h-5 w-5" />
         </div>
         <div className="min-w-0">
-          <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400 truncate">{label}</p>
-          <p className="text-sm sm:text-lg font-bold text-slate-900 truncate">
+          <p className="text-xs font-medium text-slate-500 truncate">{label}</p>
+          <p className="text-lg font-bold text-slate-900 truncate">
             {typeof value === 'number' ? `Rs. ${value.toLocaleString()}` : value}
           </p>
         </div>
@@ -76,12 +114,12 @@ function StatCard({ icon: Icon, label, value, color }: {
 
 function LoadingState() {
   return (
-    <div className="space-y-4 sm:space-y-6 animate-pulse">
-      <div className="h-8 w-48 rounded-xl bg-slate-200" />
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
-        {[1,2,3,4,5].map(i => <div key={i} className="h-20 sm:h-24 rounded-2xl bg-slate-100" />)}
+    <div className="space-y-6 animate-pulse">
+      <div className="h-8 w-48 rounded-lg bg-slate-200" />
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+        {[1,2,3,4,5].map(i => <div key={i} className="h-24 rounded-xl bg-slate-100" />)}
       </div>
-      <div className="h-64 rounded-2xl bg-slate-100" />
+      <div className="h-64 rounded-xl bg-slate-100" />
     </div>
   );
 }
@@ -137,34 +175,32 @@ export default function UserDetail() {
   );
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-6">
       {/* Back + Header */}
-      <div className="flex items-center gap-3 sm:gap-4">
+      <div className="flex items-center gap-4">
         <button onClick={() => navigate('/users')}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700">
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700">
           <ArrowLeft className="h-4 w-4" />
         </button>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 truncate">{user.name}</h1>
-            <span className={`rounded-full px-2 sm:px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
-              user.role === 'admin' ? 'bg-purple-50 text-purple-700' : 'bg-slate-50 text-slate-600'
+            <h1 className="text-2xl font-bold text-slate-900 truncate">{user.name}</h1>
+            <span className={`rounded-md px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
+              user.role === 'admin' ? 'bg-purple-50 text-purple-700' : 'bg-slate-100 text-slate-600'
             }`}>{user.role}</span>
-            {user.isVerified && <span className="rounded-full bg-emerald-50 px-2 sm:px-2.5 py-0.5 text-[10px] font-semibold text-emerald-700">Verified</span>}
+            {user.isVerified && <span className="rounded-md bg-emerald-50 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-700">Verified</span>}
           </div>
-          <p className="mt-0.5 text-xs sm:text-sm text-slate-500">Joined {new Date(user.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+          <p className="mt-0.5 text-sm text-slate-500">Joined {new Date(user.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
         </div>
       </div>
 
       {/* User Profile Card */}
-      <div className="glass-card p-4 sm:p-6">
+      <div className="card p-6">
         <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-8">
           <div className="flex items-center gap-3 sm:gap-0 sm:flex-col sm:items-center">
-            <div className={`flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-gradient-to-br ${getAvatarGradient(user.name)} text-xl sm:text-2xl font-bold text-white shadow-lg shadow-indigo-500/25`}>
-              {user.name.charAt(0).toUpperCase()}
-            </div>
+            <UserAvatar name={user.name} dp={user.dp} size="lg" />
             <div className="sm:hidden min-w-0 flex-1">
-              <p className="text-sm font-bold text-slate-900 truncate">{user.name}</p>
+              <p className="text-sm font-semibold text-slate-900 truncate">{user.name}</p>
               <p className="flex items-center gap-1 text-[11px] text-slate-500">
                 <Mail className="h-3 w-3 shrink-0" />
                 <span className="truncate">{user.email}</span>
@@ -185,8 +221,8 @@ export default function UserDetail() {
               <span className="text-slate-600 truncate">Plan: <strong>{user.activePlan}</strong></span>
             </div>
             <div className="flex items-center gap-2 text-sm min-w-0">
-              <Wallet className="h-4 w-4 text-indigo-500 shrink-0" />
-              <span className="text-base sm:text-lg font-bold text-indigo-600">Rs. {user.currentBalance.toLocaleString()}</span>
+              <Wallet className="h-4 w-4 text-emerald-500 shrink-0" />
+              <span className="text-base sm:text-lg font-bold text-emerald-600">Rs. {user.currentBalance.toLocaleString()}</span>
             </div>
           </div>
         </div>
@@ -194,29 +230,29 @@ export default function UserDetail() {
 
       {/* Stats Grid */}
       {stats && (
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
-          <StatCard icon={TrendingUp} label="Total Deposits" value={stats.totalDeposits} color="from-emerald-500 to-emerald-600" />
-          <StatCard icon={TrendingDown} label="Total Withdrawals" value={stats.totalWithdrawals} color="from-orange-500 to-rose-500" />
-          <StatCard icon={Activity} label="ROI Earnings" value={stats.totalROI} color="from-blue-500 to-blue-600" />
-          <StatCard icon={Clock} label="Pending Deposits" value={stats.pendingDeposits} color="from-amber-500 to-amber-600" />
-          <StatCard icon={Wallet} label="Pending Withdrawals" value={stats.pendingWithdrawals} color="from-purple-500 to-purple-600" />
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+          <StatCard icon={TrendingUp} label="Total Deposits" value={stats.totalDeposits} color="bg-emerald-500" />
+          <StatCard icon={TrendingDown} label="Total Withdrawals" value={stats.totalWithdrawals} color="bg-orange-500" />
+          <StatCard icon={Activity} label="ROI Earnings" value={stats.totalROI} color="bg-blue-500" />
+          <StatCard icon={Clock} label="Pending Deposits" value={stats.pendingDeposits} color="bg-amber-500" />
+          <StatCard icon={Wallet} label="Pending Withdrawals" value={stats.pendingWithdrawals} color="bg-violet-500" />
         </div>
       )}
 
       {/* Transactions */}
-      <div className="glass rounded-2xl overflow-hidden">
-        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3 border-b border-slate-100 px-4 sm:px-6 py-3.5 sm:py-4">
-          <h2 className="text-base sm:text-lg font-bold text-slate-900">
+      <div className="card overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3 border-b border-slate-200 px-4 sm:px-6 py-4">
+          <h2 className="text-base sm:text-lg font-semibold text-slate-900">
             Transaction History
-            <span className="ml-2 text-xs sm:text-sm font-normal text-slate-400">({filtered.length} of {transactions.length})</span>
+            <span className="ml-2 text-sm font-normal text-slate-400">({filtered.length} of {transactions.length})</span>
           </h2>
           <div className="flex items-center gap-2 flex-wrap">
             {/* Type filter */}
             <div className="flex rounded-lg border border-slate-200 p-0.5">
               {(['all', 'Deposit', 'Withdrawal'] as const).map(t => (
                 <button key={t} onClick={() => setFilterType(t)}
-                  className={`rounded-md px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-medium transition-colors ${
-                    filterType === t ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                    filterType === t ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
                   }`}>
                   {t === 'all' ? 'All' : t === 'Deposit' ? 'Deposits' : 'Withdrawals'}
                 </button>
@@ -224,7 +260,7 @@ export default function UserDetail() {
             </div>
             {/* Status filter */}
             <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
-              className="rounded-lg border border-slate-200 px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-medium text-slate-600 outline-none focus:border-indigo-300">
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 outline-none focus:border-emerald-300">
               <option value="all">All Status</option>
               <option value="pending">Pending</option>
               <option value="approved">Approved</option>
@@ -235,9 +271,9 @@ export default function UserDetail() {
         </div>
 
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 sm:py-12">
-            <div className="mb-3 flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200">
-              <PieChart className="h-6 w-6 sm:h-7 sm:w-7 text-slate-400" />
+          <div className="flex flex-col items-center justify-center py-12">
+            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
+              <PieChart className="h-7 w-7 text-slate-400" />
             </div>
             <p className="text-sm font-semibold text-slate-600">No transactions match these filters</p>
           </div>
@@ -246,9 +282,9 @@ export default function UserDetail() {
             {/* Mobile card list */}
             <div className="space-y-2 p-3 sm:hidden">
               {filtered.map((tx) => (
-                <div key={tx._id} className="rounded-xl bg-slate-50 p-3 border border-slate-100">
+                <div key={tx._id} className="rounded-lg bg-slate-50 p-3 border border-slate-100">
                   <div className="flex items-center gap-3">
-                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
                       tx.type === 'Deposit' ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-600'
                     }`}>
                       {tx.type === 'Deposit' ? <ArrowDownCircle className="h-5 w-5" /> : <ArrowUpCircle className="h-5 w-5" />}
@@ -264,7 +300,7 @@ export default function UserDetail() {
                         {tx.targetPhone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> {tx.targetPhone}</span>}
                       </div>
                     </div>
-                    <p className={`text-sm font-bold shrink-0 ${tx.type === 'Deposit' ? 'text-emerald-600' : 'text-orange-600'}`}>
+                    <p className={`text-sm font-semibold shrink-0 ${tx.type === 'Deposit' ? 'text-emerald-600' : 'text-orange-600'}`}>
                       {tx.type === 'Deposit' ? '+' : '-'} Rs. {tx.amount.toLocaleString()}
                     </p>
                   </div>
@@ -275,9 +311,9 @@ export default function UserDetail() {
             {/* Desktop rows */}
             <div className="hidden sm:block divide-y divide-slate-100">
               {filtered.map((tx) => (
-                <div key={tx._id} className="flex flex-wrap items-center gap-4 px-6 py-4 transition-colors hover:bg-slate-50/50">
+                <div key={tx._id} className="flex flex-wrap items-center gap-4 px-6 py-4 transition-colors hover:bg-slate-50">
                   {/* Type icon */}
-                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
                     tx.type === 'Deposit' ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-600'
                   }`}>
                     {tx.type === 'Deposit' ? <ArrowDownCircle className="h-5 w-5" /> : <ArrowUpCircle className="h-5 w-5" />}

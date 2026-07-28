@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import api from '../api/axios';
 import {
-  CheckCircle, XCircle, ArrowDownCircle, ArrowUpCircle, DollarSign,
+  CheckCircle, ArrowDownCircle, ArrowUpCircle,
   Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
-  Clock, AlertCircle, Ban, Wallet, User, Phone, Hash, Calendar,
-  TrendingUp, Filter, Download, Eye, MoreHorizontal,
+  Ban, Wallet, User, Phone, Hash, Calendar, Clock,
   ShieldCheck, ShieldX, Send, Sparkles, ListFilter,
+  Filter, Download,
 } from 'lucide-react';
 
 interface Transaction {
@@ -26,46 +26,27 @@ interface Pagination {
 }
 
 const tabs = [
-  { key: 'pending', label: 'Pending', icon: Clock, color: 'amber', gradient: 'from-amber-500 to-amber-600', lightBg: 'bg-amber-50', lightText: 'text-amber-700' },
-  { key: 'approved', label: 'Approved', icon: CheckCircle, color: 'emerald', gradient: 'from-emerald-500 to-emerald-600', lightBg: 'bg-emerald-50', lightText: 'text-emerald-700' },
-  { key: 'withdrawn', label: 'Withdrawn', icon: Wallet, color: 'blue', gradient: 'from-blue-500 to-blue-600', lightBg: 'bg-blue-50', lightText: 'text-blue-700' },
-  { key: 'rejected', label: 'Rejected', icon: Ban, color: 'rose', gradient: 'from-rose-500 to-rose-600', lightBg: 'bg-rose-50', lightText: 'text-rose-700' },
+  { key: 'pending', label: 'Pending', count: 'pending' as const },
+  { key: 'approved', label: 'Approved', count: 'approved' as const },
+  { key: 'withdrawn', label: 'Withdrawn', count: 'withdrawn' as const },
+  { key: 'rejected', label: 'Rejected', count: 'rejected' as const },
 ];
 
-const statusStyles: Record<string, { bg: string; text: string; dot: string; icon: React.ElementType }> = {
-  pending: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500', icon: Clock },
-  approved: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500', icon: CheckCircle },
-  withdrawn: { bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500', icon: Wallet },
-  rejected: { bg: 'bg-rose-50', text: 'text-rose-700', dot: 'bg-rose-500', icon: Ban },
+const statusStyles: Record<string, { bg: string; text: string; icon: React.ElementType }> = {
+  pending: { bg: 'bg-amber-50', text: 'text-amber-700', icon: Clock },
+  approved: { bg: 'bg-emerald-50', text: 'text-emerald-700', icon: CheckCircle },
+  withdrawn: { bg: 'bg-blue-50', text: 'text-blue-700', icon: Wallet },
+  rejected: { bg: 'bg-rose-50', text: 'text-rose-700', icon: Ban },
 };
 
 function StatusBadge({ status }: { status: string }) {
   const s = statusStyles[status] || statusStyles.pending;
   const Icon = s.icon;
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold ${s.bg} ${s.text} shadow-sm`}>
-      <Icon className="h-3.5 w-3.5" />
+    <span className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ${s.bg} ${s.text}`}>
+      <Icon className="h-3 w-3" />
       {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
-  );
-}
-
-function ActionButton({ onClick, variant, icon: Icon, label, loading }: {
-  onClick: () => void; variant: 'approve' | 'reject' | 'withdraw'; icon: React.ElementType; label: string; loading?: boolean;
-}) {
-  const styles = {
-    approve: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 hover:shadow-md hover:shadow-emerald-200/50 border-emerald-200',
-    withdraw: 'bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800 hover:shadow-md hover:shadow-blue-200/50 border-blue-200',
-    reject: 'bg-rose-50 text-rose-700 hover:bg-rose-100 hover:text-rose-800 hover:shadow-md hover:shadow-rose-200/50 border-rose-200',
-  };
-  return (
-    <button onClick={onClick} disabled={loading}
-      className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-semibold transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${styles[variant]}`}>
-      {loading ? (
-        <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-      ) : <Icon className="h-3.5 w-3.5" />}
-      {label}
-    </button>
   );
 }
 
@@ -84,73 +65,47 @@ function PaginationBar({ pagination, onPageChange }: {
   };
 
   return (
-    <div className="glass rounded-2xl px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div className="card px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
       <p className="text-xs sm:text-sm text-slate-500">
-        Showing <span className="font-semibold text-slate-800">{from}</span> to <span className="font-semibold text-slate-800">{to}</span> of{' '}
-        <span className="font-semibold text-slate-800">{total}</span> results
+        Showing <span className="font-medium text-slate-800">{from}</span> to <span className="font-medium text-slate-800">{to}</span> of{' '}
+        <span className="font-medium text-slate-800">{total}</span> results
       </p>
       <div className="flex items-center gap-1 overflow-x-auto">
         <button disabled={page <= 1} onClick={() => onPageChange(1)}
-          className="rounded-xl p-2 text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed">
+          className="rounded-lg p-2 text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed">
           <ChevronsLeft className="h-4 w-4" />
         </button>
         <button disabled={page <= 1} onClick={() => onPageChange(page - 1)}
-          className="rounded-xl p-2 text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed">
+          className="rounded-lg p-2 text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed">
           <ChevronLeft className="h-4 w-4" />
         </button>
-
         <button onClick={() => onPageChange(1)}
-          className={`min-w-[2.25rem] rounded-xl px-3 py-1.5 text-sm font-semibold transition-all ${page === 1 ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/25' : 'text-slate-600 hover:bg-slate-100'}`}>
+          className={`min-w-[2.25rem] rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${page === 1 ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}>
           1
         </button>
-
         {getPages()[0] > 2 && <span className="px-1 text-slate-300 text-sm">...</span>}
-
         {getPages().map((p) => (
           <button key={p} onClick={() => onPageChange(p)}
-            className={`min-w-[2.25rem] rounded-xl px-3 py-1.5 text-sm font-semibold transition-all ${page === p ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/25' : 'text-slate-600 hover:bg-slate-100'}`}>
+            className={`min-w-[2.25rem] rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${page === p ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}>
             {p}
           </button>
         ))}
-
         {getPages()[getPages().length - 1] < pages - 1 && <span className="px-1 text-slate-300 text-sm">...</span>}
-
         {pages > 1 && (
           <button onClick={() => onPageChange(pages)}
-            className={`min-w-[2.25rem] rounded-xl px-3 py-1.5 text-sm font-semibold transition-all ${page === pages ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/25' : 'text-slate-600 hover:bg-slate-100'}`}>
+            className={`min-w-[2.25rem] rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${page === pages ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}>
             {pages}
           </button>
         )}
-
         <button disabled={page >= pages} onClick={() => onPageChange(page + 1)}
-          className="rounded-xl p-2 text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed">
+          className="rounded-lg p-2 text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed">
           <ChevronRight className="h-4 w-4" />
         </button>
         <button disabled={page >= pages} onClick={() => onPageChange(pages)}
-          className="rounded-xl p-2 text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed">
+          className="rounded-lg p-2 text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed">
           <ChevronsRight className="h-4 w-4" />
         </button>
       </div>
-    </div>
-  );
-}
-
-function LoadingSkeleton() {
-  return (
-    <div className="space-y-4 animate-pulse">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="glass rounded-2xl p-5">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-xl bg-slate-200" />
-            <div className="flex-1 space-y-2.5">
-              <div className="h-4 w-48 rounded-lg bg-slate-200" />
-              <div className="h-3 w-64 rounded-lg bg-slate-100" />
-            </div>
-            <div className="h-6 w-24 rounded-xl bg-slate-200" />
-            <div className="h-9 w-28 rounded-xl bg-slate-200" />
-          </div>
-        </div>
-      ))}
     </div>
   );
 }
@@ -204,14 +159,11 @@ export default function Transactions() {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const hours = Math.floor(diff / 3600000);
-
     if (hours < 1) return 'Just now';
     if (hours < 24) return `${hours}h ago`;
     if (hours < 48) return 'Yesterday';
     return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   };
-
-  const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
   const totalCount = counts.pending + counts.approved + counts.withdrawn + counts.rejected;
 
@@ -225,26 +177,26 @@ export default function Transactions() {
     : transactions;
 
   return (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="glass-card p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+      <div className="card p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Transactions</h1>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 sm:px-3 py-0.5 sm:py-1 text-[11px] sm:text-xs font-semibold text-slate-600">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-2xl font-bold text-slate-900">Transactions</h1>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
                 <ListFilter className="h-3 w-3" />
                 {totalCount.toLocaleString()} total
               </span>
             </div>
-            <p className="text-xs sm:text-sm text-slate-500">Review, approve, and manage all financial activity</p>
+            <p className="text-sm text-slate-500">Review, approve, and manage all financial activity</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <button className="btn btn-ghost text-xs gap-2 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 border border-slate-200">
+            <button className="btn btn-secondary text-xs">
               <Filter className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Filter</span>
             </button>
-            <button className="btn btn-ghost text-xs gap-2 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 border border-slate-200">
+            <button className="btn btn-secondary text-xs">
               <Download className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Export</span>
             </button>
@@ -252,235 +204,295 @@ export default function Transactions() {
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      {/* Status Tabs */}
+      <div className="flex gap-2 overflow-x-auto pb-1">
         {tabs.map((tab) => {
-          const count = counts[tab.key as keyof typeof counts];
+          const count = counts[tab.count];
           const isActive = activeTab === tab.key;
-          const Icon = tab.icon;
-            return (
-            <button key={tab.key} onClick={() => { setActiveTab(tab.key); setSearch(''); }}
-              className={`group relative overflow-hidden rounded-2xl p-3.5 sm:p-5 text-left transition-all duration-300 ${
+          return (
+            <button key={tab.key}
+              onClick={() => { setActiveTab(tab.key); setSearch(''); }}
+              className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-all border ${
                 isActive
-                  ? 'bg-white shadow-xl shadow-indigo-500/10 ring-2 ring-indigo-500/20'
-                  : 'bg-white/70 backdrop-blur-sm border border-slate-200/70 hover:shadow-lg hover:border-slate-300'
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
               }`}>
-              {/* Background gradient blob */}
-              <div className={`absolute -right-8 -top-8 h-24 w-24 rounded-full bg-gradient-to-br ${tab.gradient} opacity-5 transition-all duration-500 group-hover:scale-150 ${isActive ? 'scale-125' : ''}`} />
-              <div className="relative">
-                <div className={`mb-2 sm:mb-3 inline-flex rounded-xl p-2 sm:p-2.5 bg-gradient-to-br ${tab.gradient} shadow-lg`}
-                  style={{ boxShadow: isActive ? `0 8px 24px -4px rgba(var(--${tab.color}-500), 0.3)` : undefined }}>
-                  <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
-                </div>
-                <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-500">{tab.label}</p>
-                <div className="mt-0.5 sm:mt-1 flex items-baseline gap-1.5 sm:gap-2">
-                  <p className="text-lg sm:text-2xl font-bold text-slate-900">
-                    {loading ? '-' : count.toLocaleString()}
-                  </p>
-                  {count > 0 && (
-                    <span className={`text-[10px] sm:text-xs font-medium ${count > 10 ? 'text-emerald-600' : 'text-amber-600'}`}>
-                      {count > 10 ? `↑ ${Math.round(count / totalCount * 100)}%` : `↓ ${Math.round(count / totalCount * 100)}%`}
-                    </span>
-                  )}
-                </div>
-              </div>
+              {tab.label}
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${
+                isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
+              }`}>
+                {loading ? '-' : count.toLocaleString()}
+              </span>
             </button>
           );
         })}
       </div>
 
       {/* Search Bar */}
-      <div className="relative">
-        <div className="glass rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2 sm:gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input type="text" placeholder="Search by name, email, transaction ID, or phone..."
-              value={search} onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white/60 py-3 pl-11 pr-4 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 focus:bg-white"
-            />
-          </div>
-          {search && (
-            <button onClick={() => setSearch('')}
-              className="text-xs font-semibold text-slate-500 hover:text-slate-700 transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-100">
-              Clear
-            </button>
-          )}
-          <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400 border-l border-slate-200 pl-4">
-            <Sparkles className="h-3.5 w-3.5 text-indigo-500" />
-            <span>{filtered.length} results</span>
-          </div>
+      <div className="card px-4 py-3 flex items-center gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input type="text" placeholder="Search by name, email, transaction ID, or phone..."
+            value={search} onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-11 pr-4 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100"
+          />
+        </div>
+        {search && (
+          <button onClick={() => setSearch('')}
+            className="text-xs font-medium text-slate-500 hover:text-slate-700 transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-100">
+            Clear
+          </button>
+        )}
+        <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400 border-l border-slate-200 pl-4">
+          <span>{filtered.length} results</span>
         </div>
       </div>
 
-      {/* Transactions List */}
+      {/* Transactions Table */}
       {loading ? (
-        <LoadingSkeleton />
-      ) : (
-        <div className="space-y-3">
-          {filtered.length === 0 ? (
-            <div className="glass rounded-2xl py-14 sm:py-20 px-6 sm:px-8 text-center">
-              <div className="mx-auto mb-5 flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200">
-                <Search className="h-8 w-8 sm:h-10 sm:w-10 text-slate-400" />
+        <div className="card overflow-hidden">
+          <div className="animate-pulse">
+            <div className="h-12 bg-slate-100 border-b border-slate-200" />
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="flex items-center gap-4 px-6 py-4 border-b border-slate-100">
+                <div className="h-9 w-9 rounded-lg bg-slate-200" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-32 rounded bg-slate-200" />
+                  <div className="h-3 w-48 rounded bg-slate-100" />
+                </div>
+                <div className="h-6 w-20 rounded bg-slate-200" />
+                <div className="h-6 w-20 rounded bg-slate-200" />
+                <div className="h-4 w-24 rounded bg-slate-200" />
               </div>
-              <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-2">No transactions found</h3>
-              <p className="text-slate-500 max-w-sm mx-auto text-xs sm:text-sm">
-                {search
-                  ? 'No matches for your search. Try a different name, email, or transaction ID.'
-                  : `There are no ${activeTab} transactions to review right now.`}
-              </p>
-              {search && (
-                <button onClick={() => setSearch('')}
-                  className="btn btn-primary mt-6">
-                  Clear Search
-                </button>
-              )}
-            </div>
-          ) : (
-            filtered.map((tx, index) => {
+            ))}
+          </div>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="card py-16 px-8 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
+            <Search className="h-8 w-8 text-slate-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-slate-800 mb-2">No transactions found</h3>
+          <p className="text-slate-500 max-w-sm mx-auto text-sm">
+            {search
+              ? 'No matches for your search. Try a different name, email, or transaction ID.'
+              : `There are no ${activeTab} transactions to review right now.`}
+          </p>
+          {search && (
+            <button onClick={() => setSearch('')} className="btn btn-primary mt-6">
+              Clear Search
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="card overflow-hidden">
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50">
+                  <th className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">User</th>
+                  <th className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">Type</th>
+                  <th className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">Status</th>
+                  <th className="px-6 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500">Amount</th>
+                  <th className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">Details</th>
+                  <th className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">Date</th>
+                  <th className="px-6 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filtered.map((tx) => {
+                  const normalizedType = String(tx.type || '').toLowerCase();
+                  const isPlanPurchase = normalizedType === 'plan';
+                  const isWalletDeposit = normalizedType === 'deposit';
+                  const isDeposit = isPlanPurchase || isWalletDeposit;
+                  const canAction = tx.status === 'pending';
+                  const planId = typeof tx.planId === 'string' ? tx.planId : tx.planId?._id;
+
+                  return (
+                    <tr key={tx._id} className="hover:bg-slate-50 transition-colors">
+                      {/* User */}
+                      <td className="px-6 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white ${
+                            isPlanPurchase ? 'bg-indigo-500' : isDeposit ? 'bg-emerald-500' : 'bg-orange-500'
+                          }`}>
+                            {tx.user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-slate-900 truncate">{tx.user.name}</p>
+                            <p className="text-[11px] text-slate-500 truncate">{tx.user.email}</p>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Type */}
+                      <td className="px-6 py-3.5">
+                        <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-medium ${
+                          isPlanPurchase ? 'bg-indigo-50 text-indigo-700' : isDeposit ? 'bg-emerald-50 text-emerald-700' : 'bg-orange-50 text-orange-700'
+                        }`}>
+                          {isPlanPurchase ? 'Plan Purchase' : isDeposit ? 'Deposit' : 'Withdrawal'}
+                        </span>
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-6 py-3.5">
+                        <StatusBadge status={tx.status} />
+                      </td>
+
+                      {/* Amount */}
+                      <td className="px-6 py-3.5 text-right">
+                        <span className={`text-sm font-bold ${isPlanPurchase || isDeposit ? 'text-emerald-600' : 'text-orange-600'}`}>
+                          {isPlanPurchase || isDeposit ? '+' : '-'}Rs. {tx.amount.toLocaleString()}
+                        </span>
+                      </td>
+
+                      {/* Details */}
+                      <td className="px-6 py-3.5">
+                        <div className="flex flex-col gap-0.5 text-[11px] text-slate-500">
+                          {isDeposit && tx.transactionId && (
+                            <span className="flex items-center gap-1">
+                              <Hash className="h-3 w-3" /> TID: {tx.transactionId}
+                            </span>
+                          )}
+                          {isPlanPurchase && tx.planName && (
+                            <span className="flex items-center gap-1">
+                              <Sparkles className="h-3 w-3" /> {tx.planName}
+                            </span>
+                          )}
+                          {!isDeposit && tx.targetPhone && (
+                            <span className="flex items-center gap-1">
+                              <Phone className="h-3 w-3" /> {tx.targetPhone}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Date */}
+                      <td className="px-6 py-3.5">
+                        <span className="text-xs text-slate-500">{formatDate(tx.createdAt)}</span>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-6 py-3.5 text-right">
+                        {canAction ? (
+                          <div className="flex items-center justify-end gap-1.5">
+                            {isPlanPurchase || isDeposit ? (
+                              <>
+                                <button onClick={() => handleReview(tx._id, 'approve')}
+                                  disabled={actionLoading === tx._id}
+                                  className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2.5 py-1.5 text-[11px] font-medium text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-all active:scale-95 disabled:opacity-50">
+                                  <ShieldCheck className="h-3 w-3" /> Approve
+                                </button>
+                                <button onClick={() => handleReview(tx._id, 'reject')}
+                                  disabled={actionLoading === tx._id}
+                                  className="inline-flex items-center gap-1 rounded-md bg-rose-50 px-2.5 py-1.5 text-[11px] font-medium text-rose-700 hover:bg-rose-100 border border-rose-200 transition-all active:scale-95 disabled:opacity-50">
+                                  <ShieldX className="h-3 w-3" /> Reject
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button onClick={() => handleReview(tx._id, 'withdraw')}
+                                  disabled={actionLoading === tx._id}
+                                  className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2.5 py-1.5 text-[11px] font-medium text-blue-700 hover:bg-blue-100 border border-blue-200 transition-all active:scale-95 disabled:opacity-50">
+                                  <Send className="h-3 w-3" /> Mark Paid
+                                </button>
+                                <button onClick={() => handleReview(tx._id, 'reject')}
+                                  disabled={actionLoading === tx._id}
+                                  className="inline-flex items-center gap-1 rounded-md bg-rose-50 px-2.5 py-1.5 text-[11px] font-medium text-rose-700 hover:bg-rose-100 border border-rose-200 transition-all active:scale-95 disabled:opacity-50">
+                                  <ShieldX className="h-3 w-3" /> Reject
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-slate-400 italic">
+                            {tx.status === 'approved' && 'Credited'}
+                            {tx.status === 'withdrawn' && 'Paid'}
+                            {tx.status === 'rejected' && 'Declined'}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Card List */}
+          <div className="md:hidden space-y-2 p-3">
+            {filtered.map((tx) => {
               const normalizedType = String(tx.type || '').toLowerCase();
               const isPlanPurchase = normalizedType === 'plan';
               const isWalletDeposit = normalizedType === 'deposit';
               const isDeposit = isPlanPurchase || isWalletDeposit;
               const canAction = tx.status === 'pending';
-              const statusS = statusStyles[tx.status] || statusStyles.pending;
-              const StatusIcon = statusS.icon;
-              const planId = typeof tx.planId === 'string' ? tx.planId : tx.planId?._id;
 
               return (
-                <div key={tx._id}
-                  className="glass rounded-2xl p-3.5 sm:p-5 transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/5 hover:border-indigo-200/50 animate-fade-in"
-                  style={{ animationDelay: `${index * 50}ms` }}>
-                  <div className="flex items-start justify-between gap-3 sm:gap-4">
-                    {/* Left: Avatar + Info */}
-                    <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
-                      <div className={`relative flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl text-xs sm:text-sm font-bold text-white shadow-lg ${
-                        isPlanPurchase
-                          ? 'bg-gradient-to-br from-indigo-500 to-violet-600 shadow-indigo-500/25'
-                          : isDeposit
-                            ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-emerald-500/25'
-                            : 'bg-gradient-to-br from-orange-500 to-rose-500 shadow-orange-500/25'
+                <div key={tx._id} className="rounded-lg bg-slate-50 p-3 border border-slate-100">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white ${
+                        isPlanPurchase ? 'bg-indigo-500' : isDeposit ? 'bg-emerald-500' : 'bg-orange-500'
                       }`}>
-                        {getInitials(tx.user.name)}
-                        <div className={`absolute -bottom-1 -right-1 flex h-4 w-4 sm:h-5 sm:w-5 items-center justify-center rounded-full border-2 border-white ${isPlanPurchase ? 'bg-indigo-500' : isDeposit ? 'bg-emerald-500' : 'bg-orange-500'}`}>
-                          {isPlanPurchase ? <Sparkles className="h-2.5 w-2.5 text-white" /> : isDeposit ? <ArrowDownCircle className="h-2.5 w-2.5 text-white" /> : <ArrowUpCircle className="h-2.5 w-2.5 text-white" />}
-                        </div>
+                        {tx.user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 sm:gap-2.5 flex-wrap">
-                          <span className="text-sm font-bold text-slate-900 truncate max-w-[140px] sm:max-w-none">{tx.user.name}</span>
-                          <span className={`inline-flex items-center gap-1 rounded-lg px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider ${
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-slate-900 truncate">{tx.user.name}</p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
                             isPlanPurchase ? 'bg-indigo-50 text-indigo-700' : isDeposit ? 'bg-emerald-50 text-emerald-700' : 'bg-orange-50 text-orange-700'
                           }`}>
-                            {isPlanPurchase ? <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> : isDeposit ? <ArrowDownCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> : <ArrowUpCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3" />}
-                            {isPlanPurchase ? 'Plan Purchase' : isDeposit ? 'Deposit' : 'Withdrawal'}
+                            {isPlanPurchase ? 'Plan' : isDeposit ? 'Deposit' : 'Withdrawal'}
                           </span>
                           <StatusBadge status={tx.status} />
                         </div>
-                        <div className="mt-1 sm:mt-1.5 flex flex-wrap items-center gap-x-2.5 sm:gap-x-4 gap-y-1 text-[11px] sm:text-xs text-slate-500">
-                          <span className="flex items-center gap-1 sm:gap-1.5 min-w-0">
-                            <User className="h-3 w-3 shrink-0" />
-                            <span className="truncate max-w-[160px] sm:max-w-none">{tx.user.email}</span>
-                          </span>
-                          {isDeposit && tx.transactionId && (
-                            <span className="flex items-center gap-1 sm:gap-1.5">
-                              <Hash className="h-3 w-3" />
-                              <span className="hidden sm:inline">TID:</span> {tx.transactionId}
-                            </span>
-                          )}
-                          {isPlanPurchase && tx.planName && (
-                            <span className="flex items-center gap-1 sm:gap-1.5">
-                              <Sparkles className="h-3 w-3" />
-                              <span className="hidden sm:inline">Plan:</span> {tx.planName}
-                            </span>
-                          )}
-                          {isPlanPurchase && planId && (
-                            <span className="flex items-center gap-1 sm:gap-1.5">
-                              <Hash className="h-3 w-3" />
-                              <span className="hidden sm:inline">Plan ID:</span> {planId}
-                            </span>
-                          )}
-                          {!isDeposit && tx.targetPhone && (
-                            <span className="flex items-center gap-1 sm:gap-1.5">
-                              <Phone className="h-3 w-3" />
-                              {tx.targetPhone}
-                            </span>
-                          )}
-                          <span className="flex items-center gap-1 sm:gap-1.5">
-                            <Calendar className="h-3 w-3" />
-                            <span className="hidden sm:inline">{formatDate(tx.createdAt)}</span>
-                            <span className="sm:hidden">{formatDate(tx.createdAt).split(',')[0]}</span>
-                          </span>
-                        </div>
                       </div>
                     </div>
-
-                    {/* Right: Amount + Actions */}
-                    <div className="flex shrink-0 flex-col items-end gap-1.5 sm:flex-row sm:items-center sm:gap-4">
-                      <div className="text-right">
-                        <p className={`text-base sm:text-xl font-bold ${isPlanPurchase || isDeposit ? 'text-emerald-600' : 'text-orange-600'}`}>
-                          {isPlanPurchase || isDeposit ? '+' : '-'}Rs. {tx.amount.toLocaleString()}
-                        </p>
-                      </div>
-
-                      {/* Action Buttons for pending */}
-                      {canAction && (
-                        <div className="hidden sm:flex items-center gap-1.5">
-                          {isPlanPurchase || isDeposit ? (
-                            <>
-                              <ActionButton variant="approve" icon={ShieldCheck} label="Approve"
-                                onClick={() => handleReview(tx._id, 'approve')} loading={actionLoading === tx._id} />
-                              <ActionButton variant="reject" icon={ShieldX} label="Reject"
-                                onClick={() => handleReview(tx._id, 'reject')} loading={actionLoading === tx._id} />
-                            </>
-                          ) : (
-                            <>
-                              <ActionButton variant="withdraw" icon={Send} label="Mark Paid"
-                                onClick={() => handleReview(tx._id, 'withdraw')} loading={actionLoading === tx._id} />
-                              <ActionButton variant="reject" icon={ShieldX} label="Reject"
-                                onClick={() => handleReview(tx._id, 'reject')} loading={actionLoading === tx._id} />
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                    <span className={`text-sm font-bold shrink-0 ${isPlanPurchase || isDeposit ? 'text-emerald-600' : 'text-orange-600'}`}>
+                      {isPlanPurchase || isDeposit ? '+' : '-'}Rs. {tx.amount.toLocaleString()}
+                    </span>
                   </div>
-
-                  {/* Mobile Actions */}
+                  <div className="mt-2 text-[11px] text-slate-500 flex items-center gap-1.5">
+                    <Calendar className="h-3 w-3" />
+                    {formatDate(tx.createdAt)}
+                  </div>
                   {canAction && (
-                    <div className="sm:hidden mt-3 pt-3 border-t border-slate-100 flex items-center gap-2">
+                    <div className="mt-2 pt-2 border-t border-slate-100 flex items-center gap-2">
                       {isPlanPurchase || isDeposit ? (
                         <>
-                          <ActionButton variant="approve" icon={ShieldCheck} label="Approve"
-                            onClick={() => handleReview(tx._id, 'approve')} loading={actionLoading === tx._id} />
-                          <ActionButton variant="reject" icon={ShieldX} label="Reject"
-                            onClick={() => handleReview(tx._id, 'reject')} loading={actionLoading === tx._id} />
+                          <button onClick={() => handleReview(tx._id, 'approve')}
+                            disabled={actionLoading === tx._id}
+                            className="flex-1 inline-flex items-center justify-center gap-1 rounded-md bg-emerald-50 px-2.5 py-1.5 text-[11px] font-medium text-emerald-700 border border-emerald-200 active:scale-95 disabled:opacity-50">
+                            <ShieldCheck className="h-3 w-3" /> Approve
+                          </button>
+                          <button onClick={() => handleReview(tx._id, 'reject')}
+                            disabled={actionLoading === tx._id}
+                            className="flex-1 inline-flex items-center justify-center gap-1 rounded-md bg-rose-50 px-2.5 py-1.5 text-[11px] font-medium text-rose-700 border border-rose-200 active:scale-95 disabled:opacity-50">
+                            <ShieldX className="h-3 w-3" /> Reject
+                          </button>
                         </>
                       ) : (
                         <>
-                          <ActionButton variant="withdraw" icon={Send} label="Mark Paid"
-                            onClick={() => handleReview(tx._id, 'withdraw')} loading={actionLoading === tx._id} />
-                          <ActionButton variant="reject" icon={ShieldX} label="Reject"
-                            onClick={() => handleReview(tx._id, 'reject')} loading={actionLoading === tx._id} />
+                          <button onClick={() => handleReview(tx._id, 'withdraw')}
+                            disabled={actionLoading === tx._id}
+                            className="flex-1 inline-flex items-center justify-center gap-1 rounded-md bg-blue-50 px-2.5 py-1.5 text-[11px] font-medium text-blue-700 border border-blue-200 active:scale-95 disabled:opacity-50">
+                            <Send className="h-3 w-3" /> Mark Paid
+                          </button>
+                          <button onClick={() => handleReview(tx._id, 'reject')}
+                            disabled={actionLoading === tx._id}
+                            className="flex-1 inline-flex items-center justify-center gap-1 rounded-md bg-rose-50 px-2.5 py-1.5 text-[11px] font-medium text-rose-700 border border-rose-200 active:scale-95 disabled:opacity-50">
+                            <ShieldX className="h-3 w-3" /> Reject
+                          </button>
                         </>
                       )}
-                    </div>
-                  )}
-
-                  {/* Status footer for non-pending */}
-                  {!canAction && (
-                    <div className="mt-3 flex items-center gap-1.5 text-xs font-medium pt-2 border-t border-slate-100/50">
-                      <StatusIcon className="h-3.5 w-3.5" style={{ color: statusS.text === 'text-amber-700' ? '#d97706' : statusS.text === 'text-emerald-700' ? '#059669' : statusS.text === 'text-blue-700' ? '#2563eb' : '#e11d48' }} />
-                      <span className="text-slate-500">
-                        {tx.status === 'withdrawn' && 'Marked as paid by admin'}
-                        {tx.status === 'approved' && 'Balance credited to user'}
-                        {tx.status === 'rejected' && 'Transaction was declined'}
-                      </span>
                     </div>
                   )}
                 </div>
               );
-            })
-          )}
+            })}
+          </div>
         </div>
       )}
 

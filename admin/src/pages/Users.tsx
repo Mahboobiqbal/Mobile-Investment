@@ -2,17 +2,18 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import {
-  User as UserIcon, Phone, Wallet,
+  User as UserIcon, Phone,
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
-  Search, Calendar, Shield,
+  Search, Shield,
   Users as UsersIcon, BadgeCheck, Target, DollarSign, ArrowUpDown,
-  X, Edit3, Eye, Mail, Sparkles,
+  X, Edit3, Eye, Mail,
 } from 'lucide-react';
 
 interface User {
   _id: string; name: string; email: string; phone: string;
   currentBalance: number; activePlan: string; role: string;
   isVerified: boolean; createdAt: string;
+  dp?: string;
 }
 
 interface Pagination {
@@ -23,17 +24,55 @@ interface Stats {
   verified: number; activePlans: number; totalBalance: number;
 }
 
-const AVATAR_GRADIENTS = [
-  'from-indigo-500 to-purple-600', 'from-emerald-500 to-teal-600',
-  'from-orange-500 to-rose-600', 'from-sky-500 to-blue-600',
-  'from-pink-500 to-fuchsia-600', 'from-amber-500 to-yellow-600',
-  'from-violet-500 to-indigo-600', 'from-lime-500 to-green-600',
+const AVATAR_COLORS = [
+  'bg-emerald-600', 'bg-blue-600', 'bg-violet-600',
+  'bg-amber-600', 'bg-rose-600', 'bg-cyan-600',
+  'bg-indigo-600', 'bg-teal-600',
 ];
 
-function getAvatarGradient(name: string) {
+function getAvatarColor(name: string) {
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  return AVATAR_GRADIENTS[Math.abs(hash) % AVATAR_GRADIENTS.length];
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+const GRAVATAR_DEFAULT = 'https://www.gravatar.com/avatar/?d=mp';
+
+function hasProfilePicture(dp?: string) {
+  return dp && dp !== GRAVATAR_DEFAULT && dp.trim() !== '';
+}
+
+function UserAvatar({ name, dp, size = 'md' }: { name: string; dp?: string; size?: 'sm' | 'md' | 'lg' }) {
+  const [imgError, setImgError] = React.useState(false);
+  const sizeClasses = {
+    sm: 'h-8 w-8 text-xs',
+    md: 'h-10 w-10 text-sm',
+    lg: 'h-16 w-16 text-xl',
+  };
+  const imgSizeClasses = {
+    sm: 'h-8 w-8',
+    md: 'h-10 w-10',
+    lg: 'h-16 w-16',
+  };
+
+  if (hasProfilePicture(dp) && !imgError) {
+    return (
+      <div className={`${imgSizeClasses[size]} shrink-0 rounded-lg overflow-hidden`}>
+        <img 
+          src={dp} 
+          alt={name} 
+          className="h-full w-full object-cover"
+          onError={() => setImgError(true)}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className={`flex ${sizeClasses[size]} shrink-0 items-center justify-center rounded-lg font-bold text-white ${getAvatarColor(name)}`}>
+      {name.charAt(0).toUpperCase()}
+    </div>
+  );
 }
 
 const sortOptions = [
@@ -57,37 +96,37 @@ function PaginationBar({ pagination, onPageChange }: {
     return range;
   };
   return (
-    <div className="glass rounded-2xl px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between flex-wrap gap-3 sm:gap-4">
+    <div className="card px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between flex-wrap gap-3 sm:gap-4">
       <p className="text-xs sm:text-sm text-slate-500">
-        {total === 0 ? 'No results' : <>Showing <span className="font-semibold text-slate-800">{from}</span> to <span className="font-semibold text-slate-800">{to}</span> of{' '}
-        <span className="font-semibold text-slate-800">{total}</span></>}
+        {total === 0 ? 'No results' : <>Showing <span className="font-medium text-slate-800">{from}</span> to <span className="font-medium text-slate-800">{to}</span> of{' '}
+        <span className="font-medium text-slate-800">{total}</span></>}
       </p>
       {pages > 1 && (
         <div className="flex items-center gap-1 overflow-x-auto">
           <button disabled={page <= 1} onClick={() => onPageChange(1)}
-            className="rounded-xl p-2 text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed">
+            className="rounded-lg p-2 text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed">
             <ChevronsLeft className="h-4 w-4" />
           </button>
           <button disabled={page <= 1} onClick={() => onPageChange(page - 1)}
-            className="rounded-xl p-2 text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed">
+            className="rounded-lg p-2 text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed">
             <ChevronLeft className="h-4 w-4" />
           </button>
           <button onClick={() => onPageChange(1)}
-            className={`min-w-[2.25rem] rounded-xl px-3 py-1.5 text-sm font-semibold transition-all ${page === 1 ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/25' : 'text-slate-600 hover:bg-slate-100'}`}>1</button>
+            className={`min-w-[2.25rem] rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${page === 1 ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}>1</button>
           {getPages()[0] > 2 && <span className="px-1 text-sm text-slate-300">...</span>}
           {getPages().map((p) => (
             <button key={p} onClick={() => onPageChange(p)}
-              className={`min-w-[2.25rem] rounded-xl px-3 py-1.5 text-sm font-semibold transition-all ${page === p ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/25' : 'text-slate-600 hover:bg-slate-100'}`}>{p}</button>
+              className={`min-w-[2.25rem] rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${page === p ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}>{p}</button>
           ))}
           {getPages()[getPages().length - 1] < pages - 1 && <span className="px-1 text-sm text-slate-300">...</span>}
           <button onClick={() => onPageChange(pages)}
-            className={`min-w-[2.25rem] rounded-xl px-3 py-1.5 text-sm font-semibold transition-all ${page === pages ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/25' : 'text-slate-600 hover:bg-slate-100'}`}>{pages}</button>
+            className={`min-w-[2.25rem] rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${page === pages ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}>{pages}</button>
           <button disabled={page >= pages} onClick={() => onPageChange(page + 1)}
-            className="rounded-xl p-2 text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed">
+            className="rounded-lg p-2 text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed">
             <ChevronRight className="h-4 w-4" />
           </button>
           <button disabled={page >= pages} onClick={() => onPageChange(pages)}
-            className="rounded-xl p-2 text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed">
+            className="rounded-lg p-2 text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed">
             <ChevronsRight className="h-4 w-4" />
           </button>
         </div>
@@ -119,39 +158,37 @@ function BalanceModal({ user, onClose, onUpdate }: {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4 backdrop-blur-sm animate-fade-in" onClick={onClose}>
-      <div className="w-full max-w-sm rounded-t-2xl sm:rounded-2xl bg-white p-5 sm:p-6 shadow-2xl shadow-black/10 animate-scale-in border border-slate-100 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4 animate-fade-in" onClick={onClose}>
+      <div className="w-full max-w-sm rounded-t-xl sm:rounded-xl bg-white p-5 sm:p-6 shadow-xl animate-scale-in border border-slate-200 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold text-slate-900">Update Balance</h2>
-          <button onClick={onClose} className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all">
+          <h2 className="text-lg font-semibold text-slate-900">Update Balance</h2>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="mb-5 flex items-center gap-3 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100/50 p-3.5 border border-slate-200/50">
-          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${getAvatarGradient(user.name)} text-sm font-bold text-white shadow-lg`}>
-            {user.name.charAt(0).toUpperCase()}
-          </div>
+        <div className="mb-5 flex items-center gap-3 rounded-lg bg-slate-50 p-3.5 border border-slate-100">
+          <UserAvatar name={user.name} dp={user.dp} />
           <div className="min-w-0">
-            <p className="text-sm font-bold text-slate-900">{user.name}</p>
-            <p className="text-xs text-slate-500">Current: <span className="font-semibold text-indigo-600">Rs. {user.currentBalance.toLocaleString()}</span></p>
+            <p className="text-sm font-semibold text-slate-900">{user.name}</p>
+            <p className="text-xs text-slate-500">Current: <span className="font-semibold text-emerald-600">Rs. {user.currentBalance.toLocaleString()}</span></p>
           </div>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">Amount</label>
+            <label className="block text-xs font-medium text-slate-700 mb-1.5">Amount</label>
             <input type="number" required min="1" step="any"
-              className="w-full rounded-xl border border-slate-200 bg-white/80 px-3.5 py-2.5 text-sm outline-none transition-all focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+              className="input-field"
               placeholder="Enter amount" value={amount}
               onChange={(e) => setAmount(e.target.value)} />
           </div>
           <div className="flex gap-2.5">
             {(['add', 'subtract'] as const).map(t => (
               <button key={t} type="button" onClick={() => setType(t)}
-                className={`flex-1 rounded-xl px-4 py-2.5 text-xs font-bold transition-all active:scale-95 ${
+                className={`flex-1 rounded-lg px-4 py-2.5 text-xs font-medium transition-all active:scale-95 ${
                   type === t
                     ? t === 'add'
-                      ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/25'
-                      : 'bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-lg shadow-rose-500/25'
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'bg-rose-600 text-white shadow-sm'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}>
                 {t === 'add' ? 'Add Funds' : 'Subtract'}
@@ -160,11 +197,11 @@ function BalanceModal({ user, onClose, onUpdate }: {
           </div>
           <div className="flex gap-2.5 pt-1">
             <button type="button" onClick={onClose}
-              className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-all">
+              className="flex-1 rounded-lg border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">
               Cancel
             </button>
             <button type="submit" disabled={!amount || parseFloat(amount) <= 0 || submitting}
-              className="flex-1 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-indigo-500/25 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95">
+              className="flex-1 btn btn-primary text-xs active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
               {submitting ? (
                 <span className="flex items-center justify-center gap-2">
                   <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
@@ -182,7 +219,7 @@ function BalanceModal({ user, onClose, onUpdate }: {
 export default function Users() {
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
-  const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 50, total: 0, pages: 1 });
+  const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 15, total: 0, pages: 1 });
   const [stats, setStats] = useState<Stats>({ verified: 0, activePlans: 0, totalBalance: 0 });
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -192,7 +229,7 @@ export default function Users() {
   const fetchUsers = async (page = 1) => {
     setLoading(true);
     try {
-      const res = await api.get(`/admin/users?page=${page}&limit=50`);
+      const res = await api.get(`/admin/users?page=${page}&limit=15`);
       setUsers(res.data.users);
       setPagination(res.data.pagination);
       if (res.data.stats) setStats(res.data.stats);
@@ -235,71 +272,67 @@ export default function Users() {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="glass-card p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+      <div className="card p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Users</h1>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 sm:px-3 py-0.5 sm:py-1 text-[11px] sm:text-xs font-semibold text-slate-600">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-2xl font-bold text-slate-900">Users</h1>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
                 <UsersIcon className="h-3 w-3" />
                 {pagination.total.toLocaleString()} total
               </span>
             </div>
-            <p className="text-xs sm:text-sm text-slate-500">Manage and view all registered users</p>
+            <p className="text-sm text-slate-500">Manage and view all registered users</p>
           </div>
         </div>
       </div>
 
       {/* Stats */}
       {!loading && (
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-          <div className="glass-card p-3.5 sm:p-4 group relative overflow-hidden">
-            <div className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-gradient-to-br from-indigo-500/10 to-indigo-600/5 transition-all duration-500 group-hover:scale-150" />
-            <div className="relative flex items-center gap-2.5 sm:gap-3">
-              <div className="flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-lg shadow-indigo-500/25">
-                <UsersIcon className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <div className="card-hover p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                <UsersIcon className="h-5 w-5" />
               </div>
               <div className="min-w-0">
                 <p className="stat-label">Total Users</p>
-                <p className="text-base sm:text-xl font-bold text-slate-900 truncate">{pagination.total.toLocaleString()}</p>
+                <p className="text-xl font-bold text-slate-900 truncate">{pagination.total.toLocaleString()}</p>
               </div>
             </div>
           </div>
-          <div className="glass-card p-3.5 sm:p-4 group relative overflow-hidden">
-            <div className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 transition-all duration-500 group-hover:scale-150" />
-            <div className="relative flex items-center gap-2.5 sm:gap-3">
-              <div className="flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/25">
-                <BadgeCheck className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+          <div className="card-hover p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                <BadgeCheck className="h-5 w-5" />
               </div>
               <div className="min-w-0">
                 <p className="stat-label">Verified</p>
-                <p className="text-base sm:text-xl font-bold text-slate-900 truncate">{stats.verified.toLocaleString()}</p>
+                <p className="text-xl font-bold text-slate-900 truncate">{stats.verified.toLocaleString()}</p>
               </div>
             </div>
           </div>
-          <div className="glass-card p-3.5 sm:p-4 group relative overflow-hidden">
-            <div className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-gradient-to-br from-amber-500/10 to-amber-600/5 transition-all duration-500 group-hover:scale-150" />
-            <div className="relative flex items-center gap-2.5 sm:gap-3">
-              <div className="flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 shadow-lg shadow-amber-500/25">
-                <Target className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+          <div className="card-hover p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                <Target className="h-5 w-5" />
               </div>
               <div className="min-w-0">
                 <p className="stat-label">On Plans</p>
-                <p className="text-base sm:text-xl font-bold text-slate-900 truncate">{stats.activePlans.toLocaleString()}</p>
+                <p className="text-xl font-bold text-slate-900 truncate">{stats.activePlans.toLocaleString()}</p>
               </div>
             </div>
           </div>
-          <div className="glass-card p-3.5 sm:p-4 group relative overflow-hidden">
-            <div className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-gradient-to-br from-sky-500/10 to-sky-600/5 transition-all duration-500 group-hover:scale-150" />
-            <div className="relative flex items-center gap-2.5 sm:gap-3">
-              <div className="flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-sky-600 shadow-lg shadow-sky-500/25">
-                <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+          <div className="card-hover p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                <DollarSign className="h-5 w-5" />
               </div>
               <div className="min-w-0">
                 <p className="stat-label">Total Balance</p>
-                <p className="text-base sm:text-xl font-bold text-slate-900 truncate">Rs. {stats.totalBalance.toLocaleString()}</p>
+                <p className="text-xl font-bold text-slate-900 truncate">Rs. {stats.totalBalance.toLocaleString()}</p>
               </div>
             </div>
           </div>
@@ -307,12 +340,12 @@ export default function Users() {
       )}
 
       {/* Search + Sort */}
-      <div className="glass rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2 sm:gap-4">
+      <div className="card px-4 py-3 flex items-center gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input type="text" placeholder="Search by name, email, or phone..."
             value={search} onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 bg-white/60 py-2.5 pl-11 pr-4 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 focus:bg-white" />
+            className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-11 pr-4 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100" />
           {search && (
             <button onClick={() => setSearch('')}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
@@ -320,15 +353,14 @@ export default function Users() {
             </button>
           )}
         </div>
-        <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white/60 px-3 py-2.5 text-sm">
+        <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm">
           <ArrowUpDown className="h-4 w-4 text-slate-400" />
           <select value={sort} onChange={(e) => setSort(e.target.value)}
-            className="outline-none bg-transparent text-slate-600 font-semibold text-xs cursor-pointer">
+            className="outline-none bg-transparent text-slate-600 font-medium text-xs cursor-pointer">
             {sortOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </div>
         <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400 border-l border-slate-200 pl-4">
-          <Sparkles className="h-3.5 w-3.5 text-indigo-500" />
           <span>{processed.length} results</span>
         </div>
       </div>
@@ -337,26 +369,26 @@ export default function Users() {
       {loading ? (
         <div className="space-y-3 animate-pulse">
           {[1,2,3,4,5].map(i => (
-            <div key={i} className="glass rounded-2xl p-4 sm:p-5">
+            <div key={i} className="card p-4 sm:p-5">
               <div className="flex items-center gap-3 sm:gap-4">
-                <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-slate-200" />
+                <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-lg bg-slate-200" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 w-40 rounded-lg bg-slate-200" />
-                  <div className="h-3 w-56 rounded-lg bg-slate-100" />
+                  <div className="h-4 w-40 rounded bg-slate-200" />
+                  <div className="h-3 w-56 rounded bg-slate-100" />
                 </div>
-                <div className="h-6 w-20 rounded-xl bg-slate-200" />
+                <div className="h-6 w-20 rounded-lg bg-slate-200" />
               </div>
             </div>
           ))}
         </div>
       ) : (
-        <div className="glass rounded-2xl overflow-hidden">
+        <div className="card overflow-hidden">
           {processed.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 sm:py-16">
-              <div className="mb-4 flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200">
+              <div className="mb-4 flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-slate-100">
                 <UserIcon className="h-7 w-7 sm:h-8 sm:w-8 text-slate-400" />
               </div>
-              <p className="text-base sm:text-lg font-bold text-slate-700">
+              <p className="text-base sm:text-lg font-semibold text-slate-700">
                 {search ? 'No users match your search' : 'No users found'}
               </p>
               {search && (
@@ -371,42 +403,40 @@ export default function Users() {
               <div className="space-y-2 p-3 sm:hidden">
                 {processed.map((user) => (
                   <div key={user._id} onClick={() => navigate(`/users/${user._id}`)}
-                    className="rounded-xl bg-slate-50 p-3 border border-slate-100 transition-all active:scale-[0.98]">
+                    className="rounded-lg bg-slate-50 p-3 border border-slate-100 transition-all active:scale-[0.98]">
                     <div className="flex items-center gap-3">
-                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${getAvatarGradient(user.name)} text-sm font-bold text-white shadow-md`}>
-                        {user.name.charAt(0).toUpperCase()}
-                      </div>
+                      <UserAvatar name={user.name} dp={user.dp} size="md" />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-bold text-slate-900">{user.name}</p>
+                        <p className="truncate text-sm font-semibold text-slate-900">{user.name}</p>
                         <p className="flex items-center gap-1 text-[11px] text-slate-500">
                           <Phone className="h-3 w-3" />
                           {user.phone}
                         </p>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-sm font-bold text-indigo-600">Rs. {user.currentBalance.toLocaleString()}</p>
+                        <p className="text-sm font-semibold text-emerald-600">Rs. {user.currentBalance.toLocaleString()}</p>
                       </div>
                     </div>
-                    <div className="mt-2 flex items-center justify-between gap-2 pl-13">
+                    <div className="mt-2 flex items-center justify-between gap-2 pl-[52px]">
                       <div className="flex items-center gap-1.5 min-w-0 flex-1">
                         {user.role === 'admin' && (
-                          <span className="inline-flex items-center gap-1 rounded-lg bg-purple-50 px-2 py-0.5 text-[10px] font-bold text-purple-700">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-purple-50 px-2 py-0.5 text-[10px] font-medium text-purple-700">
                             <Shield className="h-2.5 w-2.5" /> Admin
                           </span>
                         )}
                         {user.isVerified && (
-                          <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
                             <BadgeCheck className="h-2.5 w-2.5" /> Verified
                           </span>
                         )}
                         {user.activePlan !== 'None' && (
-                          <span className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-indigo-700 truncate">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700 truncate">
                             <Target className="h-2.5 w-2.5 shrink-0" /> {user.activePlan}
                           </span>
                         )}
                       </div>
                       <button onClick={(e) => { e.stopPropagation(); setModalUser(user); }}
-                        className="rounded-lg p-1.5 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600" title="Edit balance">
+                        className="rounded-lg p-1.5 text-slate-400 hover:bg-emerald-50 hover:text-emerald-600" title="Edit balance">
                         <Edit3 className="h-3.5 w-3.5" />
                       </button>
                     </div>
@@ -418,29 +448,26 @@ export default function Users() {
               <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-slate-100 bg-slate-50/30">
-                      <th className="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">User</th>
-                      <th className="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">Phone</th>
-                      <th className="px-5 py-3.5 text-right text-[10px] font-bold uppercase tracking-wider text-slate-500">Balance</th>
-                      <th className="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">Plan</th>
-                      <th className="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">Status</th>
-                      <th className="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">Joined</th>
-                      <th className="px-5 py-3.5 text-right text-[10px] font-bold uppercase tracking-wider text-slate-500">Actions</th>
+                    <tr className="border-b border-slate-200 bg-slate-50">
+                      <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">User</th>
+                      <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">Phone</th>
+                      <th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500">Balance</th>
+                      <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">Plan</th>
+                      <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">Status</th>
+                      <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">Joined</th>
+                      <th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {processed.map((user, index) => (
+                    {processed.map((user) => (
                       <tr key={user._id}
-                        className="group transition-all duration-200 hover:bg-indigo-50/30 hover:shadow-sm cursor-pointer"
-                        style={{ animationDelay: `${index * 30}ms` }}
+                        className="group transition-all duration-150 hover:bg-emerald-50/30 cursor-pointer"
                         onClick={() => navigate(`/users/${user._id}`)}>
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-3">
-                            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${getAvatarGradient(user.name)} text-sm font-bold text-white shadow-md`}>
-                              {user.name.charAt(0).toUpperCase()}
-                            </div>
+                            <UserAvatar name={user.name} dp={user.dp} />
                             <div className="min-w-0">
-                              <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{user.name}</p>
+                              <p className="text-sm font-semibold text-slate-900 group-hover:text-emerald-600 transition-colors">{user.name}</p>
                               <p className="flex items-center gap-1 text-[11px] text-slate-500">
                                 <Mail className="h-3 w-3" />
                                 {user.email}
@@ -455,11 +482,11 @@ export default function Users() {
                           </span>
                         </td>
                         <td className="px-5 py-3.5 text-right">
-                          <span className="text-sm font-bold text-indigo-600">Rs. {user.currentBalance.toLocaleString()}</span>
+                          <span className="text-sm font-semibold text-emerald-600">Rs. {user.currentBalance.toLocaleString()}</span>
                         </td>
                         <td className="px-5 py-3.5">
                           {user.activePlan !== 'None' ? (
-                            <span className="inline-flex items-center gap-1 rounded-xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 px-2.5 py-1 text-[10px] font-bold text-indigo-700 border border-indigo-200/50 shadow-sm">
+                            <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2.5 py-1 text-[10px] font-medium text-blue-700">
                               <Target className="h-3 w-3" />
                               {user.activePlan}
                             </span>
@@ -470,13 +497,13 @@ export default function Users() {
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-1.5">
                             {user.role === 'admin' && (
-                              <span className="inline-flex items-center gap-1 rounded-xl bg-purple-50 px-2.5 py-1 text-[10px] font-bold text-purple-700 border border-purple-200/50">
+                              <span className="inline-flex items-center gap-1 rounded-md bg-purple-50 px-2.5 py-1 text-[10px] font-medium text-purple-700">
                                 <Shield className="h-3 w-3" />
                                 Admin
                               </span>
                             )}
                             {user.isVerified && (
-                              <span className="inline-flex items-center gap-1 rounded-xl bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700 border border-emerald-200/50">
+                              <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2.5 py-1 text-[10px] font-medium text-emerald-700">
                                 <BadgeCheck className="h-3 w-3" />
                                 Verified
                               </span>
@@ -488,18 +515,17 @@ export default function Users() {
                         </td>
                         <td className="px-5 py-3.5">
                           <span className="flex items-center gap-1 text-[11px] text-slate-500">
-                            <Calendar className="h-3 w-3" />
                             {formatDate(user.createdAt)}
                           </span>
                         </td>
                         <td className="px-5 py-3.5 text-right">
                           <div className="flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
                             <button onClick={() => setModalUser(user)}
-                              className="rounded-xl p-2 text-slate-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-indigo-50 hover:text-indigo-600" title="Edit balance">
+                              className="rounded-lg p-2 text-slate-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-emerald-50 hover:text-emerald-600" title="Edit balance">
                               <Edit3 className="h-4 w-4" />
                             </button>
                             <button onClick={() => navigate(`/users/${user._id}`)}
-                              className="rounded-xl p-2 text-slate-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-slate-100 hover:text-slate-600" title="View details">
+                              className="rounded-lg p-2 text-slate-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-slate-100 hover:text-slate-600" title="View details">
                               <Eye className="h-4 w-4" />
                             </button>
                           </div>

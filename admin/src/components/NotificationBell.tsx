@@ -26,13 +26,13 @@ export default function NotificationBell() {
     <div className="relative">
       <button
         type="button"
-        className="btn btn-ghost relative p-2 sm:p-2.5 rounded-xl"
+        className="relative rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
         onClick={() => setOpen((o) => !o)}
         aria-label="Notifications"
       >
-        <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
+        <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white">
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
@@ -55,4 +55,3 @@ export default function NotificationBell() {
     </div>
   );
 }
-

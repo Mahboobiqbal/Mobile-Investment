@@ -53,8 +53,6 @@ export default function NotificationsPanel({ onClose }: Props) {
       const baseUrl = import.meta.env.VITE_API_URL || '/api';
       const url = `${baseUrl}/admin/notifications/stream`;
 
-      // SSE can't send x-admin-key headers; backend/polling fallback will handle auth failures.
-      // If EventSource can't even start, it should not break polling.
       try {
         es = new EventSource(url);
       } catch {
@@ -118,7 +116,6 @@ export default function NotificationsPanel({ onClose }: Props) {
         api.post('/admin/notifications/mark-read', { notificationId: n._id })
       )
     );
-
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     setUnreadCount(0);
   };
@@ -133,27 +130,29 @@ export default function NotificationsPanel({ onClose }: Props) {
 
   if (loading) {
     return (
-      <div className="w-[360px] sm:w-[420px] p-4">
-        <div className="text-sm font-semibold text-slate-800">Loading notifications...</div>
+      <div className="w-80 p-4">
+        <div className="text-sm text-slate-500">Loading notifications...</div>
       </div>
     );
   }
 
   return (
-    <div className="w-[360px] sm:w-[420px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+    <div className="w-80 bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
         <div className="flex items-center gap-2">
-          <Bell className="h-4 w-4 text-slate-700" />
-          <span className="text-sm font-bold text-slate-900">Notifications</span>
-          <span className="text-[11px] font-bold bg-rose-50 text-rose-700 rounded-full px-2 py-0.5 border border-rose-100">
-            {unreadCount} unread
-          </span>
+          <Bell className="h-4 w-4 text-slate-500" />
+          <span className="text-sm font-semibold text-slate-900">Notifications</span>
+          {unreadCount > 0 && (
+            <span className="text-[10px] font-medium bg-red-50 text-red-600 rounded-full px-2 py-0.5">
+              {unreadCount}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {unreadCount > 0 && (
             <button
               onClick={markAllRead}
-              className="text-xs font-bold text-indigo-600 hover:text-indigo-700"
+              className="text-xs font-medium text-emerald-600 hover:text-emerald-700"
             >
               Mark all read
             </button>
@@ -161,7 +160,7 @@ export default function NotificationsPanel({ onClose }: Props) {
           {onClose && (
             <button
               onClick={onClose}
-              className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+              className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
             >
               <X className="h-4 w-4" />
             </button>
@@ -170,33 +169,33 @@ export default function NotificationsPanel({ onClose }: Props) {
       </div>
 
       {notifications.length === 0 ? (
-        <div className="px-4 py-6 text-center">
-          <p className="text-sm font-semibold text-slate-700">No notifications</p>
-          <p className="text-xs text-slate-500 mt-1">You’re all caught up.</p>
+        <div className="px-4 py-8 text-center">
+          <p className="text-sm font-medium text-slate-700">No notifications</p>
+          <p className="text-xs text-slate-400 mt-1">You're all caught up.</p>
         </div>
       ) : (
-        <div className="max-h-[420px] overflow-y-auto px-1">
+        <div className="max-h-96 overflow-y-auto">
           {notifications.map((n) => (
             <button
               key={n._id}
               onClick={() => markRead(n._id)}
-              className={`w-full text-left px-3 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors ${
-                n.read ? 'opacity-80' : 'opacity-100'
+              className={`w-full text-left px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors ${
+                n.read ? 'opacity-60' : 'opacity-100'
               }`}
               title={n.read ? 'Already read' : 'Mark as read'}
             >
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 shrink-0">
+                  {n.read ? (
+                    <CheckCircle className="h-4 w-4 text-slate-400" />
+                  ) : (
+                    <Clock className="h-4 w-4 text-emerald-500" />
+                  )}
+                </div>
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    {n.read ? (
-                      <CheckCircle className="h-4 w-4 text-emerald-500" />
-                    ) : (
-                      <Clock className="h-4 w-4 text-amber-500" />
-                    )}
-                    <div className="text-xs font-bold text-slate-900 truncate">{n.title}</div>
-                  </div>
-                  <div className="text-xs text-slate-600 mt-1 break-words">{n.message}</div>
-                  <div className="text-[10px] text-slate-400 mt-2">{formatTime(n.createdAt)}</div>
+                  <div className="text-xs font-medium text-slate-900">{n.title}</div>
+                  <div className="text-xs text-slate-500 mt-0.5 break-words">{n.message}</div>
+                  <div className="text-[10px] text-slate-400 mt-1">{formatTime(n.createdAt)}</div>
                 </div>
               </div>
             </button>
@@ -206,4 +205,3 @@ export default function NotificationsPanel({ onClose }: Props) {
     </div>
   );
 }
-

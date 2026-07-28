@@ -247,7 +247,7 @@ export default function DepositRequestScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Amount (Rs.)</Text>
               <TextInput
-                style={[styles.input, investmentAmount && styles.inputDisabled]}
+                style={[styles.input, !!investmentAmount && styles.inputDisabled]}
                 placeholder={investmentAmount ? `Pre-filled: ${formatCurrency(investmentAmount)}` : '0.00'}
                 placeholderTextColor="#94A3B8"
                 keyboardType="decimal-pad"

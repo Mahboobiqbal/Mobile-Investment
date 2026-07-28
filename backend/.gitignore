@@ -1,4 +1,21 @@
-node_modules
+# Dependencies
+node_modules/
+
+# Environment files
 .env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Coverage
 coverage/
-SECURITY_TODO.md
+
+# Build
+build/
+
+# OS files
+.DS_Store
+Thumbs.db

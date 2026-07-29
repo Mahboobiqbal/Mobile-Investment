@@ -11,6 +11,8 @@ const titleMap: { test: RegExp; title: string }[] = [
   { test: /^\/users$/, title: 'Users' },
   { test: /^\/categories$/, title: 'Systems' },
   { test: /^\/plans$/, title: 'Plans' },
+  { test: /^\/posts$/, title: 'Community' },
+  { test: /^\/daily-profit-rate$/, title: 'Daily Profit' },
   { test: /^\/$/, title: 'Home' },
 ];
 
@@ -21,19 +23,19 @@ function getTitle(pathname: string) {
 export default function Topbar({ onMenuClick }: TopbarProps) {
   const location = useLocation();
   return (
-    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-slate-200 bg-white/80 px-4 backdrop-blur-md lg:hidden">
+    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-slate-200 bg-white px-4 lg:hidden">
       <button
         onClick={onMenuClick}
-        className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-900 active:scale-95"
+        className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition-all hover:bg-slate-50 hover:text-slate-900 active:scale-95"
         aria-label="Open menu"
       >
         <Menu className="h-5 w-5" />
       </button>
       <div className="flex items-center gap-2">
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 shadow-md shadow-indigo-500/25">
-          <span className="text-xs font-black text-white">M</span>
+        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-600">
+          <span className="text-[10px] font-bold text-white">M</span>
         </div>
-        <h1 className="text-base font-bold text-slate-900">{getTitle(location.pathname)}</h1>
+        <h1 className="text-sm font-semibold text-slate-900">{getTitle(location.pathname)}</h1>
       </div>
     </header>
   );

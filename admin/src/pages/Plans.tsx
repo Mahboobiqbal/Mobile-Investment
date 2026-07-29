@@ -142,22 +142,22 @@ export default function Plans() {
   const systemsUsed = new Set(plans.map(p => p.category?._id).filter(Boolean)).size;
 
   return (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="glass-card p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+      <div className="card p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Plans</h1>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 sm:px-3 py-0.5 sm:py-1 text-[11px] sm:text-xs font-semibold text-slate-600">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-2xl font-bold text-slate-900">Plans</h1>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
                 <LayoutGrid className="h-3 w-3" />
                 {plans.length} total
               </span>
             </div>
-            <p className="text-xs sm:text-sm text-slate-500">Create and manage investment plans under each system</p>
+            <p className="text-sm text-slate-500">Create and manage investment plans under each system</p>
           </div>
           <button onClick={openCreate} disabled={categories.length === 0}
-            className="btn btn-primary text-xs gap-2 disabled:opacity-50 disabled:cursor-not-allowed self-start sm:self-auto">
+            className="btn btn-primary text-xs disabled:opacity-50 disabled:cursor-not-allowed self-start sm:self-auto">
             <Plus className="h-4 w-4" /> New Plan
           </button>
         </div>
@@ -165,19 +165,18 @@ export default function Plans() {
 
       {/* Warning */}
       {categories.length === 0 && (
-        <div className="rounded-2xl border border-amber-200/50 bg-gradient-to-r from-amber-50 to-amber-100/50 px-4 sm:px-5 py-3 sm:py-4 text-xs sm:text-sm text-amber-700 shadow-sm">
-          <span className="font-bold">No systems exist yet.</span> Create one in the <strong>Systems</strong> page before adding plans.
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 sm:px-5 py-3 sm:py-4 text-xs sm:text-sm text-amber-700">
+          <span className="font-semibold">No systems exist yet.</span> Create one in the <strong>Systems</strong> page before adding plans.
         </div>
       )}
 
       {/* Stats */}
       {!loading && (
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-          <div className="glass-card p-4 group relative overflow-hidden">
-            <div className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-gradient-to-br from-indigo-500/10 to-indigo-600/5 transition-all duration-500 group-hover:scale-150" />
-            <div className="relative flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-lg shadow-indigo-500/25">
-                <LayoutGrid className="h-5 w-5 text-white" />
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <div className="card-hover p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                <LayoutGrid className="h-5 w-5" />
               </div>
               <div>
                 <p className="stat-label">Total Plans</p>
@@ -185,11 +184,10 @@ export default function Plans() {
               </div>
             </div>
           </div>
-          <div className="glass-card p-4 group relative overflow-hidden">
-            <div className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 transition-all duration-500 group-hover:scale-150" />
-            <div className="relative flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/25">
-                <ToggleRight className="h-5 w-5 text-white" />
+          <div className="card-hover p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                <ToggleRight className="h-5 w-5" />
               </div>
               <div>
                 <p className="stat-label">Active</p>
@@ -197,11 +195,10 @@ export default function Plans() {
               </div>
             </div>
           </div>
-          <div className="glass-card p-4 group relative overflow-hidden">
-            <div className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-gradient-to-br from-slate-500/10 to-slate-600/5 transition-all duration-500 group-hover:scale-150" />
-            <div className="relative flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-slate-500 to-slate-600 shadow-lg shadow-slate-500/25">
-                <Ban className="h-5 w-5 text-white" />
+          <div className="card-hover p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                <Ban className="h-5 w-5" />
               </div>
               <div>
                 <p className="stat-label">Inactive</p>
@@ -209,11 +206,10 @@ export default function Plans() {
               </div>
             </div>
           </div>
-          <div className="glass-card p-4 group relative overflow-hidden">
-            <div className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-gradient-to-br from-amber-500/10 to-amber-600/5 transition-all duration-500 group-hover:scale-150" />
-            <div className="relative flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 shadow-lg shadow-amber-500/25">
-                <FolderOpen className="h-5 w-5 text-white" />
+          <div className="card-hover p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                <FolderOpen className="h-5 w-5" />
               </div>
               <div>
                 <p className="stat-label">Systems Used</p>
@@ -225,15 +221,14 @@ export default function Plans() {
       )}
 
       {/* Search */}
-      <div className="glass rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2 sm:gap-4">
+      <div className="card px-4 py-3 flex items-center gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input type="text" placeholder="Search plans by name or system..."
             value={search} onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 bg-white/60 py-2.5 pl-11 pr-4 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 focus:bg-white" />
+            className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-11 pr-4 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100" />
         </div>
         <div className="flex items-center gap-2 text-xs text-slate-400 border-l border-slate-200 pl-4">
-          <Sparkles className="h-3.5 w-3.5 text-indigo-500" />
           <span>{filtered.length} results</span>
         </div>
       </div>
@@ -242,26 +237,26 @@ export default function Plans() {
       {loading ? (
         <div className="space-y-3 animate-pulse">
           {[1,2,3,4].map(i => (
-            <div key={i} className="glass rounded-2xl p-4 sm:p-5">
+            <div key={i} className="card p-4 sm:p-5">
               <div className="flex items-center gap-3 sm:gap-4">
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 w-48 rounded-lg bg-slate-200" />
-                  <div className="h-3 w-32 rounded-lg bg-slate-100" />
+                  <div className="h-4 w-48 rounded bg-slate-200" />
+                  <div className="h-3 w-32 rounded bg-slate-100" />
                 </div>
-                <div className="h-6 w-16 rounded-xl bg-slate-200" />
-                <div className="h-9 w-20 rounded-xl bg-slate-200" />
+                <div className="h-6 w-16 rounded-lg bg-slate-200" />
+                <div className="h-9 w-20 rounded-lg bg-slate-200" />
               </div>
             </div>
           ))}
         </div>
       ) : (
-        <div className="glass rounded-2xl overflow-hidden">
+        <div className="card overflow-hidden">
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 sm:py-16">
-              <div className="mb-4 flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200">
+              <div className="mb-4 flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-slate-100">
                 <LayoutGrid className="h-7 w-7 sm:h-8 sm:w-8 text-slate-400" />
               </div>
-              <p className="text-base sm:text-lg font-bold text-slate-700">
+              <p className="text-base sm:text-lg font-semibold text-slate-700">
                 {search ? 'No plans match your search' : plans.length === 0 ? 'No plans created yet' : 'No plans found'}
               </p>
               {search ? (
@@ -269,7 +264,7 @@ export default function Plans() {
                   Clear Search
                 </button>
               ) : categories.length > 0 ? (
-                <button onClick={openCreate} className="btn btn-primary mt-4 text-xs gap-2">
+                <button onClick={openCreate} className="btn btn-primary mt-4 text-xs">
                   <Plus className="h-3.5 w-3.5" /> Create Your First Plan
                 </button>
               ) : null}
@@ -279,26 +274,26 @@ export default function Plans() {
               {/* Mobile card list */}
               <div className="space-y-2 p-3 sm:hidden">
                 {filtered.map((plan) => (
-                  <div key={plan._id} className={`rounded-xl bg-slate-50 p-3 border border-slate-100 ${!plan.isActive ? 'opacity-60' : ''}`}>
+                  <div key={plan._id} className={`rounded-lg bg-slate-50 p-3 border border-slate-100 ${!plan.isActive ? 'opacity-60' : ''}`}>
                     <div className="flex items-start gap-3">
-                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br shadow-md ${
-                        plan.isActive ? 'from-emerald-500 to-emerald-600' : 'from-slate-400 to-slate-500'
+                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-white ${
+                        plan.isActive ? 'bg-emerald-500' : 'bg-slate-400'
                       }`}>
-                        <Percent className="h-5 w-5 text-white" />
+                        <Percent className="h-5 w-5" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-bold text-slate-900">{plan.name}</p>
+                        <p className="truncate text-sm font-semibold text-slate-900">{plan.name}</p>
                         {plan.category && (
-                          <p className="inline-flex items-center gap-1 text-[10px] text-indigo-700 font-semibold">
+                          <p className="inline-flex items-center gap-1 text-[10px] text-blue-700 font-medium">
                             <FolderOpen className="h-2.5 w-2.5" /> {plan.category.name}
                           </p>
                         )}
                       </div>
-                      <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 shrink-0">
+                      <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 shrink-0">
                         {(plan.dailyReturnRate * 100).toFixed(1)}%
                       </span>
                     </div>
-                    <div className="mt-2 flex items-center justify-between gap-2 pl-13">
+                    <div className="mt-2 flex items-center justify-between gap-2 pl-[52px]">
                       <div className="flex items-center gap-3 text-[11px] text-slate-500">
                         <span><span className="text-slate-400">Min:</span> Rs. {plan.minInvestment.toLocaleString()}</span>
                         <span className="flex items-center gap-1">
@@ -314,7 +309,7 @@ export default function Plans() {
                             : <ToggleLeft className="h-4 w-4 text-slate-400" />}
                         </button>
                         <button onClick={() => openEdit(plan)}
-                          className="rounded-lg p-1.5 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600" title="Edit">
+                          className="rounded-lg p-1.5 text-slate-400 hover:bg-emerald-50 hover:text-emerald-600" title="Edit">
                           <Edit3 className="h-3.5 w-3.5" />
                         </button>
                         <button onClick={() => handleDelete(plan._id)}
@@ -331,31 +326,29 @@ export default function Plans() {
               <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-slate-100 bg-slate-50/30">
-                      <th className="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">Plan</th>
-                      <th className="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">System</th>
-                      <th className="px-5 py-3.5 text-right text-[10px] font-bold uppercase tracking-wider text-slate-500">Daily Rate</th>
-                      <th className="px-5 py-3.5 text-right text-[10px] font-bold uppercase tracking-wider text-slate-500">Min</th>
-                      <th className="px-5 py-3.5 text-right text-[10px] font-bold uppercase tracking-wider text-slate-500">Max</th>
-                      <th className="px-5 py-3.5 text-center text-[10px] font-bold uppercase tracking-wider text-slate-500">Status</th>
-                      <th className="px-5 py-3.5 text-right text-[10px] font-bold uppercase tracking-wider text-slate-500">Actions</th>
+                    <tr className="border-b border-slate-200 bg-slate-50">
+                      <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">Plan</th>
+                      <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">System</th>
+                      <th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500">Daily Rate</th>
+                      <th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500">Min</th>
+                      <th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500">Max</th>
+                      <th className="px-5 py-3 text-center text-[10px] font-semibold uppercase tracking-wider text-slate-500">Status</th>
+                      <th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {filtered.map((plan) => (
                       <tr key={plan._id}
-                        className={`group transition-all duration-200 hover:bg-slate-50/50 ${!plan.isActive ? 'opacity-50' : ''}`}>
+                        className={`group transition-all duration-150 hover:bg-slate-50 ${!plan.isActive ? 'opacity-50' : ''}`}>
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-3">
-                            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br shadow-md ${
-                              plan.isActive
-                                ? 'from-emerald-500 to-emerald-600 shadow-emerald-500/25'
-                                : 'from-slate-400 to-slate-500 shadow-slate-500/25'
+                            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-white ${
+                              plan.isActive ? 'bg-emerald-500' : 'bg-slate-400'
                             }`}>
-                              <Percent className="h-5 w-5 text-white" />
+                              <Percent className="h-5 w-5" />
                             </div>
                             <div className="min-w-0">
-                              <p className="text-sm font-bold text-slate-900">{plan.name}</p>
+                              <p className="text-sm font-semibold text-slate-900">{plan.name}</p>
                               {plan.description && (
                                 <p className="text-[11px] text-slate-500 truncate max-w-[160px]">{plan.description}</p>
                               )}
@@ -364,7 +357,7 @@ export default function Plans() {
                         </td>
                         <td className="px-5 py-3.5">
                           {plan.category ? (
-                            <span className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 px-2.5 py-1 text-[10px] font-bold text-indigo-700 border border-indigo-200/50 shadow-sm">
+                            <span className="inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-2.5 py-1 text-[10px] font-medium text-blue-700">
                               <FolderOpen className="h-3 w-3" />
                               {plan.category.name}
                             </span>
@@ -373,15 +366,15 @@ export default function Plans() {
                           )}
                         </td>
                         <td className="px-5 py-3.5 text-right">
-                          <span className="inline-flex items-center gap-1 rounded-xl bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 border border-emerald-200/50">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
                             {(plan.dailyReturnRate * 100).toFixed(1)}%
                           </span>
                         </td>
                         <td className="px-5 py-3.5 text-right">
-                          <span className="text-xs font-semibold text-slate-700">Rs. {plan.minInvestment.toLocaleString()}</span>
+                          <span className="text-xs font-medium text-slate-700">Rs. {plan.minInvestment.toLocaleString()}</span>
                         </td>
                         <td className="px-5 py-3.5 text-right">
-                          <span className="text-xs font-semibold text-slate-700">
+                          <span className="text-xs font-medium text-slate-700">
                             {plan.maxInvestment
                               ? `Rs. ${plan.maxInvestment.toLocaleString()}`
                               : <Infinity className="h-4 w-4 inline text-slate-400" />}
@@ -389,12 +382,12 @@ export default function Plans() {
                         </td>
                         <td className="px-5 py-3.5 text-center">
                           <button onClick={() => handleToggleActive(plan)}
-                            className="transition-all duration-200 hover:scale-110 active:scale-95">
+                            className="transition-all duration-150 hover:scale-110 active:scale-95">
                             {plan.isActive
-                              ? <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 border border-emerald-200/50 shadow-sm">
+                              ? <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 border border-emerald-200">
                                   <ToggleRight className="h-4 w-4" /> Active
                                 </span>
-                              : <span className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-500 border border-slate-200/50">
+                              : <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-500 border border-slate-200">
                                   <ToggleLeft className="h-4 w-4" /> Inactive
                                 </span>}
                           </button>
@@ -402,11 +395,11 @@ export default function Plans() {
                         <td className="px-5 py-3.5 text-right">
                           <div className="flex items-center justify-end gap-1">
                             <button onClick={() => openEdit(plan)}
-                              className="rounded-xl p-2 text-slate-400 transition-all hover:bg-indigo-50 hover:text-indigo-600" title="Edit">
+                              className="rounded-lg p-2 text-slate-400 transition-all hover:bg-emerald-50 hover:text-emerald-600" title="Edit">
                               <Edit3 className="h-4 w-4" />
                             </button>
                             <button onClick={() => handleDelete(plan._id)}
-                              className="rounded-xl p-2 text-slate-400 transition-all hover:bg-red-50 hover:text-red-500" title="Delete">
+                              className="rounded-lg p-2 text-slate-400 transition-all hover:bg-red-50 hover:text-red-500" title="Delete">
                               <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
@@ -423,35 +416,35 @@ export default function Plans() {
 
       {/* Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4 backdrop-blur-sm animate-fade-in" onClick={() => setModalOpen(false)}>
-          <div className="w-full max-w-md rounded-t-2xl sm:rounded-2xl bg-white p-5 sm:p-6 shadow-2xl shadow-black/10 animate-scale-in border border-slate-100 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4 animate-fade-in" onClick={() => setModalOpen(false)}>
+          <div className="w-full max-w-md rounded-t-xl sm:rounded-xl bg-white p-5 sm:p-6 shadow-xl animate-scale-in border border-slate-200 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-lg shadow-indigo-500/25">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-600">
                   {editingPlan ? <Edit3 className="h-5 w-5 text-white" /> : <Plus className="h-5 w-5 text-white" />}
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">{editingPlan ? 'Edit Plan' : 'Create Plan'}</h2>
+                  <h2 className="text-lg font-semibold text-slate-900">{editingPlan ? 'Edit Plan' : 'Create Plan'}</h2>
                   <p className="text-xs text-slate-500">{editingPlan ? 'Update plan details' : 'Add a new investment plan'}</p>
                 </div>
               </div>
               <button onClick={() => setModalOpen(false)}
-                className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all">
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
                 <X className="h-4 w-4" />
               </button>
             </div>
 
             {error && (
-              <div className="mb-4 rounded-xl bg-gradient-to-r from-red-50 to-rose-50 px-4 py-3 text-xs font-semibold text-red-600 border border-red-100">
+              <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-xs font-medium text-red-600 border border-red-100">
                 {error}
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">System</label>
+                <label className="block text-xs font-medium text-slate-700 mb-1.5">System</label>
                 <select required={!editingPlan}
-                  className="w-full rounded-xl border border-slate-200 bg-white/80 px-3.5 py-2.5 text-sm outline-none transition-all focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+                  className="input-field"
                   value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
                   disabled={!!editingPlan}>
                   <option value="">Select a system</option>
@@ -459,48 +452,48 @@ export default function Plans() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Plan Name</label>
+                <label className="block text-xs font-medium text-slate-700 mb-1.5">Plan Name</label>
                 <input type="text" required
-                  className="w-full rounded-xl border border-slate-200 bg-white/80 px-3.5 py-2.5 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+                  className="input-field"
                   placeholder="e.g. Economy Car" value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Daily Return Rate (%)</label>
+                <label className="block text-xs font-medium text-slate-700 mb-1.5">Daily Return Rate (%)</label>
                 <input type="number" required step="0.1" min="0"
-                  className="w-full rounded-xl border border-slate-200 bg-white/80 px-3.5 py-2.5 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+                  className="input-field"
                   placeholder="e.g. 2.0" value={form.dailyReturnRate}
                   onChange={(e) => setForm({ ...form, dailyReturnRate: e.target.value })} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Min Investment (Rs.)</label>
+                  <label className="block text-xs font-medium text-slate-700 mb-1.5">Min Investment (Rs.)</label>
                   <input type="number" min="0"
-                    className="w-full rounded-xl border border-slate-200 bg-white/80 px-3.5 py-2.5 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+                    className="input-field"
                     placeholder="0" value={form.minInvestment}
                     onChange={(e) => setForm({ ...form, minInvestment: e.target.value })} />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Max Investment (Rs.)</label>
+                  <label className="block text-xs font-medium text-slate-700 mb-1.5">Max Investment (Rs.)</label>
                   <input type="number" min="0"
-                    className="w-full rounded-xl border border-slate-200 bg-white/80 px-3.5 py-2.5 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+                    className="input-field"
                     placeholder="Leave empty for unlimited" value={form.maxInvestment}
                     onChange={(e) => setForm({ ...form, maxInvestment: e.target.value })} />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Description</label>
-                <textarea className="w-full rounded-xl border border-slate-200 bg-white/80 px-3.5 py-2.5 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+                <label className="block text-xs font-medium text-slate-700 mb-1.5">Description</label>
+                <textarea className="input-field"
                   rows={2} placeholder="Optional plan description" value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })} />
               </div>
               <div className="flex gap-2.5 pt-2">
                 <button type="button" onClick={() => setModalOpen(false)}
-                  className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-all">
+                  className="flex-1 rounded-lg border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">
                   Cancel
                 </button>
                 <button type="submit"
-                  className="flex-1 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-indigo-500/25 hover:shadow-xl transition-all active:scale-95">
+                  className="flex-1 btn btn-primary text-xs active:scale-95">
                   {editingPlan ? 'Update Plan' : 'Create Plan'}
                 </button>
               </div>

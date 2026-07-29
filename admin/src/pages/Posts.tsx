@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
+import { MessageSquare, Send, Calendar, User, Tag } from 'lucide-react';
 
 export default function Posts() {
   const [title, setTitle] = useState('');
@@ -7,7 +8,7 @@ export default function Posts() {
   const [category, setCategory] = useState('update');
   const [isPublished, setIsPublished] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [posts, setPosts] = useState([]);
+  const [posts, setPosts] = useState<any[]>([]);
 
   const fetchPosts = async () => {
     try {
@@ -36,44 +37,102 @@ export default function Posts() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-lg bg-white p-4 shadow">
-        <h3 className="text-lg font-bold">Create Community Post</h3>
-        <form onSubmit={onSubmit} className="mt-3 space-y-3">
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="w-full rounded-lg border px-3 py-2 text-sm" />
-          <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Message body" rows={4} className="w-full rounded-lg border px-3 py-2 text-sm" />
-          <div className="flex items-center gap-3">
-            <select value={category} onChange={(e) => setCategory(e.target.value)} className="rounded-lg border px-3 py-2 text-sm">
-              <option value="update">Update</option>
-              <option value="announcement">Announcement</option>
-              <option value="education">Education</option>
-            </select>
-            <label className="inline-flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={isPublished} onChange={(e) => setIsPublished(e.target.checked)} /> Published
-            </label>
-            <button type="submit" disabled={loading} className="ml-auto rounded-lg bg-indigo-600 px-4 py-2 text-white text-sm font-semibold">{loading ? 'Saving...' : 'Publish'}</button>
+    <div className="space-y-6 animate-fade-in">
+      {/* Header */}
+      <div className="card p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="space-y-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-2xl font-bold text-slate-900">Community</h1>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                <MessageSquare className="h-3 w-3" />
+                {posts.length} posts
+              </span>
+            </div>
+            <p className="text-sm text-slate-500">Create and manage community posts</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Create Post Form */}
+      <div className="card p-6">
+        <h2 className="text-sm font-semibold text-slate-900 mb-4">Create Community Post</h2>
+        <form onSubmit={onSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-1.5">Title</label>
+            <input value={title} onChange={(e) => setTitle(e.target.value)}
+              placeholder="Post title"
+              className="input-field" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-1.5">Message Body</label>
+            <textarea value={body} onChange={(e) => setBody(e.target.value)}
+              placeholder="Write your message..."
+              rows={4} className="input-field" />
+          </div>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">Category</label>
+              <select value={category} onChange={(e) => setCategory(e.target.value)}
+                className="input-field w-auto">
+                <option value="update">Update</option>
+                <option value="announcement">Announcement</option>
+                <option value="education">Education</option>
+              </select>
+            </div>
+            <div className="pt-6">
+              <label className="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                <input type="checkbox" checked={isPublished}
+                  onChange={(e) => setIsPublished(e.target.checked)}
+                  className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+                Published
+              </label>
+            </div>
+            <div className="pt-6 sm:ml-auto">
+              <button type="submit" disabled={loading}
+                className="btn btn-primary text-xs disabled:opacity-50">
+                <Send className="h-3.5 w-3.5" />
+                {loading ? 'Publishing...' : 'Publish'}
+              </button>
+            </div>
           </div>
         </form>
       </div>
 
-      <div className="rounded-lg bg-white p-4 shadow">
-        <h3 className="text-lg font-bold">Recent Posts</h3>
-        <ul className="mt-3 space-y-3">
-          {posts.map((p: any) => (
-            <li key={p._id} className="border rounded-lg p-3">
-              <div className="flex items-center justify-between">
-                <strong>{p.title}</strong>
-                <span className="text-xs text-slate-500">{new Date(p.createdAt).toLocaleString()}</span>
+      {/* Recent Posts */}
+      <div className="card p-6">
+        <h2 className="text-sm font-semibold text-slate-900 mb-4">Recent Posts</h2>
+        {posts.length === 0 ? (
+          <div className="text-center py-8">
+            <MessageSquare className="mx-auto h-10 w-10 text-slate-300 mb-2" />
+            <p className="text-sm text-slate-500">No posts yet. Create your first post above.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {posts.map((p: any) => (
+              <div key={p._id} className="rounded-lg border border-slate-200 p-4 hover:shadow-sm transition-all">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-semibold text-slate-900">{p.title}</h3>
+                  <span className="text-[10px] text-slate-400 whitespace-nowrap flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    {new Date(p.createdAt).toLocaleString()}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm text-slate-600 line-clamp-2">{p.body}</p>
+                <div className="mt-3 flex items-center gap-3 text-[11px] text-slate-500">
+                  <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-emerald-700 font-medium">
+                    <Tag className="h-3 w-3" />
+                    {p.category}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <User className="h-3 w-3" />
+                    {p.author}
+                  </span>
+                </div>
               </div>
-              <p className="mt-2 text-sm text-slate-700">{p.body}</p>
-              <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
-                <span>{p.category}</span>
-                <span>·</span>
-                <span>{p.author}</span>
-              </div>
-            </li>
-          ))}
-        </ul>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

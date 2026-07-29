@@ -15,11 +15,11 @@ export default function Dashboard() {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex h-screen bg-slate-50 overflow-hidden">
       <Sidebar open={drawerOpen} onClose={() => setDrawerOpen(false)} />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden lg:ml-60">
         <Topbar onMenuClick={() => setDrawerOpen(true)} />
-        <main className="flex-1 overflow-x-hidden p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/transactions" element={<Transactions />} />

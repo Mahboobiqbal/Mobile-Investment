@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
-import { DollarSign, Save, RotateCcw, Sparkles } from 'lucide-react';
+import { DollarSign, Save, RotateCcw, Info, TrendingUp, Calendar, Zap, Clock, AlertTriangle, CheckCircle } from 'lucide-react';
 
 export default function DailyProfitRatePage() {
   const [rate, setRate] = useState('0.5');
@@ -54,59 +54,109 @@ export default function DailyProfitRatePage() {
     setRate('0.5');
   };
 
+  // Compute a visual representation: a circular progress-like indicator
+  const ratePercent = Math.min(Math.max(parseFloat(rate) || 0, 0), 100);
+  const circumference = 2 * Math.PI * 54;
+  const strokeDashoffset = circumference - (ratePercent / 100) * circumference;
+
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="glass-card p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Daily Profit Rate</h1>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700">
-                <Sparkles className="h-3 w-3" />
-                {date || 'Today'}
-              </span>
+      {/* Hero Section */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-500 p-6 sm:p-8 text-white shadow-lg shadow-emerald-500/20">
+        {/* Decorative circles */}
+        <div className="absolute -top-16 -right-16 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
+        <div className="absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
+        
+        <div className="relative z-10">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
+            {/* Left: Title + Rate */}
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="h-4 w-4 text-emerald-200" />
+                <span className="text-sm text-emerald-100 font-medium">{date || 'Today'}</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold mb-1">Daily Profit Rate</h1>
+              <p className="text-emerald-100 text-sm max-w-md">
+                Set today's profit percentage. Resets to 0.5% automatically each day.
+              </p>
+              
+              {/* Current rate big display */}
+              <div className="mt-6 flex items-baseline gap-2">
+                <span className="text-5xl sm:text-6xl font-extrabold tracking-tight">{currentRate.toFixed(2)}</span>
+                <span className="text-2xl font-semibold text-emerald-200">%</span>
+              </div>
+              <div className="mt-2">
+                {isDefault ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-medium backdrop-blur-sm">
+                    <Clock className="h-3 w-3" />
+                    Default — not customized
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-medium backdrop-blur-sm">
+                    <CheckCircle className="h-3 w-3" />
+                    Custom rate active
+                  </span>
+                )}
+              </div>
             </div>
-            <p className="text-sm text-slate-500">
-              Set today's profit percentage. Resets to 0.5% automatically each day.
-            </p>
+            
+            {/* Right: Circular gauge */}
+            <div className="hidden sm:flex flex-col items-center">
+              <div className="relative">
+                <svg className="h-32 w-32 -rotate-90" viewBox="0 0 120 120">
+                  {/* Background circle */}
+                  <circle
+                    cx="60" cy="60" r="54"
+                    fill="none"
+                    stroke="rgba(255,255,255,0.15)"
+                    strokeWidth="8"
+                  />
+                  {/* Progress arc */}
+                  <circle
+                    cx="60" cy="60" r="54"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={strokeDashoffset}
+                    className="transition-all duration-500 ease-out"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-2xl font-bold">{ratePercent.toFixed(1)}</span>
+                  <span className="text-xs text-emerald-200">percent</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       {loading ? (
-        <div className="glass rounded-2xl p-8 text-center animate-pulse">
+        <div className="card p-8 text-center animate-pulse">
           <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-slate-200" />
-          <div className="mx-auto h-6 w-48 rounded-lg bg-slate-200" />
+          <div className="mx-auto h-6 w-48 rounded bg-slate-200" />
         </div>
       ) : (
         <>
-          <div className="glass rounded-2xl p-6 sm:p-8">
-            <div className="flex flex-col items-center text-center mb-8">
-              <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-xl shadow-emerald-500/25">
-                <DollarSign className="h-10 w-10 text-white" />
+          {/* Set Rate Section */}
+          <div className="card p-6 sm:p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50">
+                <TrendingUp className="h-5 w-5 text-emerald-600" />
               </div>
-              <h2 className="text-lg font-bold text-slate-900">Current Rate</h2>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-5xl font-black text-slate-900">{currentRate.toFixed(2)}</span>
-                <span className="text-2xl font-bold text-slate-500">%</span>
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">Update Rate</h2>
+                <p className="text-xs text-slate-500">Adjust today's profit distribution rate</p>
               </div>
-              {isDefault && (
-                <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
-                  Default (not customized for today)
-                </span>
-              )}
-              {!isDefault && (
-                <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                  Custom rate for today
-                </span>
-              )}
             </div>
 
-            <div className="mx-auto max-w-sm">
-              <label className="block text-sm font-bold text-slate-700 mb-2">
-                Set Today's Rate (%)
+            <div className="max-w-md">
+              <label className="block text-xs font-medium text-slate-700 mb-2">
+                Today's Rate (%)
               </label>
-              <div className="flex items-center gap-3">
+              <div className="relative">
                 <input
                   type="number"
                   step="0.01"
@@ -114,12 +164,31 @@ export default function DailyProfitRatePage() {
                   max="100"
                   value={rate}
                   onChange={(e) => setRate(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-lg font-bold text-center outline-none transition-all focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+                  className="input-field text-center text-2xl font-bold py-4 pr-12"
                   placeholder="0.5"
                 />
-                <span className="text-lg font-bold text-slate-500">%</span>
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xl font-medium text-slate-400">%</span>
               </div>
-              <p className="mt-2 text-xs text-slate-400">
+              
+              {/* Quick preset buttons */}
+              <div className="mt-4 flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-slate-400 font-medium">Quick:</span>
+                {['0.1', '0.25', '0.5', '0.75', '1.0', '2.0'].map((preset) => (
+                  <button
+                    key={preset}
+                    onClick={() => setRate(preset)}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+                      rate === preset
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {preset}%
+                  </button>
+                ))}
+              </div>
+
+              <p className="mt-3 text-xs text-slate-400">
                 Enter a value between 0% and 100%. Default is 0.5%.
               </p>
 
@@ -127,7 +196,7 @@ export default function DailyProfitRatePage() {
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-500/25 transition-all hover:shadow-xl hover:from-indigo-600 hover:to-indigo-700 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 btn btn-primary py-3 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {saving ? (
                     <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
@@ -139,29 +208,62 @@ export default function DailyProfitRatePage() {
                 <button
                   onClick={handleReset}
                   disabled={saving}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-6 py-3 text-sm font-bold text-slate-600 transition-all hover:bg-slate-50 active:scale-[0.97] disabled:opacity-50"
+                  className="btn btn-secondary py-3 active:scale-[0.98] disabled:opacity-50"
                 >
                   <RotateCcw className="h-4 w-4" />
-                  Reset
+                  Reset to 0.5%
                 </button>
               </div>
             </div>
           </div>
 
-          <div className="glass rounded-2xl p-4 sm:p-6">
-            <h3 className="font-bold text-slate-900 mb-3">How It Works</h3>
-            <div className="space-y-3 text-sm text-slate-600">
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">1</div>
-                <p>The daily profit rate applies to <strong>all active users</strong> when you trigger ROI distribution.</p>
+          {/* How It Works */}
+          <div className="card p-6 sm:p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50">
+                <Info className="h-5 w-5 text-amber-600" />
               </div>
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">2</div>
-                <p>The default rate is <strong>0.5%</strong>. You can override it for today using the form above.</p>
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">How It Works</h2>
+                <p className="text-xs text-slate-500">Understanding the daily profit system</p>
               </div>
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">3</div>
-                <p>The rate <strong>resets to 0.5% automatically</strong> each day — you only need to set it if you want a different value.</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="rounded-xl bg-slate-50 p-4 border border-slate-100">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+                    <Zap className="h-4 w-4" />
+                  </div>
+                  <span className="text-sm font-semibold text-slate-900">1. Set Rate</span>
+                </div>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  The rate applies to <strong className="text-slate-700">all active users</strong> when you trigger ROI distribution.
+                </p>
+              </div>
+
+              <div className="rounded-xl bg-slate-50 p-4 border border-slate-100">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
+                    <TrendingUp className="h-4 w-4" />
+                  </div>
+                  <span className="text-sm font-semibold text-slate-900">2. Default 0.5%</span>
+                </div>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  The default rate is <strong className="text-slate-700">0.5%</strong>. Override it for today using the form above.
+                </p>
+              </div>
+
+              <div className="rounded-xl bg-slate-50 p-4 border border-slate-100">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+                    <Clock className="h-4 w-4" />
+                  </div>
+                  <span className="text-sm font-semibold text-slate-900">3. Auto Reset</span>
+                </div>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  The rate <strong className="text-slate-700">resets automatically</strong> each day — only set it if you want a different value.
+                </p>
               </div>
             </div>
           </div>

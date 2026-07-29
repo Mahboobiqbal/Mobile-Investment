@@ -17,9 +17,13 @@ const swaggerSpec = require('./swagger');
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5000', 'https://investintrees.vercel.app'],
+  origin: process.env.NODE_ENV === 'production'
+    ? ['https://investintrees.vercel.app']
+    : ['http://localhost:3000', 'http://localhost:5000', 'https://investintrees.vercel.app'],
   credentials: true,
 }));
 app.use(express.json({ limit: '1mb' }));

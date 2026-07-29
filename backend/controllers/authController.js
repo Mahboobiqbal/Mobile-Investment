@@ -144,7 +144,6 @@ const registerUser = async (req, res) => {
         amount: bonus,
         type: 'bonus',
         status: 'approved',
-        description: `Sign-up bonus of Rs. ${bonus}`,
       });
     }
 

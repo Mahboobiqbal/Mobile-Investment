@@ -14,7 +14,7 @@ const transactionSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['plan', 'deposit', 'withdrawal', 'Deposit', 'Withdrawal'],
+      enum: ['plan', 'deposit', 'withdrawal', 'Deposit', 'Withdrawal', 'bonus'],
       required: true,
     },
     transactionId: {

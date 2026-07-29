@@ -4,6 +4,7 @@ const Plan = require('../models/Plan');
 const InvestmentCategory = require('../models/InvestmentCategory');
 const UserInvestment = require('../models/UserInvestment');
 const DailyProfitRate = require('../models/DailyProfitRate');
+const Settings = require('../models/Settings');
 const { createAdminNotification } = require('./notificationsController');
 
 const normalizeTransactionType = (value) => String(value || '').toLowerCase();
@@ -24,6 +25,9 @@ const submitDeposit = async (req, res) => {
     const normalizedType = transactionType ? normalizeTransactionType(transactionType) : (planId ? 'plan' : 'deposit');
     const isPlanPurchase = normalizedType === 'plan';
 
+    const settings = await Settings.findOne({ key: 'global' });
+    const minDeposit = settings?.minDeposit || 0;
+
     let plan = null;
     if (isPlanPurchase) {
       if (!planId) {
@@ -34,13 +38,18 @@ const submitDeposit = async (req, res) => {
       if (!plan || !plan.isActive) {
         return res.status(400).json({ message: 'Invalid or inactive plan' });
       }
-      if (amount < plan.minInvestment) {
-        return res.status(400).json({ message: `Minimum investment for this plan is ${plan.minInvestment}` });
+      const effectiveMin = Math.max(minDeposit, plan.minInvestment);
+      if (amount < effectiveMin) {
+        return res.status(400).json({ message: `Minimum investment for this plan is Rs. ${effectiveMin}` });
       }
       if (plan.maxInvestment && amount > plan.maxInvestment) {
-        return res.status(400).json({ message: `Maximum investment for this plan is ${plan.maxInvestment}` });
+        return res.status(400).json({ message: `Maximum investment for this plan is Rs. ${plan.maxInvestment}` });
       }
+    } else if (minDeposit > 0 && amount < minDeposit) {
+      return res.status(400).json({ message: `Minimum deposit amount is Rs. ${minDeposit}` });
+    }
 
+    if (plan) {
       user.pendingPlanId = plan._id;
       user.pendingInvestmentAmount = investmentAmount || amount;
       await user.save();

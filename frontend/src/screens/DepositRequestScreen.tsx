@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { AxiosError } from 'axios';
 
+import api from '../services/api';
 import { walletApi, type InvestmentPlan } from '../services/api/walletApi';
 import { useAuth } from '../context/AuthContext';
 import SuccessModal from '../components/SuccessModal';
@@ -47,6 +48,17 @@ export default function DepositRequestScreen() {
   const [planLoading, setPlanLoading] = useState(false);
   const [successModal, setSuccessModal] = useState({ visible: false });
   const [errorModal, setErrorModal] = useState({ visible: false, title: '', message: '' });
+  const [minDeposit, setMinDeposit] = useState(0);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await api.get('/settings');
+        setMinDeposit(res.data.minDeposit || 0);
+      } catch { }
+    };
+    fetchSettings();
+  }, []);
 
   useEffect(() => {
     if (selectedPlanId) {
@@ -78,8 +90,9 @@ export default function DepositRequestScreen() {
       return false;
     }
 
-    if (plan && numAmount < plan.minInvestment) {
-      Alert.alert('Invalid Amount', `Minimum investment for this plan is Rs. ${plan.minInvestment.toLocaleString('en-PK')}.`);
+    const effectiveMin = plan ? Math.max(minDeposit, plan.minInvestment) : minDeposit;
+    if (numAmount < effectiveMin) {
+      Alert.alert('Invalid Amount', `Minimum deposit amount is Rs. ${effectiveMin.toLocaleString('en-PK')}.`);
       return false;
     }
 
@@ -94,7 +107,7 @@ export default function DepositRequestScreen() {
     }
 
     return true;
-  }, [amount, transactionId, plan]);
+  }, [amount, transactionId, plan, minDeposit]);
 
   const handleSubmitDeposit = useCallback(async () => {
     if (!validateForm()) {
@@ -258,7 +271,7 @@ export default function DepositRequestScreen() {
               {investmentAmount ? (
                 <Text style={styles.inputHint}>Amount pre-filled from plan selection</Text>
               ) : (
-                <Text style={styles.inputHint}>Minimum deposit: Rs. 500</Text>
+                <Text style={styles.inputHint}>Minimum deposit: Rs. {minDeposit || 500}</Text>
               )}
             </View>
 

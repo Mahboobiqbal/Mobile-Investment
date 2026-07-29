@@ -4,6 +4,7 @@ const Plan = require('../models/Plan');
 const InvestmentCategory = require('../models/InvestmentCategory');
 const UserInvestment = require('../models/UserInvestment');
 const DailyProfitRate = require('../models/DailyProfitRate');
+const Settings = require('../models/Settings');
 const { syncUserPlanState } = require('../utils/planState');
 
 const normalizeTransactionType = (value) => String(value || '').toLowerCase();
@@ -521,6 +522,35 @@ const deletePlan = async (req, res) => {
   }
 };
 
+const getSettings = async (req, res) => {
+  try {
+    let settings = await Settings.findOne({ key: 'global' });
+    if (!settings) {
+      settings = await Settings.create({ key: 'global' });
+    }
+    return res.status(200).json(settings);
+  } catch (error) {
+    return res.status(500).json({ message: error.message || 'Failed to fetch settings' });
+  }
+};
+
+const updateSettings = async (req, res) => {
+  try {
+    const { minDeposit, signupBonus } = req.body;
+    const update = {};
+    if (minDeposit !== undefined) update.minDeposit = minDeposit;
+    if (signupBonus !== undefined) update.signupBonus = signupBonus;
+    const settings = await Settings.findOneAndUpdate(
+      { key: 'global' },
+      { $set: update },
+      { upsert: true, new: true }
+    );
+    return res.status(200).json({ message: 'Settings updated successfully', settings });
+  } catch (error) {
+    return res.status(500).json({ message: error.message || 'Failed to update settings' });
+  }
+};
+
 const getDailyProfitRate = async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
@@ -574,6 +604,8 @@ module.exports = {
   updatePlan,
   deletePlan,
   getDashboardAnalytics,
+  getSettings,
+  updateSettings,
   getDailyProfitRate,
   setDailyProfitRate,
 };

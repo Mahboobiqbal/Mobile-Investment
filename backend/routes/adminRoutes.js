@@ -17,6 +17,8 @@ const {
   getDashboardAnalytics,
   getDailyProfitRate,
   setDailyProfitRate,
+  getSettings,
+  updateSettings,
 } = require('../controllers/adminController');
 const {
   getAllMutualFundRequests,
@@ -400,6 +402,9 @@ router.get('/daily-profit-rate', getDailyProfitRate);
  *         description: Forbidden - valid admin API key required
  */
 router.post('/daily-profit-rate', setDailyProfitRate);
+
+router.get('/settings', getSettings);
+router.post('/settings', updateSettings);
 
 /**
  * @openapi

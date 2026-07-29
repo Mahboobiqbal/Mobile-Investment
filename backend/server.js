@@ -49,6 +49,20 @@ app.use('/api/admin', adminAuthMiddleware, adminRoutes);
 app.use('/api/admin', adminAuthMiddleware, notificationsRoutes);
 
 
+// Public settings route
+const Settings = require('./models/Settings');
+app.get('/api/settings', async (req, res) => {
+  try {
+    let settings = await Settings.findOne({ key: 'global' });
+    if (!settings) {
+      settings = await Settings.create({ key: 'global' });
+    }
+    res.json(settings);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch settings' });
+  }
+});
+
 // Public community routes
 const postsRoutes = require('./routes/postsRoutes');
 app.use('/api/community', postsRoutes);

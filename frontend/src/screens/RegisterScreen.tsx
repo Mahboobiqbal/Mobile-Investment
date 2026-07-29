@@ -1,7 +1,7 @@
 import { AxiosError } from 'axios';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -34,6 +34,17 @@ export default function RegisterScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [successModal, setSuccessModal] = useState({ visible: false, title: '', message: '' });
   const [errorModal, setErrorModal] = useState({ visible: false, title: '', message: '' });
+  const [signupBonus, setSignupBonus] = useState(0);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await api.get('/settings');
+        setSignupBonus(res.data.signupBonus || 0);
+      } catch { }
+    };
+    fetchSettings();
+  }, []);
 
   const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !password.trim() || !phone.trim()) {
@@ -81,9 +92,19 @@ export default function RegisterScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.formCard}>
+            <View style={styles.formCard}>
             <Text style={styles.formTitle}>Create Account</Text>
             <Text style={styles.formSubtitle}>Fill in your details to get started</Text>
+
+            {signupBonus > 0 && (
+              <View style={styles.bonusBanner}>
+                <Text style={styles.bonusIcon}>🎁</Text>
+                <View style={styles.bonusTextWrapper}>
+                  <Text style={styles.bonusTitle}>Signup Bonus!</Text>
+                  <Text style={styles.bonusSubtitle}>Get Rs. {signupBonus.toLocaleString('en-PK')} credited instantly when you create your account.</Text>
+                </View>
+              </View>
+            )}
 
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Full Name</Text>
@@ -294,6 +315,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.3,
+  },
+
+  // Bonus Banner
+  bonusBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ECFDF5',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    padding: 14,
+    marginBottom: 20,
+    gap: 12,
+  },
+  bonusIcon: {
+    fontSize: 24,
+  },
+  bonusTextWrapper: {
+    flex: 1,
+  },
+  bonusTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#065F46',
+    marginBottom: 2,
+  },
+  bonusSubtitle: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#047857',
+    lineHeight: 16,
   },
 
   // Switch

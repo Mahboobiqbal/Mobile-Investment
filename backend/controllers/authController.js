@@ -8,6 +8,7 @@ const User = require('../models/User');
 const Plan = require('../models/Plan');
 const Transaction = require('../models/Transaction');
 const UserInvestment = require('../models/UserInvestment');
+const Settings = require('../models/Settings');
 const DailyProfitRate = require('../models/DailyProfitRate');
 const { syncUserPlanState } = require('../utils/planState');
 
@@ -132,6 +133,20 @@ const registerUser = async (req, res) => {
       password: hashedPassword,
       phone,
     });
+
+    const settings = await Settings.findOne({ key: 'global' });
+    const bonus = settings?.signupBonus || 0;
+    if (bonus > 0) {
+      user.currentBalance = bonus;
+      await user.save();
+      await Transaction.create({
+        user: user._id,
+        amount: bonus,
+        type: 'bonus',
+        status: 'approved',
+        description: `Sign-up bonus of Rs. ${bonus}`,
+      });
+    }
 
     sendWelcomeEmail(user);
 

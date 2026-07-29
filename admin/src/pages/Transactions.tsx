@@ -7,6 +7,8 @@ import {
   ShieldCheck, ShieldX, Send, Sparkles, ListFilter,
   Filter, Download,
 } from 'lucide-react';
+import ConfirmModal from '../components/ConfirmModal';
+import Toast from '../components/Toast';
 
 interface Transaction {
   _id: string;
@@ -119,6 +121,18 @@ export default function Transactions() {
   const [search, setSearch] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  const [confirmState, setConfirmState] = useState<{
+    isOpen: boolean; txId: string; action: 'approve' | 'reject' | 'withdraw';
+  }>({ isOpen: false, txId: '', action: 'approve' });
+
+  const [toast, setToast] = useState<{
+    isOpen: boolean; type: 'success' | 'error'; message: string;
+  }>({ isOpen: false, type: 'success', message: '' });
+
+  const showToast = (type: 'success' | 'error', message: string) => {
+    setToast({ isOpen: true, type, message });
+  };
+
   const fetchTransactions = useCallback(async (page = 1) => {
     setLoading(true);
     try {
@@ -139,16 +153,23 @@ export default function Transactions() {
     fetchTransactions(1);
   }, [fetchTransactions]);
 
-  const handleReview = async (txId: string, action: 'approve' | 'reject' | 'withdraw') => {
-    if (!window.confirm(`Are you sure you want to ${action} this transaction?`)) return;
+  const handleReview = (txId: string, action: 'approve' | 'reject' | 'withdraw') => {
+    setConfirmState({ isOpen: true, txId, action });
+  };
+
+  const handleConfirm = async () => {
+    const { txId, action } = confirmState;
     setActionLoading(txId);
+    setConfirmState(prev => ({ ...prev, isOpen: false }));
     try {
       const res = await api.post('/admin/review-transaction', { transactionId: txId, action });
-      const msg = res.data?.message || `Transaction ${action}d successfully`;
-      alert(msg);
+      const actionLabel = action === 'withdraw' ? 'withdrawn' : `${action}d`;
+      const msg = res.data?.message || `Transaction ${actionLabel} successfully`;
+      showToast('success', msg);
       fetchTransactions(pagination.page);
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Action failed');
+      const msg = err.response?.data?.message || 'Action failed';
+      showToast('error', msg);
     } finally {
       setActionLoading(null);
     }
@@ -500,6 +521,23 @@ export default function Transactions() {
       {!loading && pagination.pages > 1 && (
         <PaginationBar pagination={pagination} onPageChange={(p) => fetchTransactions(p)} />
       )}
+
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        title={confirmState.action === 'approve' ? 'Approve Transaction' : confirmState.action === 'reject' ? 'Reject Transaction' : 'Mark as Paid'}
+        message={`Are you sure you want to ${confirmState.action === 'withdraw' ? 'mark this withdrawal as paid' : confirmState.action + ' this transaction'}? This action cannot be undone.`}
+        action={confirmState.action}
+        onConfirm={handleConfirm}
+        onCancel={() => setConfirmState(prev => ({ ...prev, isOpen: false }))}
+        loading={actionLoading === confirmState.txId}
+      />
+
+      <Toast
+        isOpen={toast.isOpen}
+        type={toast.type}
+        message={toast.message}
+        onClose={() => setToast(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

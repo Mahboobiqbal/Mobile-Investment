@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import { MessageSquare, Send, Calendar, User, Tag } from 'lucide-react';
+import Toast from '../components/Toast';
 
 export default function Posts() {
   const [title, setTitle] = useState('');
@@ -9,6 +10,14 @@ export default function Posts() {
   const [isPublished, setIsPublished] = useState(true);
   const [loading, setLoading] = useState(false);
   const [posts, setPosts] = useState<any[]>([]);
+
+  const [toast, setToast] = useState<{
+    isOpen: boolean; type: 'success' | 'error'; message: string;
+  }>({ isOpen: false, type: 'success', message: '' });
+
+  const showToast = (type: 'success' | 'error', message: string) => {
+    setToast({ isOpen: true, type, message });
+  };
 
   const fetchPosts = async () => {
     try {
@@ -23,16 +32,19 @@ export default function Posts() {
 
   const onSubmit = async (e: any) => {
     e.preventDefault();
-    if (!title.trim() || !body.trim()) return alert('Title and body required');
+    if (!title.trim() || !body.trim()) {
+      showToast('error', 'Title and body are required');
+      return;
+    }
     setLoading(true);
     try {
       const authorAvatar = import.meta.env.VITE_ADMIN_AVATAR || undefined;
       const res = await api.post('/admin/posts', { title, body, category, isPublished, authorAvatar });
       setPosts(prev => [res.data.post, ...prev]);
       setTitle(''); setBody(''); setCategory('update'); setIsPublished(true);
-      alert('Post created');
+      showToast('success', 'Post created successfully');
     } catch (err: any) {
-      alert(err?.response?.data?.message || 'Failed to create post');
+      showToast('error', err?.response?.data?.message || 'Failed to create post');
     } finally { setLoading(false); }
   };
 
@@ -134,6 +146,13 @@ export default function Posts() {
           </div>
         )}
       </div>
+
+      <Toast
+        isOpen={toast.isOpen}
+        type={toast.type}
+        message={toast.message}
+        onClose={() => setToast(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

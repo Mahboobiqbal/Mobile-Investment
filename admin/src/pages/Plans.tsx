@@ -5,6 +5,8 @@ import {
   LayoutGrid, ToggleLeft, ToggleRight, Percent, DollarSign,
   Infinity, Ban, FolderOpen, Sparkles,
 } from 'lucide-react';
+import ConfirmModal from '../components/ConfirmModal';
+import Toast from '../components/Toast';
 
 interface Category {
   _id: string; name: string;
@@ -39,6 +41,16 @@ export default function Plans() {
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [form, setForm] = useState(defaultForm);
   const [error, setError] = useState('');
+
+  const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; id: string }>({ isOpen: false, id: '' });
+
+  const [toast, setToast] = useState<{
+    isOpen: boolean; type: 'success' | 'error'; message: string;
+  }>({ isOpen: false, type: 'success', message: '' });
+
+  const showToast = (type: 'success' | 'error', message: string) => {
+    setToast({ isOpen: true, type, message });
+  };
 
   const fetchData = async () => {
     try {
@@ -111,13 +123,19 @@ export default function Plans() {
     }
   };
 
-  const handleDelete = async (planId: string) => {
-    if (!window.confirm('Are you sure you want to delete this plan?')) return;
+  const handleDelete = (planId: string) => {
+    setConfirmDelete({ isOpen: true, id: planId });
+  };
+
+  const handleConfirmDelete = async () => {
+    const id = confirmDelete.id;
+    setConfirmDelete(prev => ({ ...prev, isOpen: false }));
     try {
-      await api.delete(`/admin/plans/${planId}`);
+      await api.delete(`/admin/plans/${id}`);
+      showToast('success', 'Plan deleted successfully');
       fetchData();
     } catch (err) {
-      alert('Failed to delete plan');
+      showToast('error', 'Failed to delete plan');
     }
   };
 
@@ -126,7 +144,7 @@ export default function Plans() {
       await api.put(`/admin/plans/${plan._id}`, { isActive: !plan.isActive });
       fetchData();
     } catch (err) {
-      alert('Failed to toggle plan status');
+      showToast('error', 'Failed to toggle plan status');
     }
   };
 
@@ -501,6 +519,22 @@ export default function Plans() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={confirmDelete.isOpen}
+        title="Delete Plan"
+        message="Are you sure you want to delete this plan? This action cannot be undone."
+        action="reject"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmDelete(prev => ({ ...prev, isOpen: false }))}
+      />
+
+      <Toast
+        isOpen={toast.isOpen}
+        type={toast.type}
+        message={toast.message}
+        onClose={() => setToast(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

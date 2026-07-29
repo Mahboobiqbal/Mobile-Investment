@@ -8,6 +8,7 @@ import {
   Users as UsersIcon, BadgeCheck, Target, DollarSign, ArrowUpDown,
   X, Edit3, Eye, Mail,
 } from 'lucide-react';
+import Toast from '../components/Toast';
 
 interface User {
   _id: string; name: string; email: string; phone: string;
@@ -142,6 +143,14 @@ function BalanceModal({ user, onClose, onUpdate }: {
   const [type, setType] = useState<'add' | 'subtract'>('add');
   const [submitting, setSubmitting] = useState(false);
 
+  const [toast, setToast] = useState<{
+    isOpen: boolean; type: 'success' | 'error'; message: string;
+  }>({ isOpen: false, type: 'success', message: '' });
+
+  const showToast = (type: 'success' | 'error', message: string) => {
+    setToast({ isOpen: true, type, message });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -151,7 +160,7 @@ function BalanceModal({ user, onClose, onUpdate }: {
       });
       onUpdate();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Update failed');
+      showToast('error', err.response?.data?.message || 'Update failed');
     } finally {
       setSubmitting(false);
     }
@@ -211,6 +220,13 @@ function BalanceModal({ user, onClose, onUpdate }: {
             </button>
           </div>
         </form>
+
+        <Toast
+          isOpen={toast.isOpen}
+          type={toast.type}
+          message={toast.message}
+          onClose={() => setToast(prev => ({ ...prev, isOpen: false }))}
+        />
       </div>
     </div>
   );

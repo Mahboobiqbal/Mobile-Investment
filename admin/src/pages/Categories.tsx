@@ -4,6 +4,8 @@ import {
   Plus, Edit3, Trash2, X, Layers, ToggleLeft, ToggleRight, Search,
   Hash, FileText, Eye, EyeOff, Sparkles,
 } from 'lucide-react';
+import ConfirmModal from '../components/ConfirmModal';
+import Toast from '../components/Toast';
 
 interface Category {
   _id: string;
@@ -23,6 +25,16 @@ export default function Categories() {
   const [editing, setEditing] = useState<Category | null>(null);
   const [form, setForm] = useState({ name: '', description: '' });
   const [error, setError] = useState('');
+
+  const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; id: string }>({ isOpen: false, id: '' });
+
+  const [toast, setToast] = useState<{
+    isOpen: boolean; type: 'success' | 'error'; message: string;
+  }>({ isOpen: false, type: 'success', message: '' });
+
+  const showToast = (type: 'success' | 'error', message: string) => {
+    setToast({ isOpen: true, type, message });
+  };
 
   const fetchCategories = async () => {
     try {
@@ -67,13 +79,19 @@ export default function Categories() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Delete this system? Plans linked to it must be removed first.')) return;
+  const handleDelete = (id: string) => {
+    setConfirmDelete({ isOpen: true, id });
+  };
+
+  const handleConfirmDelete = async () => {
+    const id = confirmDelete.id;
+    setConfirmDelete(prev => ({ ...prev, isOpen: false }));
     try {
       await api.delete(`/admin/categories/${id}`);
+      showToast('success', 'System deleted successfully');
       fetchCategories();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to delete category');
+      showToast('error', err.response?.data?.message || 'Failed to delete category');
     }
   };
 
@@ -82,7 +100,7 @@ export default function Categories() {
       await api.put(`/admin/categories/${cat._id}`, { isActive: !cat.isActive });
       fetchCategories();
     } catch (err) {
-      alert('Failed to toggle');
+      showToast('error', 'Failed to toggle system status');
     }
   };
 
@@ -385,6 +403,22 @@ export default function Categories() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={confirmDelete.isOpen}
+        title="Delete System"
+        message="Delete this system? Plans linked to it must be removed first. This action cannot be undone."
+        action="reject"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmDelete(prev => ({ ...prev, isOpen: false }))}
+      />
+
+      <Toast
+        isOpen={toast.isOpen}
+        type={toast.type}
+        message={toast.message}
+        onClose={() => setToast(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

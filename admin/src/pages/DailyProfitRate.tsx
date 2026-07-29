@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import { DollarSign, Save, RotateCcw, Info, TrendingUp, Calendar, Zap, Clock, AlertTriangle, CheckCircle } from 'lucide-react';
+import Toast from '../components/Toast';
 
 export default function DailyProfitRatePage() {
   const [rate, setRate] = useState('0.5');
@@ -9,6 +10,14 @@ export default function DailyProfitRatePage() {
   const [date, setDate] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const [toast, setToast] = useState<{
+    isOpen: boolean; type: 'success' | 'error'; message: string;
+  }>({ isOpen: false, type: 'success', message: '' });
+
+  const showToast = (type: 'success' | 'error', message: string) => {
+    setToast({ isOpen: true, type, message });
+  };
 
   useEffect(() => {
     const fetch = async () => {
@@ -33,7 +42,7 @@ export default function DailyProfitRatePage() {
   const handleSave = async () => {
     const val = parseFloat(rate);
     if (isNaN(val) || val < 0 || val > 100) {
-      alert('Please enter a valid percentage (0–100)');
+      showToast('error', 'Please enter a valid percentage (0–100)');
       return;
     }
     setSaving(true);
@@ -42,9 +51,9 @@ export default function DailyProfitRatePage() {
       setCurrentRate(val);
       setIsDefault(false);
       setDate(res.data.date);
-      alert(res.data.message);
+      showToast('success', res.data.message);
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to save');
+      showToast('error', err.response?.data?.message || 'Failed to save');
     } finally {
       setSaving(false);
     }
@@ -269,6 +278,13 @@ export default function DailyProfitRatePage() {
           </div>
         </>
       )}
+
+      <Toast
+        isOpen={toast.isOpen}
+        type={toast.type}
+        message={toast.message}
+        onClose={() => setToast(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

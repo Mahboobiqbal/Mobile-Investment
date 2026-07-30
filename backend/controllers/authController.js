@@ -10,6 +10,7 @@ const Transaction = require('../models/Transaction');
 const UserInvestment = require('../models/UserInvestment');
 const Settings = require('../models/Settings');
 const DailyProfitRate = require('../models/DailyProfitRate');
+const SignupOtp = require('../models/SignupOtp');
 const { syncUserPlanState } = require('../utils/planState');
 
 const emailUser = process.env.EMAIL_USER;
@@ -37,10 +38,10 @@ const isEmailConfigured = () =>
 const sendAppEmail = ({ to, subject, text, html, logLabel }) => {
   if (!isEmailConfigured()) {
     console.error(`${logLabel} skipped: EMAIL_USER/APP_PASSWORD are missing or still using placeholder values.`);
-    return;
+    return Promise.resolve({ skipped: true });
   }
 
-  transporter
+  return transporter
     .sendMail({
       from: process.env.EMAIL_FROM || emailUser,
       to,
@@ -54,9 +55,11 @@ const sendAppEmail = ({ to, subject, text, html, logLabel }) => {
         accepted: info.accepted,
         rejected: info.rejected,
       });
+      return info;
     })
     .catch((emailError) => {
       console.error(`Failed to send ${logLabel}:`, emailError.message);
+      throw emailError;
     });
 };
 
@@ -110,14 +113,107 @@ const signToken = (user) =>
     }
   );
 
+const checkSignupOtp = async (req, res) => {
+  try {
+    const { email } = req.query;
+    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+    if (!normalizedEmail) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+    const otpRecord = await SignupOtp.findOne({ email: normalizedEmail, expiresAt: { $gt: new Date() } });
+    return res.status(200).json({ otpExists: !!otpRecord });
+  } catch (error) {
+    return res.status(500).json({ message: error.message || 'Failed to check OTP' });
+  }
+};
+
+const sendSignupOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+
+    if (!normalizedEmail) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    const existingUser = await User.findOne({ email: normalizedEmail });
+    if (existingUser) {
+      return res.status(400).json({ message: 'An account with this email already exists' });
+    }
+
+    const existingOtp = await SignupOtp.findOne({ email: normalizedEmail, expiresAt: { $gt: new Date() } });
+    if (existingOtp) {
+      return res.status(200).json({ message: 'A valid verification code already exists for this email', otpExists: true });
+    }
+    if (existingUser) {
+      return res.status(400).json({ message: 'An account with this email already exists' });
+    }
+
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+    await SignupOtp.findOneAndDelete({ email: normalizedEmail });
+    await SignupOtp.create({ email: normalizedEmail, otp, expiresAt });
+
+    try {
+      await sendAppEmail({
+        to: normalizedEmail,
+        subject: 'Your SmartInvest Email Verification Code',
+        text: `Your email verification code is: ${otp}\n\nThis code expires in 10 minutes.\n\nIf you did not request this, please ignore this email.`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: #f8fafc; border-radius: 16px;">
+            <div style="text-align: center; margin-bottom: 24px;">
+              <div style="font-size: 40px; margin-bottom: 8px;">📈</div>
+              <h1 style="font-size: 24px; font-weight: 800; color: #0f172a; margin: 0;">SmartInvest</h1>
+            </div>
+            <div style="background: white; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+              <h2 style="font-size: 18px; color: #0f172a; margin: 0 0 8px;">Verify Your Email</h2>
+              <p style="font-size: 14px; color: #64748b; margin: 0 0 20px; line-height: 1.5;">Use the code below to verify your email address and complete your registration.</p>
+              <div style="background: #f1f5f9; border-radius: 10px; padding: 16px; text-align: center;">
+                <span style="font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #0f172a;">${otp}</span>
+              </div>
+              <p style="font-size: 12px; color: #94a3b8; margin: 16px 0 0; text-align: center;">This code expires in 15 minutes</p>
+            </div>
+          </div>
+        `,
+        logLabel: 'Signup OTP email',
+      });
+    } catch (emailErr) {
+      console.log(`[DEV] OTP for ${normalizedEmail}: ${otp}`);
+    }
+
+    return res.status(200).json({ message: 'Verification code sent to your email' });
+  } catch (error) {
+    return res.status(500).json({ message: error.message || 'Failed to send verification code' });
+  }
+};
+
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, email, password, phone, otp } = req.body;
     const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
 
     if (!name || !normalizedEmail || !password || !phone) {
       return res.status(400).json({ message: 'All required fields must be provided' });
     }
+
+    if (!otp) {
+      return res.status(400).json({ message: 'Email verification code is required' });
+    }
+
+    const otpRecord = await SignupOtp.findOne({ email: normalizedEmail });
+    if (!otpRecord) {
+      return res.status(400).json({ message: 'No verification code found. Please request a new one.' });
+    }
+    if (new Date() > otpRecord.expiresAt) {
+      await SignupOtp.deleteOne({ _id: otpRecord._id });
+      return res.status(400).json({ message: 'Verification code has expired. Please request a new one.' });
+    }
+    if (otpRecord.otp !== otp) {
+      return res.status(400).json({ message: 'Invalid verification code' });
+    }
+
+    await SignupOtp.deleteOne({ _id: otpRecord._id });
 
     const existingUser = await User.findOne({ email: normalizedEmail });
 
@@ -233,30 +329,26 @@ const getUserProfile = async (req, res) => {
   }
 };
 
-const updateUserProfile = async (req, res) => {
-  try {
-    const { name, phone, dp } = req.body;
+  const updateUserProfile = async (req, res) => {
+    try {
+      const { name, dp } = req.body;
 
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    if (name !== undefined) {
-      const nextName = typeof name === 'string' ? name.trim() : '';
-      if (!nextName) {
-        return res.status(400).json({ message: 'Name cannot be empty' });
+      const user = await User.findById(req.user.id);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
       }
-      user.name = nextName;
-    }
 
-    if (phone !== undefined) {
-      user.phone = typeof phone === 'string' ? phone.trim() : phone;
-    }
+      if (name !== undefined) {
+        const nextName = typeof name === 'string' ? name.trim() : '';
+        if (!nextName) {
+          return res.status(400).json({ message: 'Name cannot be empty' });
+        }
+        user.name = nextName;
+      }
 
-    if (dp !== undefined) {
-      user.dp = typeof dp === 'string' && dp.trim() ? dp.trim() : user.dp;
-    }
+      if (dp !== undefined) {
+        user.dp = typeof dp === 'string' && dp.trim() ? dp.trim() : user.dp;
+      }
 
     await user.save();
 
@@ -648,6 +740,8 @@ const getUserDailyROIHistory = async (req, res) => {
   };
 
 module.exports = {
+  checkSignupOtp,
+  sendSignupOtp,
   registerUser,
   loginUser,
   getUserProfile,

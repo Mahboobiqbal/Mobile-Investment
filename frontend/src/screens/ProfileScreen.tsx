@@ -67,7 +67,6 @@ export default function ProfileScreen() {
     try {
       await authApi.updateProfile({
         name: name.trim(),
-        phone: phone.trim(),
         dp: dp.trim(),
       });
 
@@ -160,15 +159,10 @@ export default function ProfileScreen() {
 
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>Phone Number</Text>
-            <TextInput
-              value={phone}
-              editable={isEditing}
-              onChangeText={setPhone}
-              placeholder="Enter your phone number"
-              placeholderTextColor="#94A3B8"
-              keyboardType="phone-pad"
-              style={[styles.input, !isEditing && styles.inputReadonly]}
-            />
+            <View style={styles.readonlyValue}>
+              <Text style={styles.readonlyText}>{phone || 'No phone registered'}</Text>
+            </View>
+            <Text style={styles.phoneNote}>Phone number cannot be changed. Used for payments and withdrawals.</Text>
           </View>
 
           <View style={styles.fieldGroup}>
@@ -184,7 +178,6 @@ export default function ProfileScreen() {
                 onPress={() => {
                   setIsEditing(false);
                   setName(userData?.name || '');
-                  setPhone(userData?.phone || '');
                   setDp(userData?.dp || '');
                 }}
                 style={styles.cancelButton}
@@ -407,6 +400,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
     color: '#475569',
+  },
+  phoneNote: {
+    fontSize: 11,
+    fontWeight: '400',
+    color: '#DC2626',
+    lineHeight: 15,
+    marginTop: 4,
   },
 
   // Edit actions

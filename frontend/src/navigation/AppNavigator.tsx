@@ -97,10 +97,10 @@ function BottomTabs() {
         name="Community"
         component={CommunityScreen}
         options={{
-          tabBarLabel: 'Wallet',
+          tabBarLabel: 'Community',
           tabBarIcon: ({ focused }) => (
             <View style={[styles.tabIconWrap, focused && styles.tabIconWrapActive]}>
-              <Ionicons name={focused ? 'wallet' : 'wallet-outline'} size={22} color={focused ? '#FFFFFF' : '#64748B'} />
+              <Ionicons name={focused ? 'people' : 'people-outline'} size={22} color={focused ? '#FFFFFF' : '#64748B'} />
             </View>
           ),
         }}

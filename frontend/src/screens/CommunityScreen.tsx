@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, Pressable, TextInput, RefreshControl, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import api from '../services/api';
@@ -38,6 +38,29 @@ const SAMPLE_POSTS: CommunityPost[] = [
     createdAt: 'Yesterday',
     category: 'education',
   },
+  {
+    id: '4',
+    title: 'Security update: 2FA now available',
+    body: 'Two-factor authentication has been enabled for all accounts. Enable it in your profile settings for added security.',
+    author: 'SmartInvest Admin',
+    createdAt: '3 days ago',
+    category: 'announcement',
+  },
+  {
+    id: '5',
+    title: 'Understanding investment returns',
+    body: 'Learn how daily ROI is calculated and credited to your account. Our system processes returns every 24 hours.',
+    author: 'SmartInvest Team',
+    createdAt: '5 days ago',
+    category: 'education',
+  },
+];
+
+const CATEGORIES = [
+  { key: 'all', label: 'All', icon: '📋' },
+  { key: 'update', label: 'Updates', icon: '📊' },
+  { key: 'announcement', label: 'Announcements', icon: '📢' },
+  { key: 'education', label: 'Education', icon: '📖' },
 ];
 
 const CATEGORY_CONFIG: Record<string, { label: string; border: string; bg: string; text: string; icon: string }> = {
@@ -51,6 +74,7 @@ export default function CommunityScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [postsData, setPostsData] = useState<CommunityPost[]>(SAMPLE_POSTS);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState('all');
 
   useEffect(() => { fetchPosts(); }, []);
 
@@ -74,38 +98,44 @@ export default function CommunityScreen() {
     }
   };
 
-  const posts = useMemo(() => {
+  const filteredPosts = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return postsData;
-    return postsData.filter(post =>
-      post.title.toLowerCase().includes(q) ||
-      post.body.toLowerCase().includes(q) ||
-      post.author.toLowerCase().includes(q)
-    );
-  }, [query, postsData]);
+    let result = postsData;
+    if (activeCategory !== 'all') {
+      result = result.filter(p => p.category === activeCategory);
+    }
+    if (q) {
+      result = result.filter(post =>
+        post.title.toLowerCase().includes(q) ||
+        post.body.toLowerCase().includes(q) ||
+        post.author.toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }, [query, postsData, activeCategory]);
 
-  const onRefresh = async () => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await fetchPosts();
     setRefreshing(false);
-  };
+  }, []);
 
-  const renderItem = ({ item }: { item: CommunityPost }) => {
+  const renderItem = ({ item, index }: { item: CommunityPost; index: number }) => {
     const cat = CATEGORY_CONFIG[item.category] || CATEGORY_CONFIG.update;
+    const isFirst = index === 0;
+
     return (
-      <View style={[styles.postCard, { borderLeftColor: cat.border }]}>
-        <View style={styles.postHeader}>
-          <View style={[styles.categoryPill, { backgroundColor: cat.bg }]}>
-            <Text style={styles.categoryIcon}>{cat.icon}</Text>
-            <Text style={[styles.categoryLabel, { color: cat.text }]}>{cat.label}</Text>
+      <View style={[styles.postCard, isFirst && styles.postCardFirst]}>
+        <View style={styles.postCardTop}>
+          <View style={[styles.categoryBadge, { backgroundColor: cat.bg }]}>
+            <Text style={styles.categoryBadgeIcon}>{cat.icon}</Text>
+            <Text style={[styles.categoryBadgeLabel, { color: cat.text }]}>{cat.label}</Text>
           </View>
           <Text style={styles.postTime}>{item.createdAt}</Text>
         </View>
 
         <Text style={styles.postTitle}>{item.title}</Text>
-        <Text style={styles.postBody}>{item.body}</Text>
-
-        <View style={styles.postDivider} />
+        <Text style={styles.postBody} numberOfLines={3}>{item.body}</Text>
 
         <View style={styles.postFooter}>
           <View style={styles.authorRow}>
@@ -120,6 +150,9 @@ export default function CommunityScreen() {
             )}
             <Text style={styles.authorName}>{item.author}</Text>
           </View>
+          <Pressable style={styles.readMoreBtn}>
+            <Text style={styles.readMoreText}>Read More</Text>
+          </Pressable>
         </View>
       </View>
     );
@@ -129,7 +162,7 @@ export default function CommunityScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <FlatList
         contentContainerStyle={styles.listContent}
-        data={posts}
+        data={filteredPosts}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         refreshControl={
@@ -143,10 +176,16 @@ export default function CommunityScreen() {
         ListHeaderComponent={() => (
           <View>
             <View style={styles.heroSection}>
-              <Text style={styles.heroTitle}>Updates</Text>
-              <Text style={styles.heroSubtitle}>
-                Stay informed with the latest news, announcements, and educational content from our team.
-              </Text>
+              <View style={styles.heroContent}>
+                <Text style={styles.heroBadge}>Community</Text>
+                <Text style={styles.heroTitle}>Stay Connected</Text>
+                <Text style={styles.heroSubtitle}>
+                  Latest updates, announcements, and educational content from the SmartInvest team.
+                </Text>
+              </View>
+              <View style={styles.heroGraphic}>
+                <Text style={styles.heroGraphicIcon}>💬</Text>
+              </View>
             </View>
 
             <View style={styles.searchContainer}>
@@ -167,6 +206,14 @@ export default function CommunityScreen() {
               </View>
             </View>
 
+            <View style={styles.categoriesRow}>
+              <ScrollableCategories
+                categories={CATEGORIES}
+                active={activeCategory}
+                onSelect={setActiveCategory}
+              />
+            </View>
+
             {fetchError ? (
               <View style={styles.errorBanner}>
                 <Text style={styles.errorBannerTitle}>Connection Issue</Text>
@@ -175,14 +222,25 @@ export default function CommunityScreen() {
                 </Text>
               </View>
             ) : null}
+
+            {filteredPosts.length > 0 && (
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>
+                  {activeCategory === 'all' ? 'All Posts' : CATEGORIES.find(c => c.key === activeCategory)?.label || 'Posts'}
+                </Text>
+                <Text style={styles.sectionCount}>{filteredPosts.length} post{filteredPosts.length !== 1 ? 's' : ''}</Text>
+              </View>
+            )}
           </View>
         )}
         ListEmptyComponent={() => (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>📭</Text>
-            <Text style={styles.emptyTitle}>No results</Text>
+            <View style={styles.emptyIconWrap}>
+              <Text style={styles.emptyIcon}>📭</Text>
+            </View>
+            <Text style={styles.emptyTitle}>No posts found</Text>
             <Text style={styles.emptySubtext}>
-              No posts match your search. Try a different keyword.
+              {query ? 'Try a different search term or category.' : 'Check back later for new content.'}
             </Text>
           </View>
         )}
@@ -191,21 +249,64 @@ export default function CommunityScreen() {
   );
 }
 
+function ScrollableCategories({
+  categories,
+  active,
+  onSelect,
+}: {
+  categories: { key: string; label: string; icon: string }[];
+  active: string;
+  onSelect: (key: string) => void;
+}) {
+  return (
+    <View style={styles.categoriesInner}>
+      {categories.map((cat) => {
+        const isActive = cat.key === active;
+        return (
+          <Pressable
+            key={cat.key}
+            onPress={() => onSelect(cat.key)}
+            style={[styles.categoryChip, isActive && styles.categoryChipActive]}
+          >
+            <Text style={styles.categoryChipIcon}>{cat.icon}</Text>
+            <Text style={[styles.categoryChipLabel, isActive && styles.categoryChipLabelActive]}>
+              {cat.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F1F5F9',
   },
   listContent: {
     paddingBottom: 100,
   },
 
-  // Hero header
   heroSection: {
+    flexDirection: 'row',
     paddingHorizontal: 20,
     paddingTop: 24,
-    paddingBottom: 20,
-    backgroundColor: '#0F172A',
+    paddingBottom: 28,
+    backgroundColor: '#059669',
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+  },
+  heroContent: {
+    flex: 1,
+  },
+  heroBadge: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#A7F3D0',
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    marginBottom: 8,
   },
   heroTitle: {
     fontSize: 26,
@@ -217,32 +318,40 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     color: '#94A3B8',
-    marginTop: 6,
+    marginTop: 8,
     lineHeight: 19,
+    paddingRight: 10,
+  },
+  heroGraphic: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingLeft: 10,
+  },
+  heroGraphicIcon: {
+    fontSize: 48,
   },
 
-  // Search
   searchContainer: {
     paddingHorizontal: 20,
-    marginTop: -14,
+    marginTop: -16,
     marginBottom: 16,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    elevation: 5,
   },
   searchIcon: {
     fontSize: 14,
-    marginRight: 8,
+    marginRight: 10,
   },
   searchInput: {
     flex: 1,
@@ -257,13 +366,49 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Error
+  categoriesRow: {
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  categoriesInner: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  categoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 5,
+  },
+  categoryChipActive: {
+    backgroundColor: '#059669',
+    borderColor: '#059669',
+  },
+  categoryChipIcon: {
+    fontSize: 12,
+  },
+  categoryChipLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  categoryChipLabelActive: {
+    color: '#FFFFFF',
+  },
+
   errorBanner: {
     marginHorizontal: 20,
     backgroundColor: '#FEF3C7',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 12,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: '#F59E0B',
   },
   errorBannerTitle: {
     fontSize: 12,
@@ -277,39 +422,59 @@ const styles = StyleSheet.create({
     color: '#B45309',
   },
 
-  // Post card
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  sectionCount: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#94A3B8',
+  },
+
   postCard: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: 20,
     marginBottom: 12,
-    borderRadius: 12,
-    padding: 16,
-    borderLeftWidth: 3,
+    borderRadius: 16,
+    padding: 18,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 3,
   },
-  postHeader: {
+  postCardFirst: {
+    borderWidth: 1,
+    borderColor: '#E0F2FE',
+  },
+  postCardTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 12,
   },
-  categoryPill: {
+  categoryBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
   },
-  categoryIcon: {
+  categoryBadgeIcon: {
+    fontSize: 12,
+  },
+  categoryBadgeLabel: {
     fontSize: 11,
-  },
-  categoryLabel: {
-    fontSize: 10,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -320,38 +485,41 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
   },
   postTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
     color: '#0F172A',
     marginBottom: 6,
-    lineHeight: 20,
+    lineHeight: 21,
   },
   postBody: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#475569',
+    color: '#64748B',
     lineHeight: 19,
   },
-  postDivider: {
-    height: 1,
-    backgroundColor: '#F1F5F9',
-    marginVertical: 12,
+  postFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
   },
-  postFooter: {},
   authorRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
   authorAvatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
   },
   authorAvatarPlaceholder: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -364,27 +532,46 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#64748B',
   },
+  readMoreBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 8,
+    backgroundColor: '#F1F5F9',
+  },
+  readMoreText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0EA5E9',
+  },
 
-  // Empty state
   emptyState: {
     paddingVertical: 60,
     alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  emptyIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
   },
   emptyIcon: {
-    fontSize: 44,
-    marginBottom: 12,
+    fontSize: 28,
   },
   emptyTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: '#0F172A',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   emptySubtext: {
     fontSize: 13,
     fontWeight: '500',
     color: '#94A3B8',
     textAlign: 'center',
-    paddingHorizontal: 40,
+    lineHeight: 19,
   },
 });

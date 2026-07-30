@@ -1,6 +1,6 @@
 const express = require('express');
 
-const { forgotPassword, getUserDashboardStats, getUserDailyROIHistory, getUserInvestments, getUserProfile, loginUser, registerUser, resetPassword, updatePassword, updateUserProfile, verifyOtp } = require('../controllers/authController');
+const { checkSignupOtp, forgotPassword, getUserDashboardStats, getUserDailyROIHistory, getUserInvestments, getUserProfile, loginUser, registerUser, resetPassword, sendSignupOtp, updatePassword, updateUserProfile, verifyOtp } = require('../controllers/authController');
 const authMiddleware = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -30,6 +30,8 @@ const router = express.Router();
  *       400:
  *         description: Validation error
  */
+router.get('/check-signup-otp', checkSignupOtp);
+router.post('/send-signup-otp', sendSignupOtp);
 router.post('/register', registerUser);
 
 /**

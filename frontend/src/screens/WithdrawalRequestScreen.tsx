@@ -144,7 +144,7 @@ export default function WithdrawalRequestScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
+      <KeyboardAvoidingView behavior="padding" style={styles.flex}>
         <View style={styles.header}>
           <Pressable onPress={() => navigation.goBack()} hitSlop={10} style={styles.headerBack}>
             <Text style={styles.headerBackText}>←</Text>

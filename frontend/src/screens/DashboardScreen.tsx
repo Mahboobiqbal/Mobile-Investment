@@ -551,39 +551,50 @@ export default function DashboardScreen() {
           {/* 6. MY PLANS SUMMARY */}
           <View>
             <Text style={[styles.sectionTitle, { marginBottom: isSmallScreen ? 4 : 8 }]}>My Plans Summary</Text>
-            <View style={styles.tableMainWrapperCard}>
-              <View style={styles.tableHeaderBackgroundRow}>
-                <Text style={[styles.thElement, { flex: 1.5, textAlign: 'center' }]}>DATE</Text>
-                <Text style={[styles.thElement, { flex: 2, textAlign: 'center' }]}>AMOUNT</Text>
-                <Text style={[styles.thElement, { flex: 2, textAlign: 'center' }]}>PROFIT</Text>
-                <Text style={[styles.thElement, { flex: 1.5, textAlign: 'center' }]}>RATE</Text>
-                <Text style={[styles.thElement, { flex: 2, textAlign: 'right' }]}>BALANCE</Text>
-              </View>
+            <View style={styles.planSummaryCard}>
 
-{roiHistory.length > 0 ? (
+              <View style={styles.planListDivider} />
+
+              {roiHistory.length > 0 ? (
                 roiHistory.map((week) => {
                   const isOpen = expandedWeeks[week.weekNumber] || false;
                   return (
                     <View key={week.weekNumber}>
                       <Pressable
                         onPress={() => setExpandedWeeks(prev => ({ ...prev, [week.weekNumber]: !prev[week.weekNumber] }))}
-                        style={[styles.tableDataRow, { paddingVertical: isSmallScreen ? 5 : 8 }]}
+                        style={styles.planWeekHeader}
                       >
-                        <Text style={[styles.tdElement, { flex: 8, fontWeight: '700', color: '#334155' }]}>
-                          {isOpen ? '▼' : '▶'}  {week.label}
-                        </Text>
+                        <View style={styles.planWeekLeft}>
+                          <Text style={styles.planWeekArrow}>{isOpen ? '▼' : '▶'}</Text>
+                          <Text style={styles.planWeekLabel}>{week.label}</Text>
+                        </View>
+                        <Text style={styles.planWeekDays}>{week.days.length} day{week.days.length !== 1 ? 's' : ''}</Text>
                       </Pressable>
 
-                      {isOpen && week.days.map((day) => {
+                      {isOpen && week.days.map((day, dIdx) => {
                         const dayOfWeek = new Date(day.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' });
                         const amount = day.balanceAfter - day.profit;
+                        const isLast = dIdx === week.days.length - 1;
                         return (
-                          <View key={day.date} style={[styles.tableDataRow, { paddingVertical: isSmallScreen ? 4 : 6, backgroundColor: '#F8FAFC' }]}>
-                            <Text style={[styles.tdElement, { flex: 1.5, textAlign: 'center', fontSize: 10, color: '#64748B' }]}>{dayOfWeek} {day.date.slice(8)}</Text>
-                            <Text style={[styles.tdElement, { flex: 2, textAlign: 'center', color: '#0F172A', fontWeight: '600', fontSize: 11 }]}>{formatCurrency(amount)}</Text>
-                            <Text style={[styles.tdElement, { flex: 2, textAlign: 'center', color: '#059669', fontWeight: '600', fontSize: 11 }]}>{formatCurrency(day.profit)}</Text>
-                            <Text style={[styles.tdElement, { flex: 1.5, textAlign: 'center', color: '#2563EB', fontWeight: '600', fontSize: 11 }]}>{(day.rate * 100).toFixed(1)}%</Text>
-                            <Text style={[styles.tdElement, { flex: 2, textAlign: 'right', color: '#0F172A', fontWeight: '700', fontSize: 11 }]}>{formatCurrency(day.balanceAfter)}</Text>
+                          <View key={day.date} style={[styles.planDayRow, isLast && styles.planDayRowLast]}>
+                            <View style={styles.planDayDate}>
+                              <Text style={styles.planDayWeekday}>{dayOfWeek}</Text>
+                              <Text style={styles.planDayNum}>{day.date.slice(8)}</Text>
+                            </View>
+                            <View style={styles.planDayDivider} />
+                            <View style={styles.planDayDetails}>
+                              <View style={styles.planDayAmounts}>
+                                <Text style={styles.planDayInvest}>{formatCurrency(amount)}</Text>
+                                <View style={styles.planDayProfitTag}>
+                                  <Text style={styles.planDayProfitIcon}>+</Text>
+                                  <Text style={styles.planDayProfitText}>{formatCurrency(day.profit)}</Text>
+                                </View>
+                              </View>
+                              <Text style={styles.planDayBalance}>Balance: {formatCurrency(day.balanceAfter)}</Text>
+                            </View>
+                            <View style={styles.planDayRateWrap}>
+                              <Text style={styles.planDayRate}>{(day.rate * 100).toFixed(1)}%</Text>
+                            </View>
                           </View>
                         );
                       })}
@@ -591,30 +602,24 @@ export default function DashboardScreen() {
                   );
                 })
               ) : investments.filter(inv => inv.status === 'active').length > 0 || (stats.totalDepositsApproved || 0) > 0 ? (
-                <View style={[styles.tableDataRow, { paddingVertical: isSmallScreen ? 5 : 8 }]}>
-                  <Text style={[styles.tdElement, { flex: 1.5, textAlign: 'center', fontSize: 10, color: '#64748B' }]}>Today</Text>
-                  <Text style={[styles.tdElement, { flex: 2, textAlign: 'center', color: '#0F172A', fontWeight: '600', fontSize: 11 }]}>{formatCurrency(stats.totalDepositsApproved || 0)}</Text>
-                  <Text style={[styles.tdElement, { flex: 2, textAlign: 'center', color: '#059669', fontWeight: '600', fontSize: 11 }]}>{formatCurrency(0)}</Text>
-                  <Text style={[styles.tdElement, { flex: 1.5, textAlign: 'center', color: '#2563EB', fontWeight: '600', fontSize: 11 }]}>{(stats.dailyRate * 100).toFixed(1)}%</Text>
-                  <Text style={[styles.tdElement, { flex: 2, textAlign: 'right', color: '#0F172A', fontWeight: '700', fontSize: 11 }]}>{formatCurrency(stats.currentBalance || 0)}</Text>
+                <View style={styles.planEmptyRow}>
+                  <Text style={styles.planEmptyText}>Today</Text>
+                  <View style={styles.planEmptyDetails}>
+                    <Text style={styles.planEmptyInvest}>{formatCurrency(stats.totalDepositsApproved || 0)}</Text>
+                    <View style={styles.planEmptyProfitTag}>
+                      <Text style={styles.planEmptyProfitIcon}>+</Text>
+                      <Text style={styles.planEmptyProfitText}>{formatCurrency(0)}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.planEmptyRate}>{(stats.dailyRate * 100).toFixed(1)}%</Text>
                 </View>
               ) : (
-                <View style={[styles.tableDataRow, { paddingVertical: 12 }]}>
-                  <Text style={[styles.tdElement, { flex: 8, textAlign: 'center', color: '#64748B', fontStyle: 'italic' }]}>No active investments</Text>
+                <View style={styles.planEmptyState}>
+                  <Text style={styles.planEmptyStateIcon}>📭</Text>
+                  <Text style={styles.planEmptyStateText}>No active investments</Text>
                 </View>
               )}
 
-              {/* Combined Direct Cashout Footer Strip */}
-              <View style={[styles.innerWithdrawStrip, { padding: isSmallScreen ? 6 : 10 }]}>
-                <View>
-                  <Text style={styles.withdrawStripLabel}>TOTAL WITHDRAWABLE</Text>
-                  <Text style={[styles.withdrawStripValue, { fontSize: isSmallScreen ? 12 : 14 }]}>{formatCurrency(stats.totalROIEarnings || 0)}</Text>
-                </View>
-                <Pressable style={[styles.withdrawStripButton, { paddingVertical: isSmallScreen ? 5 : 8 }]} onPress={() => navigation.navigate('WithdrawalRequest' as never)}>
-                  <Text style={styles.withdrawStripButtonArrow}>↑</Text>
-                  <Text style={styles.withdrawStripButtonText}>Withdraw</Text>
-                </Pressable>
-              </View>
             </View>
           </View>
 
@@ -965,6 +970,194 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
   },
+
+  // Plan Summary
+  planSummaryCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  planListDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+  },
+  planWeekHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  planWeekLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  planWeekArrow: {
+    fontSize: 10,
+    color: '#64748B',
+  },
+  planWeekLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  planWeekDays: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#94A3B8',
+  },
+  planDayRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F8FAFC',
+    gap: 10,
+  },
+  planDayRowLast: {
+    borderBottomWidth: 0,
+  },
+  planDayDate: {
+    alignItems: 'center',
+    width: 36,
+  },
+  planDayWeekday: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#94A3B8',
+    textTransform: 'uppercase',
+  },
+  planDayNum: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginTop: 1,
+  },
+  planDayDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: '#E2E8F0',
+  },
+  planDayDetails: {
+    flex: 1,
+  },
+  planDayAmounts: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  planDayInvest: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  planDayProfitTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ECFDF5',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    gap: 2,
+  },
+  planDayProfitIcon: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#059669',
+  },
+  planDayProfitText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#059669',
+  },
+  planDayBalance: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: '#94A3B8',
+    marginTop: 2,
+  },
+  planDayRateWrap: {
+    alignItems: 'flex-end',
+  },
+  planDayRate: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#2563EB',
+  },
+  planEmptyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    gap: 10,
+  },
+  planEmptyText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#94A3B8',
+    width: 36,
+    textAlign: 'center',
+  },
+  planEmptyDetails: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  planEmptyInvest: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  planEmptyProfitTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    gap: 2,
+  },
+  planEmptyProfitIcon: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#94A3B8',
+  },
+  planEmptyProfitText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#94A3B8',
+  },
+  planEmptyRate: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#2563EB',
+  },
+  planEmptyState: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+    gap: 8,
+  },
+  planEmptyStateIcon: {
+    fontSize: 18,
+  },
+  planEmptyStateText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#94A3B8',
+  },
+
   loadingContainer: {
     flex: 1,
     alignItems: 'center',

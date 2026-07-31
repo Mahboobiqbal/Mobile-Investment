@@ -16,8 +16,12 @@ const { syncUserPlanState } = require('../utils/planState');
 const emailUser = process.env.EMAIL_USER;
 const emailPassword = process.env.APP_PASSWORD || process.env.EMAIL_PASSWORD;
 
+const smtpPort = Number(process.env.EMAIL_PORT || 465);
 const transporter = nodemailer.createTransport({
-  service: process.env.EMAIL_SERVICE || 'gmail',
+  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+  port: smtpPort,
+  secure: smtpPort === 465,
+  family: 4,
   connectionTimeout: 10000,
   greetingTimeout: 10000,
   socketTimeout: 10000,
@@ -35,32 +39,65 @@ const isEmailConfigured = () =>
       emailUser !== 'your_real_sender@gmail.com'
   );
 
-const sendAppEmail = ({ to, subject, text, html, logLabel }) => {
-  if (!isEmailConfigured()) {
-    console.error(`${logLabel} skipped: EMAIL_USER/APP_PASSWORD are missing or still using placeholder values.`);
-    return Promise.resolve({ skipped: true });
+const sendBrevoEmail = async ({ to, subject, text, html, logLabel }) => {
+  const brevoKey = process.env.BREVO_API_KEY;
+  if (!brevoKey) {
+    throw new Error('BREVO_API_KEY is not configured');
   }
 
-  return transporter
-    .sendMail({
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'api-key': brevoKey,
+    },
+    body: JSON.stringify({
+      sender: { name: 'SmartInvest', email: emailUser || process.env.EMAIL_FROM || 'no-reply@smartinvest.com' },
+      to: [{ email: to }],
+      subject,
+      textContent: text,
+      htmlContent: html,
+    }),
+    timeout: 15000,
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Brevo API error ${res.status}: ${errText.slice(0, 300)}`);
+  }
+
+  console.log(`${logLabel} sent via Brevo API to ${to}`);
+  return { messageId: 'brevo', accepted: [to], rejected: [] };
+};
+
+const sendAppEmail = async ({ to, subject, text, html, logLabel }) => {
+  if (!isEmailConfigured()) {
+    console.error(`${logLabel} skipped: EMAIL_USER/APP_PASSWORD are missing or still using placeholder values.`);
+    return { skipped: true };
+  }
+
+  try {
+    const info = await transporter.sendMail({
       from: process.env.EMAIL_FROM || emailUser,
       to,
       subject,
       text,
       html,
-    })
-    .then((info) => {
-      console.log(`${logLabel} queued:`, {
-        messageId: info.messageId,
-        accepted: info.accepted,
-        rejected: info.rejected,
-      });
-      return info;
-    })
-    .catch((emailError) => {
-      console.error(`Failed to send ${logLabel}:`, emailError.message);
-      throw emailError;
     });
+    console.log(`${logLabel} queued:`, {
+      messageId: info.messageId,
+      accepted: info.accepted,
+      rejected: info.rejected,
+    });
+    return info;
+  } catch (emailError) {
+    console.error(`Failed to send ${logLabel} via SMTP:`, emailError.message);
+    if (process.env.BREVO_API_KEY) {
+      console.log(`${logLabel} falling back to Brevo HTTP API...`);
+      return sendBrevoEmail({ to, subject, text, html, logLabel });
+    }
+    throw emailError;
+  }
 };
 
 const escapeHtml = (value) =>

@@ -14,13 +14,13 @@ const transactionSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['plan', 'deposit', 'withdrawal', 'Deposit', 'Withdrawal', 'bonus'],
+      enum: ['plan', 'deposit', 'withdrawal', 'Deposit', 'Withdrawal', 'bonus', 'roi'],
       required: true,
     },
     transactionId: {
       type: String,
       required: function () {
-        return ['plan', 'deposit', 'Deposit'].includes(this.type);
+        return ['plan', 'deposit', 'Deposit', 'roi'].includes(this.type);
       },
     },
     targetPhone: {

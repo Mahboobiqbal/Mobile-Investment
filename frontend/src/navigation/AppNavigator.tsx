@@ -37,7 +37,7 @@ export type RootStackParamList = {
     dailyReturnRate?: number;
   };
   Dashboard: undefined;
-  Analysis: undefined;
+  Analysis: { filterType?: 'deposits' | 'roi' | 'withdrawals' } | undefined;
   Settings: undefined;
   Profile: undefined;
   DepositRequest: { selectedPlanId?: string; selectedPlanName?: string; investmentAmount?: number } | undefined;

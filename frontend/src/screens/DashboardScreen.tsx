@@ -388,23 +388,23 @@ export default function DashboardScreen() {
           <View>
             <Text style={[styles.sectionTitle, { marginBottom: isSmallScreen ? 4 : 8 }]}>Financial Analytics</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.analyticsHorizontalContent}>
-              <View style={[styles.analyticsHCard, { borderBottomColor: '#8B5CF6' }]}>
+              <Pressable style={[styles.analyticsHCard, { borderBottomColor: '#8B5CF6' }]} onPress={() => navigation.navigate('Analysis', { filterType: 'deposits' })}>
                 <Text style={styles.analyticsHIcon}>📊</Text>
                 <Text style={styles.analyticsHLabel}>TOTAL INVESTMENT</Text>
-                <Text style={[styles.analyticsHValue, { color: '#6D28D9' }]}>{formatCurrency(stats.currentBalance)}</Text>
-              </View>
+                <Text style={[styles.analyticsHValue, { color: '#6D28D9' }]}>{formatCurrency(stats.totalInvestment)}</Text>
+              </Pressable>
 
-              <View style={[styles.analyticsHCard, { borderBottomColor: '#008F5A' }]}>
+              <Pressable style={[styles.analyticsHCard, { borderBottomColor: '#008F5A' }]} onPress={() => navigation.navigate('Analysis', { filterType: 'roi' })}>
                 <Text style={styles.analyticsHIcon}>📈</Text>
                 <Text style={styles.analyticsHLabel}>TOTAL ROI PROFIT</Text>
                 <Text style={[styles.analyticsHValue, { color: '#008F5A' }]}>{formatCurrency(stats.totalROIEarnings)}</Text>
-              </View>
+              </Pressable>
 
-              <View style={[styles.analyticsHCard, { borderBottomColor: '#F59E0B' }]}>
+              <Pressable style={[styles.analyticsHCard, { borderBottomColor: '#F59E0B' }]} onPress={() => navigation.navigate('Analysis', { filterType: 'withdrawals' })}>
                 <Text style={styles.analyticsHIcon}>💰</Text>
                 <Text style={styles.analyticsHLabel}>TOTAL WITHDRAWN</Text>
                 <Text style={[styles.analyticsHValue, { color: '#D97706' }]}>{formatCurrency(stats.totalWithdrawalsApproved)}</Text>
-              </View>
+              </Pressable>
             </ScrollView>
           </View>
 
@@ -576,7 +576,7 @@ export default function DashboardScreen() {
                         const amount = day.balanceAfter - day.profit;
                         const isLast = dIdx === week.days.length - 1;
                         return (
-                          <View key={day.date} style={[styles.planDayRow, isLast && styles.planDayRowLast]}>
+                          <View key={`${week.weekNumber}-${day.date}-${dIdx}`} style={[styles.planDayRow, isLast && styles.planDayRowLast]}>
                             <View style={styles.planDayDate}>
                               <Text style={styles.planDayWeekday}>{dayOfWeek}</Text>
                               <Text style={styles.planDayNum}>{day.date.slice(8)}</Text>

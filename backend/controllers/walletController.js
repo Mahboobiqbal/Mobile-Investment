@@ -193,7 +193,22 @@ const getTransactions = async (req, res) => {
 };
 
 const runDailyProfitDistribution = async () => {
-  const today = new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const pkOffset = 5 * 60 * 60 * 1000;
+  const pkDate = new Date(now.getTime() + pkOffset);
+  const today = pkDate.toISOString().split('T')[0];
+
+  const dupes = await Transaction.aggregate([
+    { $match: { transactionId: { $regex: `^ROI-DAILY-${today}-` } } },
+    { $group: { _id: '$transactionId', ids: { $push: '$_id' }, count: { $sum: 1 } } },
+    { $match: { count: { $gt: 1 } } },
+  ]);
+  for (const dupe of dupes) {
+    const [keep, ...remove] = dupe.ids;
+    await Transaction.deleteMany({ _id: { $in: remove } });
+    console.log(`[Cleanup] Removed ${remove.length} duplicate ROI(s) for ${dupe._id}`);
+  }
+
   const dailyConfig = await DailyProfitRate.findOne({ date: today });
   const dailyRate = dailyConfig ? dailyConfig.rate : 0.005;
 
@@ -209,11 +224,11 @@ const runDailyProfitDistribution = async () => {
 
   for (const user of users) {
     try {
-      // Skip if user already received today's ROI
-      const alreadyReceived = await Transaction.findOne({
-        transactionId: `ROI-DAILY-${today}-${user._id}`,
-      });
-      if (alreadyReceived) {
+      const profit = Math.round(user.currentBalance * dailyRate * 100) / 100;
+      const txId = `ROI-DAILY-${today}-${user._id}`;
+
+      const existingTx = await Transaction.findOne({ transactionId: txId });
+      if (existingTx) {
         results.push({
           userId: user._id,
           userEmail: user.email,
@@ -223,15 +238,14 @@ const runDailyProfitDistribution = async () => {
         continue;
       }
 
-      const profit = Math.round(user.currentBalance * dailyRate * 100) / 100;
       user.currentBalance += profit;
       await user.save();
 
       const transaction = await Transaction.create({
         user: user._id,
         amount: profit,
-        type: 'deposit',
-        transactionId: `ROI-DAILY-${today}-${user._id}`,
+        type: 'roi',
+        transactionId: txId,
         status: 'approved',
       });
 

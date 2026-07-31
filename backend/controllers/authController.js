@@ -552,8 +552,10 @@ const getUserDashboardStats = async (req, res) => {
               totalROIEarnings: [
                 {
                   $match: {
-                    type: { $in: ['deposit', 'Deposit'] },
-                    transactionId: /^ROI-DAILY-/,
+                    $or: [
+                      { type: { $in: ['deposit', 'Deposit'] }, transactionId: /^ROI-DAILY-/ },
+                      { type: 'roi' },
+                    ],
                   },
                 },
                 {
@@ -676,7 +678,10 @@ const getUserDailyROIHistory = async (req, res) => {
 
       const roiTransactions = await Transaction.find({
         user: new mongoose.Types.ObjectId(userId),
-        transactionId: { $regex: `^${monthPrefix}` },
+        $or: [
+          { transactionId: { $regex: `^${monthPrefix}` } },
+          { type: 'roi' },
+        ],
         status: { $in: ['approved', 'Approved'] },
       }).sort({ createdAt: 1 }).lean();
 
@@ -694,10 +699,15 @@ const getUserDailyROIHistory = async (req, res) => {
       }
 
       const weeks = [];
+      const seenDates = new Set();
 
       for (const tx of roiTransactions) {
         runningBalance += tx.amount;
         const dateStr = tx.transactionId.replace('ROI-DAILY-', '').split('-').slice(0, 3).join('-');
+
+        if (seenDates.has(dateStr)) continue;
+        seenDates.add(dateStr);
+
         const dayOfMonth = new Date(dateStr).getDate();
         const weekNumber = Math.ceil(dayOfMonth / 7);
 

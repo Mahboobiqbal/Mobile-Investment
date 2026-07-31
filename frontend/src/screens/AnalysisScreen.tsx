@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -10,11 +10,12 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { AxiosError } from 'axios';
 import ErrorModal from '../components/ErrorModal';
+import type { RootStackParamList } from '../navigation/AppNavigator';
 
 interface Transaction {
   _id: string;
@@ -32,8 +33,16 @@ interface ApiError {
 
 type FilterType = 'daily' | 'weekly' | 'monthly' | 'all';
 
+const FILTER_HEADERS: Record<string, string> = {
+  deposits: 'Total Deposits',
+  roi: 'ROI History',
+  withdrawals: 'Withdrawals',
+};
+
 export default function AnalysisScreen() {
   const navigation = useNavigation();
+  const route = useRoute<RouteProp<RootStackParamList, 'Analysis'>>();
+  const filterType = route.params?.filterType;
   const { userData } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -171,6 +180,21 @@ export default function AnalysisScreen() {
     }
   };
 
+  const filteredTransactions = getFilteredTransactions();
+  const typeFilteredTransactions = useMemo(() => {
+    if (!filterType) return filteredTransactions;
+    switch (filterType) {
+      case 'deposits':
+        return filteredTransactions.filter(tx => ['plan', 'deposit', 'Deposit'].includes(tx.type) && !isROITx(tx));
+      case 'roi':
+        return filteredTransactions.filter(tx => isROITx(tx) || tx.type === 'roi');
+      case 'withdrawals':
+        return filteredTransactions.filter(tx => ['withdrawal', 'Withdrawal'].includes(tx.type));
+      default:
+        return filteredTransactions;
+    }
+  }, [filteredTransactions, filterType]);
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -182,8 +206,9 @@ export default function AnalysisScreen() {
     );
   }
 
-  const filteredTransactions = getFilteredTransactions();
-  const stats = getTransactionStats(filteredTransactions);
+  const stats = getTransactionStats(typeFilteredTransactions);
+
+  const screenTitle = filterType ? FILTER_HEADERS[filterType] || 'Transaction Analysis' : 'Transaction Analysis';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -191,7 +216,7 @@ export default function AnalysisScreen() {
         <Pressable onPress={() => navigation.goBack()} hitSlop={10} style={styles.headerBack}>
           <Text style={styles.headerBackText}>←</Text>
         </Pressable>
-        <Text style={styles.headerTitle}>Transaction Analysis</Text>
+        <Text style={styles.headerTitle}>{screenTitle}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -203,7 +228,7 @@ export default function AnalysisScreen() {
         <View style={styles.filterCard}>
           <View style={styles.filterHeader}>
             <Text style={styles.filterLabel}>Filter by Period</Text>
-            <Text style={styles.filterCount}>{filteredTransactions.length} transactions</Text>
+            <Text style={styles.filterCount}>{typeFilteredTransactions.length} transactions</Text>
           </View>
           <View style={styles.filterButtons}>
             {(['daily', 'weekly', 'monthly', 'all'] as FilterType[]).map((filterOption) => (
@@ -254,52 +279,76 @@ export default function AnalysisScreen() {
         </View>
 
         <View style={styles.statsGrid}>
-          <View style={[styles.statCard, { borderLeftColor: '#0EA5E9' }]}>
-            <View style={[styles.statIconWrap, { backgroundColor: '#E0F2FE' }]}>
-              <Text style={styles.statIcon}>↓</Text>
+          {!filterType || filterType === 'deposits' ? (
+            <View style={[styles.statCard, { borderLeftColor: '#0EA5E9' }]}>
+              <View style={styles.statCardInner}>
+                <View style={[styles.statIconWrap, { backgroundColor: '#E0F2FE' }]}>
+                  <Text style={styles.statIcon}>↓</Text>
+                </View>
+                <View style={styles.statTextWrap}>
+                  <Text style={styles.statLabel}>Total Deposits</Text>
+                  <Text style={styles.statValue}>{formatCurrency(stats.deposits)}</Text>
+                </View>
+              </View>
             </View>
-            <Text style={styles.statLabel}>Total Deposits</Text>
-            <Text style={[styles.statValue, { color: '#0284C7' }]}>{formatCurrency(stats.deposits)}</Text>
-          </View>
+          ) : null}
 
-          <View style={[styles.statCard, { borderLeftColor: '#10B981' }]}>
-            <View style={[styles.statIconWrap, { backgroundColor: '#DCFCE7' }]}>
-              <Text style={styles.statIcon}>↻</Text>
+          {!filterType || filterType === 'roi' ? (
+            <View style={[styles.statCard, { borderLeftColor: '#10B981' }]}>
+              <View style={styles.statCardInner}>
+                <View style={[styles.statIconWrap, { backgroundColor: '#DCFCE7' }]}>
+                  <Text style={styles.statIcon}>↻</Text>
+                </View>
+                <View style={styles.statTextWrap}>
+                  <Text style={styles.statLabel}>ROI Earned</Text>
+                  <Text style={styles.statValue}>{formatCurrency(stats.roi)}</Text>
+                </View>
+              </View>
             </View>
-            <Text style={styles.statLabel}>ROI Earned</Text>
-            <Text style={[styles.statValue, { color: '#059669' }]}>{formatCurrency(stats.roi)}</Text>
-          </View>
+          ) : null}
 
-          <View style={[styles.statCard, { borderLeftColor: '#EF4444' }]}>
-            <View style={[styles.statIconWrap, { backgroundColor: '#FEE2E2' }]}>
-              <Text style={styles.statIcon}>↑</Text>
+          {!filterType || filterType === 'withdrawals' ? (
+            <View style={[styles.statCard, { borderLeftColor: '#EF4444' }]}>
+              <View style={styles.statCardInner}>
+                <View style={[styles.statIconWrap, { backgroundColor: '#FEE2E2' }]}>
+                  <Text style={styles.statIcon}>↑</Text>
+                </View>
+                <View style={styles.statTextWrap}>
+                  <Text style={styles.statLabel}>Total Withdrawn</Text>
+                  <Text style={styles.statValue}>{formatCurrency(stats.withdrawals)}</Text>
+                </View>
+              </View>
             </View>
-            <Text style={styles.statLabel}>Total Withdrawn</Text>
-            <Text style={[styles.statValue, { color: '#DC2626' }]}>{formatCurrency(stats.withdrawals)}</Text>
-          </View>
+          ) : null}
 
-          <View style={[styles.statCard, { borderLeftColor: '#8B5CF6' }]}>
-            <View style={[styles.statIconWrap, { backgroundColor: '#F3E8FF' }]}>
-              <Text style={styles.statIcon}>#</Text>
+          {!filterType ? (
+            <View style={[styles.statCard, { borderLeftColor: '#8B5CF6' }]}>
+              <View style={styles.statCardInner}>
+                <View style={[styles.statIconWrap, { backgroundColor: '#F3E8FF' }]}>
+                  <Text style={styles.statIcon}>#</Text>
+                </View>
+                <View style={styles.statTextWrap}>
+                  <Text style={styles.statLabel}>Transactions</Text>
+                  <Text style={styles.statValue}>{stats.count}</Text>
+                </View>
+              </View>
             </View>
-            <Text style={styles.statLabel}>Transactions</Text>
-            <Text style={[styles.statValue, { color: '#7C3AED' }]}>{stats.count}</Text>
-          </View>
+          ) : null}
         </View>
 
         <View style={styles.txSection}>
           <Text style={styles.txSectionTitle}>Transaction History</Text>
 
-          {filteredTransactions.length === 0 ? (
+          {typeFilteredTransactions.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyIcon}>📭</Text>
               <Text style={styles.emptyTitle}>No transactions found</Text>
-              <Text style={styles.emptySubtext}>Try selecting a different time period</Text>
+              <Text style={styles.emptySubtext}>{filterType ? 'No data available for this category' : 'Try selecting a different time period'}</Text>
             </View>
           ) : (
             <FlatList
               scrollEnabled={false}
-              data={filteredTransactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())}
+              data={typeFilteredTransactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())}
               keyExtractor={(item) => item._id}
               renderItem={({ item }) => (
                 <View style={styles.txItem}>
@@ -505,45 +554,54 @@ const styles = StyleSheet.create({
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 10,
     marginBottom: 8,
   },
   statCard: {
-    width: '48%',
+    flex: 1,
+    minWidth: '47%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 16,
-    borderLeftWidth: 3,
+    borderRadius: 16,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
     elevation: 2,
   },
+  statCardInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
   statIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 46,
+    height: 46,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
   },
   statIcon: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '800',
-    color: '#0F172A',
+  },
+  statTextWrap: {
+    flex: 1,
   },
   statLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#64748B',
+    color: '#94A3B8',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   statValue: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '800',
+    color: '#0F172A',
   },
 
   // Transaction section

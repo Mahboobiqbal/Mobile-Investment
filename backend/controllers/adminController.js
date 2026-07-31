@@ -232,7 +232,7 @@ const getUserDetail = async (req, res) => {
         .filter((t) => ['withdrawal', 'Withdrawal'].includes(t.type) && (t.status === 'approved' || t.status === 'withdrawn'))
         .reduce((sum, t) => sum + t.amount, 0),
       totalROI: transactions
-        .filter((t) => t.transactionId?.startsWith('ROI-DAILY-'))
+        .filter((t) => t.transactionId?.startsWith('ROI-DAILY-') || t.type === 'roi')
         .reduce((sum, t) => sum + t.amount, 0),
       pendingDeposits: transactions
         .filter((t) => ['plan', 'deposit', 'Deposit'].includes(t.type) && t.status === 'pending')

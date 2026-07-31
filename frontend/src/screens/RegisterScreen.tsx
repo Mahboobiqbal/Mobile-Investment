@@ -114,12 +114,15 @@ export default function RegisterScreen() {
     }
     setOtpSending(true);
     try {
-      await api.post('/auth/send-signup-otp', { email: email.trim().toLowerCase() });
+      const res = await api.post('/auth/send-signup-otp', { email: email.trim().toLowerCase() });
       setOtpSent(true);
       setOtpDigits(['', '', '', '', '', '']);
       setOtpVerified(false);
       setOtpTimer(60);
       setTimeout(() => otpRefs.current[0]?.focus(), 100);
+      if (res.data?.emailDelivered === false) {
+        setErrorModal({ visible: true, title: 'Email Not Delivered', message: 'The verification code could not be emailed to you right now. Please try again in a few minutes or contact support.' });
+      }
     } catch (error) {
       const axiosError = error as AxiosError<ApiError>;
       setErrorModal({ visible: true, title: 'Failed', message: axiosError.response?.data?.message || 'Could not send verification code' });

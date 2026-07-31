@@ -155,8 +155,9 @@ const sendSignupOtp = async (req, res) => {
     await SignupOtp.findOneAndDelete({ email: normalizedEmail });
     await SignupOtp.create({ email: normalizedEmail, otp, expiresAt });
 
+    let emailDelivered = false;
     try {
-      await sendAppEmail({
+      const info = await sendAppEmail({
         to: normalizedEmail,
         subject: 'Your SmartInvest Email Verification Code',
         text: `Your email verification code is: ${otp}\n\nThis code expires in 10 minutes.\n\nIf you did not request this, please ignore this email.`,
@@ -178,11 +179,21 @@ const sendSignupOtp = async (req, res) => {
         `,
         logLabel: 'Signup OTP email',
       });
+      emailDelivered = Boolean(info && !info.skipped && info.accepted && info.accepted.length > 0);
     } catch (emailErr) {
-      console.log(`[DEV] OTP for ${normalizedEmail}: ${otp}`);
+      console.error(`[Email FAILED] OTP for ${normalizedEmail}: ${otp}`);
+      emailDelivered = false;
     }
 
-    return res.status(200).json({ message: 'Verification code sent to your email' });
+    if (!emailDelivered) {
+      console.error(`[WARN] Signup OTP email was NOT delivered to ${normalizedEmail}. Check EMAIL_USER/APP_PASSWORD env vars on the server.`);
+    }
+
+    return res.status(200).json({
+      message: emailDelivered ? 'Verification code sent to your email' : 'Verification code generated but email delivery failed',
+      otpExists: true,
+      emailDelivered,
+    });
   } catch (error) {
     return res.status(500).json({ message: error.message || 'Failed to send verification code' });
   }

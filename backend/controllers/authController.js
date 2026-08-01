@@ -82,10 +82,81 @@ const sendBrevoEmail = async ({ to, subject, text, html, logLabel }) => {
   return { messageId: 'brevo', accepted: [to], rejected: [] };
 };
 
+const gmailApiConfigured = () =>
+  Boolean(process.env.GMAIL_REFRESH_TOKEN && process.env.GMAIL_CLIENT_ID && process.env.GMAIL_CLIENT_SECRET);
+
+const getGmailAccessToken = async () => {
+  const params = new URLSearchParams({
+    client_id: process.env.GMAIL_CLIENT_ID,
+    client_secret: process.env.GMAIL_CLIENT_SECRET,
+    refresh_token: process.env.GMAIL_REFRESH_TOKEN,
+    grant_type: 'refresh_token',
+  });
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params.toString(),
+    timeout: 15000,
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Gmail token error ${res.status}: ${errText.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  if (!data.access_token) throw new Error('Gmail token response missing access_token');
+  return data.access_token;
+};
+
+const buildRawGmailMessage = ({ to, subject, text, html }) => {
+  const sender = parseSender();
+  const boundary = `smartinvest-${Date.now().toString(16)}`;
+  const headers = [
+    `From: ${sender.name} <${sender.email}>`,
+    `To: ${to}`,
+    `Subject: =?UTF-8?B?${Buffer.from(subject, 'utf8').toString('base64')}?=`,
+    'MIME-Version: 1.0',
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+  ].join('\r\n');
+  const body =
+    `--${boundary}\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n${text}\r\n` +
+    `--${boundary}\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n${html}\r\n` +
+    `--${boundary}--`;
+  return Buffer.from(headers + '\r\n\r\n' + body, 'utf8').toString('base64url');
+};
+
+const sendGmailEmail = async ({ to, subject, text, html, logLabel }) => {
+  const token = await getGmailAccessToken();
+  const raw = buildRawGmailMessage({ to, subject, text, html });
+  const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ raw }),
+    timeout: 15000,
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Gmail API error ${res.status}: ${errText.slice(0, 300)}`);
+  }
+  const data = await res.json();
+  console.log(`${logLabel} sent via Gmail API to ${to} (${data.id})`);
+  return { messageId: data.id, accepted: [to], rejected: [] };
+};
+
 const sendAppEmail = async ({ to, subject, text, html, logLabel }) => {
-  if (!isEmailConfigured()) {
-    console.error(`${logLabel} skipped: EMAIL_USER/APP_PASSWORD are missing or still using placeholder values.`);
+  if (!isEmailConfigured() && !gmailApiConfigured()) {
+    console.error(`${logLabel} skipped: EMAIL_USER/APP_PASSWORD or GMAIL_* env vars are missing or still using placeholder values.`);
     return { skipped: true };
+  }
+
+  if (gmailApiConfigured()) {
+    try {
+      return await sendGmailEmail({ to, subject, text, html, logLabel });
+    } catch (gmailError) {
+      console.error(`Failed to send ${logLabel} via Gmail API:`, gmailError.message);
+    }
   }
 
   try {

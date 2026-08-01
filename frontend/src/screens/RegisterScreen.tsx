@@ -136,8 +136,8 @@ export default function RegisterScreen() {
       setErrorModal({ visible: true, title: 'Missing Fields', message: 'Please fill all fields before registering.' });
       return;
     }
-    if (otpString.length !== 6) {
-      setErrorModal({ visible: true, title: 'Code Required', message: 'Please enter the full 6-digit verification code sent to your email.' });
+    if (otpSent && otpString.length > 0 && otpString.length !== 6) {
+      setErrorModal({ visible: true, title: 'Incomplete Code', message: 'Please enter the full 6-digit verification code or leave it empty to skip.' });
       return;
     }
 

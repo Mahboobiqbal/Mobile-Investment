@@ -328,23 +328,27 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ message: 'All required fields must be provided' });
     }
 
-    if (!otp) {
+    const skipOtp = process.env.SKIP_SIGNUP_OTP === 'true';
+
+    if (!skipOtp && !otp) {
       return res.status(400).json({ message: 'Email verification code is required' });
     }
 
-    const otpRecord = await SignupOtp.findOne({ email: normalizedEmail });
-    if (!otpRecord) {
+    const otpRecord = skipOtp ? null : await SignupOtp.findOne({ email: normalizedEmail });
+    if (!skipOtp && !otpRecord) {
       return res.status(400).json({ message: 'No verification code found. Please request a new one.' });
     }
-    if (new Date() > otpRecord.expiresAt) {
+    if (!skipOtp && new Date() > otpRecord.expiresAt) {
       await SignupOtp.deleteOne({ _id: otpRecord._id });
       return res.status(400).json({ message: 'Verification code has expired. Please request a new one.' });
     }
-    if (otpRecord.otp !== otp) {
+    if (!skipOtp && otpRecord.otp !== otp) {
       return res.status(400).json({ message: 'Invalid verification code' });
     }
 
-    await SignupOtp.deleteOne({ _id: otpRecord._id });
+    if (otpRecord) {
+      await SignupOtp.deleteOne({ _id: otpRecord._id });
+    }
 
     const existingUser = await User.findOne({ email: normalizedEmail });
 

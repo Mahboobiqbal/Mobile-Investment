@@ -39,11 +39,23 @@ const isEmailConfigured = () =>
       emailUser !== 'your_real_sender@gmail.com'
   );
 
+const parseSender = () => {
+  const raw = process.env.EMAIL_FROM;
+  if (raw) {
+    const m = String(raw).match(/^([^<]+)\s*<([^>]+)>$/);
+    if (m) return { name: m[1].trim(), email: m[2].trim() };
+    return { name: 'SmartInvest', email: String(raw).trim() };
+  }
+  return { name: 'SmartInvest', email: emailUser };
+};
+
 const sendBrevoEmail = async ({ to, subject, text, html, logLabel }) => {
   const brevoKey = process.env.BREVO_API_KEY;
   if (!brevoKey) {
     throw new Error('BREVO_API_KEY is not configured');
   }
+
+  const sender = parseSender();
 
   const res = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
@@ -52,7 +64,7 @@ const sendBrevoEmail = async ({ to, subject, text, html, logLabel }) => {
       'api-key': brevoKey,
     },
     body: JSON.stringify({
-      sender: { name: 'SmartInvest', email: emailUser || process.env.EMAIL_FROM || 'no-reply@smartinvest.com' },
+      sender,
       to: [{ email: to }],
       subject,
       textContent: text,

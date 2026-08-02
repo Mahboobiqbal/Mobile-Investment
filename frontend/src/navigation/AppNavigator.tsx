@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
+import VerifySignupScreen from '../screens/VerifySignupScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import PlanSelectionScreen from '../screens/PlanSelectionScreen';
 import TermsConditionScreen from '../screens/TermsConditionScreen';
@@ -24,6 +25,7 @@ import ActivePlanHistoryScreen from '../screens/ActivePlanHistoryScreen';
 export type RootStackParamList = {
   Login: { email?: string; password?: string } | undefined;
   Register: undefined;
+  VerifySignup: { name: string; email: string; password: string; phone: string } | undefined;
   ForgotPassword: { email?: string } | undefined;
   PlanSelection: undefined;
   Systems: undefined;
@@ -138,6 +140,7 @@ export default function AppNavigator() {
     >
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="VerifySignup" component={VerifySignupScreen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
       <Stack.Screen name="MainTabs" component={BottomTabs} options={{ gestureEnabled: false }} />
       <Stack.Screen

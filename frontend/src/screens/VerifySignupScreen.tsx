@@ -42,7 +42,9 @@ export default function VerifySignupScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [successModal, setSuccessModal] = useState({ visible: false, title: '', message: '' });
   const [errorModal, setErrorModal] = useState({ visible: false, title: '', message: '' });
+  const [otpExpired, setOtpExpired] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const hasStartedRef = useRef(false);
   const otpRefs = useRef<(TextInput | null)[]>([]);
 
   const otpString = otpDigits.join('');
@@ -52,6 +54,7 @@ export default function VerifySignupScreen() {
     try {
       const res = await api.post('/auth/send-signup-otp', { email: email.trim().toLowerCase() });
       setOtpDigits(['', '', '', '', '', '']);
+      setOtpExpired(false);
       if (showTimer) setOtpTimer(60);
       setTimeout(() => otpRefs.current[0]?.focus(), 150);
       if (res.data?.emailDelivered === false) {
@@ -72,11 +75,13 @@ export default function VerifySignupScreen() {
         const res = await api.get(`/auth/check-signup-otp?email=${encodeURIComponent(email.trim().toLowerCase())}`);
         if (res.data.otpExists) {
           setOtpDigits(['', '', '', '', '', '']);
+          setOtpExpired(false);
+          setOtpTimer(60);
         } else {
-          await requestOtp(false);
+          await requestOtp(true);
         }
       } catch {
-        await requestOtp(false);
+        await requestOtp(true);
       }
     };
     check();
@@ -94,10 +99,16 @@ export default function VerifySignupScreen() {
           return prev - 1;
         });
       }, 1000);
+    } else if (hasStartedRef.current) {
+      setOtpExpired(true);
     }
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
+  }, [otpTimer]);
+
+  useEffect(() => {
+    if (otpTimer === 60) hasStartedRef.current = true;
   }, [otpTimer]);
 
   const handleOtpDigitChange = useCallback((text: string, index: number) => {
@@ -209,6 +220,12 @@ export default function VerifySignupScreen() {
                 ))}
               </View>
 
+              {otpExpired && (
+                <Text style={styles.expiredText}>
+                  This code has expired. Please request a new code.
+                </Text>
+              )}
+
               <Pressable
                 onPress={() => requestOtp()}
                 disabled={otpSending || otpTimer > 0}
@@ -217,7 +234,9 @@ export default function VerifySignupScreen() {
                 <Text style={styles.resendText}>
                   {otpSending ? 'Sending...' : otpTimer > 0
                     ? `Resend code in ${otpTimer}s`
-                    : 'Resend code'}
+                    : otpExpired
+                      ? 'Request new code'
+                      : 'Resend code'}
                 </Text>
               </Pressable>
             </View>
@@ -379,6 +398,14 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#065F46',
+  },
+
+  expiredText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#DC2626',
+    textAlign: 'center',
+    marginBottom: 12,
   },
 
   otpBoxesRow: {

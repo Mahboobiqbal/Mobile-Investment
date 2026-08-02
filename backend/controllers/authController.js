@@ -270,7 +270,7 @@ const sendSignupOtp = async (req, res) => {
     }
 
     const otp = crypto.randomInt(100000, 999999).toString();
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 60 * 1000);
 
     await SignupOtp.findOneAndDelete({ email: normalizedEmail });
     await SignupOtp.create({ email: normalizedEmail, otp, expiresAt });
@@ -280,7 +280,7 @@ const sendSignupOtp = async (req, res) => {
       const info = await sendAppEmail({
         to: normalizedEmail,
         subject: 'Your SmartInvest Email Verification Code',
-        text: `Your email verification code is: ${otp}\n\nThis code expires in 10 minutes.\n\nIf you did not request this, please ignore this email.`,
+        text: `Your email verification code is: ${otp}\n\nThis code expires in 60 seconds.\n\nIf you did not request this, please ignore this email.`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: #f8fafc; border-radius: 16px;">
             <div style="text-align: center; margin-bottom: 24px;">
@@ -293,7 +293,7 @@ const sendSignupOtp = async (req, res) => {
               <div style="background: #f1f5f9; border-radius: 10px; padding: 16px; text-align: center;">
                 <span style="font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #0f172a;">${otp}</span>
               </div>
-              <p style="font-size: 12px; color: #94a3b8; margin: 16px 0 0; text-align: center;">This code expires in 15 minutes</p>
+              <p style="font-size: 12px; color: #94a3b8; margin: 16px 0 0; text-align: center;">This code expires in 60 seconds</p>
             </div>
           </div>
         `,

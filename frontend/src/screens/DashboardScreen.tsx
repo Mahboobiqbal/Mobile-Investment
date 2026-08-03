@@ -19,6 +19,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import api from '../services/api';
+import { authApi } from '../services/api/authApi';
 import { useAuth } from '../context/AuthContext';
 import SuccessModal from '../components/SuccessModal';
 import ErrorModal from '../components/ErrorModal';
@@ -245,22 +246,31 @@ export default function DashboardScreen() {
     setPinCodeInput('');
   };
 
-  const handlePinSubmit = () => {
-    const CORRECT_PIN = '0000';
-    if (pinCodeInput === CORRECT_PIN) {
-      setShowBalance(true);
-      setShowPinModal(false);
-      setPinCodeInput('');
-      setSuccessModal({
-        visible: true,
-        title: 'Balance Visible',
-        message: 'Your balance is now visible.',
-      });
-    } else {
+  const handlePinSubmit = async () => {
+    try {
+      const response = await authApi.verifyBalancePin(pinCodeInput);
+      if (response.data.valid) {
+        setShowBalance(true);
+        setShowPinModal(false);
+        setPinCodeInput('');
+        setSuccessModal({
+          visible: true,
+          title: 'Balance Visible',
+          message: 'Your balance is now visible.',
+        });
+      } else {
+        setErrorModal({
+          visible: true,
+          title: 'Incorrect PIN',
+          message: 'The PIN you entered is incorrect. Please try again.',
+        });
+        setPinCodeInput('');
+      }
+    } catch (error) {
       setErrorModal({
         visible: true,
-        title: 'Incorrect PIN',
-        message: 'The PIN you entered is incorrect. Please try again.',
+        title: 'Verification Failed',
+        message: 'Unable to verify your PIN. Please try again.',
       });
       setPinCodeInput('');
     }

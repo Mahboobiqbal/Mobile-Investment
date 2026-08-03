@@ -16,6 +16,11 @@ export default function ProfileScreen() {
   const [phone, setPhone] = useState('');
   const [dp, setDp] = useState('');
 
+  const [pinCurrent, setPinCurrent] = useState('');
+  const [pinNew, setPinNew] = useState('');
+  const [pinConfirm, setPinConfirm] = useState('');
+  const [isSavingPin, setIsSavingPin] = useState(false);
+
   useEffect(() => {
     setName(userData?.name || '');
     setPhone(userData?.phone || '');
@@ -77,6 +82,37 @@ export default function ProfileScreen() {
       Alert.alert('Update failed', error?.response?.data?.message || 'Unable to save profile changes.');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSavePin = async () => {
+    if (!/^\d{4}$/.test(pinCurrent)) {
+      Alert.alert('Invalid current PIN', 'Your current PIN must be 4 digits.');
+      return;
+    }
+    if (!/^\d{4}$/.test(pinNew)) {
+      Alert.alert('Invalid new PIN', 'Your new PIN must be exactly 4 digits.');
+      return;
+    }
+    if (pinNew !== pinConfirm) {
+      Alert.alert('PIN mismatch', 'The new PIN and confirmation do not match.');
+      return;
+    }
+
+    setIsSavingPin(true);
+    try {
+      await authApi.updateBalancePin({ currentPin: pinCurrent, newPin: pinNew });
+      setPinCurrent('');
+      setPinNew('');
+      setPinConfirm('');
+      Alert.alert('PIN updated', 'Your balance view PIN has been changed successfully.');
+    } catch (error: any) {
+      Alert.alert(
+        'Update failed',
+        error?.response?.data?.message || 'Unable to change your balance view PIN.'
+      );
+    } finally {
+      setIsSavingPin(false);
     }
   };
 
@@ -198,6 +234,70 @@ export default function ProfileScreen() {
               </Pressable>
             </View>
           )}
+        </View>
+
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Balance View Code</Text>
+          </View>
+
+          <Text style={styles.pinNote}>
+            A 4-digit code required to reveal your balance on the dashboard. Default code is 0000.
+          </Text>
+
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Current Code</Text>
+            <TextInput
+              value={pinCurrent}
+              onChangeText={setPinCurrent}
+              placeholder="Enter current code"
+              placeholderTextColor="#94A3B8"
+              keyboardType="number-pad"
+              secureTextEntry
+              maxLength={4}
+              style={styles.input}
+            />
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>New Code</Text>
+            <TextInput
+              value={pinNew}
+              onChangeText={setPinNew}
+              placeholder="Enter new 4-digit code"
+              placeholderTextColor="#94A3B8"
+              keyboardType="number-pad"
+              secureTextEntry
+              maxLength={4}
+              style={styles.input}
+            />
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Confirm New Code</Text>
+            <TextInput
+              value={pinConfirm}
+              onChangeText={setPinConfirm}
+              placeholder="Re-enter new code"
+              placeholderTextColor="#94A3B8"
+              keyboardType="number-pad"
+              secureTextEntry
+              maxLength={4}
+              style={styles.input}
+            />
+          </View>
+
+          <Pressable
+            onPress={handleSavePin}
+            style={styles.pinButton}
+            disabled={isSavingPin}
+          >
+            {isSavingPin ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <Text style={styles.pinButtonText}>Change Code</Text>
+            )}
+          </Pressable>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -437,6 +537,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#0F172A',
   },
   saveButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  pinNote: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: '#64748B',
+    lineHeight: 17,
+    marginBottom: 16,
+  },
+  pinButton: {
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    backgroundColor: '#0F172A',
+    marginTop: 4,
+  },
+  pinButtonText: {
     fontSize: 14,
     fontWeight: '700',
     color: '#FFFFFF',

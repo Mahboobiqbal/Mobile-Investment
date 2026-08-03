@@ -94,6 +94,12 @@ export const authApi = {
   updatePassword: (data: { currentPassword?: string; newPassword?: string }) =>
     api.put<{ message: string }>('/auth/update-password', data),
 
+  verifyBalancePin: (pin: string) =>
+    api.post<{ valid: boolean }>('/auth/verify-balance-pin', { pin }),
+
+  updateBalancePin: (data: { currentPin: string; newPin: string }) =>
+    api.put<{ message: string }>('/auth/balance-pin', data),
+
   getDashboardStats: () =>
     api.get<DashboardStats>('/auth/dashboard-stats'),
 

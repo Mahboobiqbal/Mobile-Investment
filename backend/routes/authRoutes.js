@@ -1,6 +1,6 @@
 const express = require('express');
 
-const { checkSignupOtp, forgotPassword, getUserDashboardStats, getUserDailyROIHistory, getUserInvestments, getUserProfile, loginUser, registerUser, resetPassword, sendSignupOtp, updatePassword, updateUserProfile, verifyOtp } = require('../controllers/authController');
+const { checkSignupOtp, forgotPassword, getUserDashboardStats, getUserDailyROIHistory, getUserInvestments, getUserProfile, loginUser, registerUser, resetPassword, sendSignupOtp, updateBalancePin, updatePassword, updateUserProfile, verifyBalancePin, verifyOtp } = require('../controllers/authController');
 const authMiddleware = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -169,6 +169,51 @@ router.put('/profile', authMiddleware, updateUserProfile);
  *         description: Password updated
  */
 router.put('/update-password', authMiddleware, updatePassword);
+
+/**
+ * @openapi
+ * /auth/verify-balance-pin:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Verify the balance view PIN
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [pin]
+ *             properties:
+ *               pin: { type: string, description: 4-digit PIN }
+ *     responses:
+ *       200:
+ *         description: Returns whether the PIN is valid
+ */
+router.post('/verify-balance-pin', authMiddleware, verifyBalancePin);
+
+/**
+ * @openapi
+ * /auth/balance-pin:
+ *   put:
+ *     tags: [Auth]
+ *     summary: Change the balance view PIN
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [currentPin, newPin]
+ *             properties:
+ *               currentPin: { type: string, description: Current 4-digit PIN (default 0000) }
+ *               newPin: { type: string, description: New 4-digit PIN }
+ *     responses:
+ *       200:
+ *         description: PIN updated successfully
+ */
+router.put('/balance-pin', authMiddleware, updateBalancePin);
 
 /**
  * @openapi

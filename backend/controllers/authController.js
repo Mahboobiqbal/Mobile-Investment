@@ -531,6 +531,66 @@ const updatePassword = async (req, res) => {
   }
 };
 
+const DEFAULT_BALANCE_PIN = '0000';
+
+const verifyBalancePin = async (req, res) => {
+  try {
+    const { pin } = req.body;
+    if (typeof pin !== 'string' || !/^\d{4}$/.test(pin)) {
+      return res.status(400).json({ message: 'A valid 4-digit PIN is required' });
+    }
+
+    const user = await User.findById(req.user.id).select('+balanceViewPin');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    let valid = false;
+    if (!user.balanceViewPin) {
+      valid = pin === DEFAULT_BALANCE_PIN;
+    } else {
+      valid = await bcrypt.compare(pin, user.balanceViewPin);
+    }
+
+    return res.status(200).json({ valid });
+  } catch (error) {
+    return res.status(500).json({ message: error.message || 'PIN verification failed' });
+  }
+};
+
+const updateBalancePin = async (req, res) => {
+  try {
+    const { currentPin, newPin } = req.body;
+
+    if (typeof newPin !== 'string' || !/^\d{4}$/.test(newPin)) {
+      return res.status(400).json({ message: 'New PIN must be exactly 4 digits' });
+    }
+
+    const user = await User.findById(req.user.id).select('+balanceViewPin');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    let currentValid = false;
+    if (!user.balanceViewPin) {
+      currentValid = currentPin === DEFAULT_BALANCE_PIN;
+    } else {
+      currentValid = typeof currentPin === 'string' && (await bcrypt.compare(currentPin, user.balanceViewPin));
+    }
+
+    if (!currentValid) {
+      return res.status(401).json({ message: 'Current PIN is incorrect' });
+    }
+
+    user.balanceViewPin = await bcrypt.hash(newPin, 10);
+    await user.save();
+
+    return res.status(200).json({ message: 'Balance view PIN updated successfully' });
+  } catch (error) {
+    return res.status(500).json({ message: error.message || 'PIN update failed' });
+  }
+};
+
 const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -898,4 +958,6 @@ module.exports = {
   getUserDashboardStats,
   getUserInvestments,
   getUserDailyROIHistory,
+  verifyBalancePin,
+  updateBalancePin,
 };

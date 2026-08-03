@@ -70,6 +70,11 @@ const userSchema = new mongoose.Schema(
 			type: Date,
 			default: null,
 		},
+		balanceViewPin: {
+			type: String,
+			default: null,
+			select: false,
+		},
 	},
 	{
 		timestamps: true,

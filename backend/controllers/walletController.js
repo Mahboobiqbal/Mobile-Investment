@@ -198,17 +198,6 @@ const runDailyProfitDistribution = async () => {
   const pkDate = new Date(now.getTime() + pkOffset);
   const today = pkDate.toISOString().split('T')[0];
 
-  const dupes = await Transaction.aggregate([
-    { $match: { transactionId: { $regex: `^ROI-DAILY-${today}-` } } },
-    { $group: { _id: '$transactionId', ids: { $push: '$_id' }, count: { $sum: 1 } } },
-    { $match: { count: { $gt: 1 } } },
-  ]);
-  for (const dupe of dupes) {
-    const [keep, ...remove] = dupe.ids;
-    await Transaction.deleteMany({ _id: { $in: remove } });
-    console.log(`[Cleanup] Removed ${remove.length} duplicate ROI(s) for ${dupe._id}`);
-  }
-
   const dailyConfig = await DailyProfitRate.findOne({ date: today });
   const dailyRate = dailyConfig ? dailyConfig.rate : 0.005;
 
@@ -227,8 +216,21 @@ const runDailyProfitDistribution = async () => {
       const profit = Math.round(user.currentBalance * dailyRate * 100) / 100;
       const txId = `ROI-DAILY-${today}-${user._id}`;
 
-      const existingTx = await Transaction.findOne({ transactionId: txId });
-      if (existingTx) {
+      const upsert = await Transaction.updateOne(
+        { transactionId: txId },
+        {
+          $setOnInsert: {
+            user: user._id,
+            amount: profit,
+            type: 'roi',
+            transactionId: txId,
+            status: 'approved',
+          },
+        },
+        { upsert: true }
+      );
+
+      if (upsert.upsertedCount === 0) {
         results.push({
           userId: user._id,
           userEmail: user.email,
@@ -238,26 +240,26 @@ const runDailyProfitDistribution = async () => {
         continue;
       }
 
-      user.currentBalance += profit;
-      await user.save();
-
-      const transaction = await Transaction.create({
-        user: user._id,
-        amount: profit,
-        type: 'roi',
-        transactionId: txId,
-        status: 'approved',
-      });
+      await User.updateOne({ _id: user._id }, { $inc: { currentBalance: profit } });
 
       results.push({
         userId: user._id,
         userEmail: user.email,
         dailyRate,
         profit,
-        newBalance: user.currentBalance,
-        transactionId: transaction._id,
+        newBalance: Math.round((user.currentBalance + profit) * 100) / 100,
+        transactionId: txId,
       });
     } catch (userError) {
+      if (userError.code === 11000) {
+        results.push({
+          userId: user._id,
+          userEmail: user.email,
+          skipped: true,
+          message: 'Already received today\'s ROI',
+        });
+        continue;
+      }
       console.error(`Failed to distribute profit for user ${user._id}:`, userError.message);
       results.push({
         userId: user._id,
